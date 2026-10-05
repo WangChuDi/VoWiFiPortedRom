@@ -90,32 +90,37 @@ public final class MainActivity extends Activity {
     private void status(String message){summary.setText(message);if(actionStatus!=null)actionStatus.setText(message);}
     private void render(JSONObject data){
         last=data;results.removeAllViews();
-        if(data.has("error")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
+        if(data.has("error")&&!data.has("sdk")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
         status("Android API "+data.optInt("sdk")+" · SIM"+(data.optInt("slot")+1)+" · 只读结果");
+        StringBuilder unavailable=new StringBuilder();
+        for(String key:new String[]{"error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error"})
+            if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
+        if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
-        card("实体 Wi-Fi",data.optString("wifi","未观测"));
+        card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
         card("ePDG DNS",data.optString("dns","未观测"));
         card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));
         card("首选互联网 APN",data.optString("apn","不可见"));
-        card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+data.optBoolean("wfc_roaming_setting")+" · 偏好模式 "+data.optInt("wfc_mode"):"不可见 · "+data.optString("settings_error","未知"));
+        card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+(data.has("wfc_roaming_setting")?data.optBoolean("wfc_roaming_setting"):"未知")+" · 偏好模式 "+(data.has("wfc_mode")?data.optInt("wfc_mode"):"未知"):"不可见 · "+data.optString("settings_error","未知"));
         card("WLAN 语音 provisioning",data.has("wlan_voice_provisioned")?Boolean.toString(data.optBoolean("wlan_voice_provisioned"))+"（框架配置结果，不代表运营商已接受注册）":"不可见 · "+data.optString("provisioning_error","未知"));
         JSONObject policy=data.optJSONObject("selected_policy");
         if(policy!=null)card("所选 SIM 的运营商策略",policy.toString());
         int networks=data.optInt("ims_network_count");
-        card("所选 SIM 的 IMS 网络",networks+" 个 · 接口 "+data.optString("ims_interface","不可见")+" · P-CSCF "+data.optInt("pcscf_count")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
+        card("所选 SIM 的 IMS 网络",data.has("network_error")?"不可见 · "+data.optString("network_error"):networks+" 个 · 接口 "+(data.isNull("ims_interface")?"未观测":data.optString("ims_interface","不可见"))+" · P-CSCF "+data.optInt("pcscf_count")+(data.optInt("ims_unattributed_network_count")>0?"\n另有 "+data.optInt("ims_unattributed_network_count")+" 个 IMS 网络无法归属到卡槽":"")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
         int t=data.optInt("ims_transport",-1);
         String registration=t==2?"WLAN 已注册":t==1?"蜂窝网络已注册":t==-2?"注册中":t==-3?"未注册":"不可见 / 尚未回调";
         card("IMS 注册",data.has("ims_error")?"不可见 · "+data.optString("ims_error"):registration);
         card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
         card("最近一次系统短信分发",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
-        card("替换控制器（当前管理 SIM2）",providers==null?"未加载配套模块":providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+providers.optString("config_ims_mmtel_package_override_string","未替换 IMS"));
+        card("替换控制器（当前管理 SIM2）",providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+providers.optString("config_ims_mmtel_package_override_string","未替换 IMS"));
         setActions(data.optBoolean("engine_supported"));
         boolean active=providers!=null&&"ACTIVE".equals(providers.optString("transaction"));
         trial.setEnabled(data.optBoolean("engine_supported")&&data.optBoolean("controller")&&!active);
         enable.setEnabled(data.optBoolean("engine_supported")&&active&&!"ENABLED".equals(providers.optString("persistent")));
         reload.setEnabled(data.optBoolean("engine_supported")&&active);
         rollback.setEnabled(active); // Recovery is available even after selecting another SIM.
+        if(data.has("error")){setActions(false);status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
     }
     private void card(String heading,String value){
         LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(14),dp(4),dp(14),dp(10));c.setBackgroundColor(Color.WHITE);

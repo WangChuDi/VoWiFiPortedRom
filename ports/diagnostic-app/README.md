@@ -9,15 +9,18 @@ engine. The source and embedded engine retain GPL-2.0 licensing; see
 
 The root helper reports only selected-subscription metadata:
 
-* Active SIM slot, subscription ID and operator, without phone number/IMSI/ICCID.
+* Active SIM slot, subscription ID, actual SIM state and operator, without phone
+  number/IMSI/ICCID. An active subscription is not assumed to mean SIM_READY.
 * Physical Wi-Fi and ePDG DNS resolution bound to that Wi-Fi network.
 * Selected internet APN/type, user WFC and roaming switches, carrier policy and
   WLAN voice provisioning where the ROM exposes those interfaces.
 * IMS networks matched by `TelephonyNetworkSpecifier` subscription ID, interface
   existence and P-CSCF count; a stale framework interface is shown explicitly.
+  Newer/extended frameworks also use the subscription-ID set where accessible;
+  absent/redacted attribution is reported separately, never assigned by order.
 * IMS registration transport and MMTEL voice/SMS capabilities through callbacks.
-* Current replacement IWLAN process and its own child-opened metadata; this is
-  not a universal IKE monitor for native or other replacement stacks.
+* Current replacement IWLAN process and its own historical child-opened metadata;
+  logs can expire and a previous event is not a real-time IKE status check.
 * Latest SMS-dispatch capability observation from the current phone process,
   separated from advertised IMS capability. The check does not send an SMS.
 
@@ -32,6 +35,10 @@ Root is requested by the tool's own UID: authorizing ADB Shell is insufficient.
 MIUI's app_process needs an explicit telephony bootstrap and active-list slot
 lookup. Root commands have bounded waits and IPC output is captured through a
 pipe. A failed action clears old button state; inspect again before proceeding.
+Optional telephony-bootstrap, controller and per-stage failures are isolated.
+An inaccessible stage leaves the other results visible. Empty or inaccessible
+subscriptions still permit physical-Wi-Fi/controller checks, while replacement
+actions require a freshly observed SIM_READY in the tested profile.
 
 ## Optional replacement
 
@@ -78,6 +85,10 @@ methods. These are useful adaptation paths, not proof of end-to-end support:
 [DataService source](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/telephony/java/android/telephony/data/DataService.java),
 [ImsService source](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/telephony/java/android/telephony/ims/ImsService.java).
 Main is a development branch, not a release-version test.
+`NetworkCapabilities.getSubscriptionIds()` is public from API35 / U extension12
+and permission-filtered. The root helper attempts reflection on API31+ for older
+hidden implementations and treats absent/empty sets as attribution unavailable:
+[official API contract](https://developer.android.com/reference/android/net/NetworkCapabilities#getSubscriptionIds()).
 
 ## Build
 
@@ -96,3 +107,11 @@ results. The reload button was exercised: it disables mutation buttons, waits
 up to 45 seconds for registration/capability recovery and displays the refreshed
 WLAN voice/SMS result. A bottom refresh button avoids scrolling back to the top.
 These UI checks are separate from compilation and backend diagnostics.
+
+The 0.1.1 update was rebuilt/signed, installed with the same application identity,
+and checked through the application's own root invocation. SIM2 reports actual
+state READY, one matching IMS network on an existing IPsec interface, two P-CSCF
+addresses and WLAN voice/SMS capabilities. Empty SIM1 retains physical Wi-Fi and
+controller status without claiming SIM2's IMS network. Android12–17 behavior and
+inaccessible-interface branches still need device validation; this source/API
+review does not enable the replacement engine on those versions.
