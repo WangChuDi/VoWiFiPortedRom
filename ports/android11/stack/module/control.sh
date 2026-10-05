@@ -3,7 +3,6 @@
 set -eu
 MODDIR=${0%/*}
 STATE=/data/adb/codex_vowifi_stack
-FILES=/data/user_de/0/com.android.phone/files
 COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
 MODULE=/data/adb/modules/codex_vowifi_stack_api30
 umask 077
@@ -69,6 +68,13 @@ restart_phone() {
   PID=$(pidof com.android.phone || true)
   [ -z "$PID" ] || kill "$PID"
 }
+archive_transaction() {
+  ARCHIVE="$STATE/baseline-${1}-$(date +%s)-$$"
+  if [ -d "$STATE/baseline" ]; then mv "$STATE/baseline" "$ARCHIVE"; else mkdir -p "$ARCHIVE"; fi
+  for NAME in providers-before.bin providers-before.bin.new persistence.properties persistence.properties.new override-before.xml owner components phase transaction; do
+    [ ! -f "$STATE/$NAME" ] || mv "$STATE/$NAME" "$ARCHIVE/$NAME"
+  done
+}
 gate() {
   BOOT=$(settings get global boot_count 2>&1)
   case "$BOOT" in ''|*[!0-9]*) return 1;; esac
@@ -83,6 +89,22 @@ gate() {
 }
 rollback() {
   [ -f "$STATE/transaction" ] || { echo rollback=NOT_NEEDED; return; }
+  if [ "$(cat "$STATE/phase" 2>/dev/null || true)" = PREPARING ]; then
+    # Snapshot failure cannot justify clearing a live override that was never
+    # modified by this transaction. Preserve its partial evidence privately.
+    archive_transaction prepare-failed
+    rm -f "$STATE/trial-running"
+    echo rollback=PREPARATION_DISCARDED_NO_PROVIDER_CHANGE
+    return
+  fi
+  REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
+  [ -n "$REGISTRY" ] || { echo call-state-unavailable; return 1; }
+  if printf '%s\n' "$REGISTRY" | grep -Eq 'mCallState=[12]'; then echo active-call-refused; return 1; fi
+  # Old directory-wide baselines are adopted once, while the original card and
+  # its selected replacement file still prove which filename belongs to it.
+  if [ ! -f "$STATE/persistence.properties" ]; then
+    if ! carrier persistence-adopt; then echo rollback=SUBSCRIPTION_MIGRATION_RETRY_REQUIRED; return 1; fi
+  fi
   run_cmd settings put global codex_wfc_stack_trial_until 0 || true
   run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_until" 0 || true
   run_cmd settings delete global "codex_wfc_stack_slot_${OWNER_SLOT}_sub" || true
@@ -91,21 +113,7 @@ rollback() {
   # A file-only restore can leave the loader's live override selected. Clear
   # both layers and wait for its asynchronous deletion before restoring XML.
   if ! carrier clear; then echo rollback=OVERRIDE_CLEAR_RETRY_REQUIRED; return 1; fi
-  # Only persisted override files are touched; ordinary cache and APNs stay intact.
-  for F in "$FILES"/carrierconfig-*-override-*.xml; do
-    [ -f "$F" ] || continue
-    NAME=${F##*/}
-    if [ -f "$STATE/baseline/$NAME" ]; then
-      cp -p "$STATE/baseline/$NAME" "$F"
-    else
-      rm -f "$F"
-    fi
-  done
-  for F in "$STATE/baseline"/carrierconfig-*-override-*.xml; do
-    [ -f "$F" ] || continue
-    cp -p "$F" "$FILES/${F##*/}"
-  done
-  restorecon "$FILES"/carrierconfig-*.xml >/dev/null 2>&1 || true
+  if ! carrier persistence-restore; then echo rollback=SELECTED_FILE_RESTORE_RETRY_REQUIRED; return 1; fi
   resetprop -n ro.telephony.iwlan_operation_mode "$(cat "$STATE/mode-before")"
   POLICY_OK=1
   if [ -f "$STATE/sms-policy-before" ]; then
@@ -116,9 +124,7 @@ rollback() {
   if ! carrier verify-restored; then echo rollback=PROVIDER_RESTORE_RETRY_REQUIRED; return 1; fi
   [ ! -f "$COMPANION" ] || sh "$COMPANION" start
   [ "$POLICY_OK" = 1 ] || { echo rollback=PROVIDERS_RESTORED_POLICY_RETRY_REQUIRED; return 1; }
-  rm -f "$STATE/transaction"
-  rm -f "$STATE/providers-before.bin" "$STATE/components" "$STATE/owner"
-  mv "$STATE/baseline" "$STATE/baseline-restored-$(date +%s)"
+  archive_transaction restored
   echo rollback=RESTORED
 }
 case "${1:-status}" in
@@ -128,6 +134,7 @@ case "${1:-status}" in
     [ ! -f "$STATE/enabled" ] || echo persistent=ENABLED
     echo component_selection=1
     echo identity_selection=1
+    echo subscription_file_selection=1
     if [ -f "$STATE/transaction" ]; then
       echo "owner_slot=$OWNER_SLOT"
       echo "owner_sub=$OWNER_SUB"
@@ -156,9 +163,6 @@ case "${1:-status}" in
     mkdir -p "$STATE/baseline"
     # This directory is used only for this transaction; stale snapshots are rejected.
     [ ! -f "$STATE/baseline/ready" ] || { echo stale-baseline-refused; exit 1; }
-    for F in "$FILES"/carrierconfig-*-override-*.xml; do
-      [ ! -f "$F" ] || cp -p "$F" "$STATE/baseline/${F##*/}"
-    done
     touch "$STATE/baseline/ready"
     getprop ro.telephony.iwlan_operation_mode > "$STATE/mode-before"
     # Remains available if the module is disabled/removed at the next normal boot.
@@ -172,28 +176,23 @@ case "${1:-status}" in
     printf '%s\n' "$OWNER_SLOT:$OWNER_SUB" > "$STATE/owner.new"
     mv "$STATE/owner.new" "$STATE/owner"
     printf '%s\n' "$TOKEN" > "$STATE/transaction"
+    printf '%s\n' PREPARING > "$STATE/phase"
     touch "$STATE/trial-running"
     printf '%s\n' "$COMPONENTS" > "$STATE/components"
     if ! carrier snapshot; then echo provider-snapshot-failed; rollback; exit 1; fi
+    printf '%s\n' OVERRIDE_ATTEMPTED > "$STATE/phase"
     nohup sh "$MODDIR/control.sh" watchdog "$TOKEN" 9>&- > "$STATE/watchdog.log" 2>&1 < /dev/null &
     echo $! > "$STATE/watchdog.pid"
     if ! carrier apply "$COMPONENTS"; then echo provider-apply-failed; rollback; exit 1; fi
     sleep 2
     if ! carrier verify "$COMPONENTS"; then echo provider-verify-failed; rollback; exit 1; fi
-    FOUND=0
-    if [ "$((COMPONENTS & 1))" != 0 ]; then SELECTED_PACKAGE=dev.codex.vowifi.iwlan
-    elif [ "$((COMPONENTS & 2))" != 0 ]; then SELECTED_PACKAGE=dev.codex.vowifi.qns
-    else SELECTED_PACKAGE=me.phh.ims; fi
-    for F in "$FILES"/carrierconfig-*-override-*.xml; do
-      [ -f "$F" ] || continue
-      grep -q "$SELECTED_PACKAGE" "$F" && FOUND=1
-    done
-    [ "$FOUND" = 1 ] || { echo persist-format-unverified; rollback; exit 1; }
+    if ! carrier persistence-verify "$COMPONENTS"; then echo persist-format-unverified; rollback; exit 1; fi
     if ! gate; then echo trial-gate-failed; rollback; exit 1; fi
     [ ! -f "$COMPANION" ] || sh "$COMPANION" stop
     # Operation mode is global. Change it only for a replacement data service.
     if [ "$((COMPONENTS & 1))" != 0 ]; then resetprop -n ro.telephony.iwlan_operation_mode AP-assisted; fi
     restart_phone
+    printf '%s\n' ACTIVE > "$STATE/phase"
     echo trial=STARTED
     ;;
   watchdog)

@@ -1,6 +1,6 @@
 id=codex_vowifi_stack_api30
 name=Android 11 application-side IWLAN QNS IMS experiment
-version=0.5.1-trial
-versionCode=6
+version=0.6.0-trial
+versionCode=7
 author=WangChuDi; phhusson/ims and Suiying6023 references
 description=API30 raphael VOXI replacement services. Provider switch requires explicit trial; original companion baseline retained.

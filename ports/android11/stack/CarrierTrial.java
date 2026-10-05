@@ -50,21 +50,49 @@ public final class CarrierTrial {
     private static void run(String[] args)throws Exception {
         if(android.os.Process.myUid()!=0)throw new SecurityException("root-required");
         if(args.length<1)throw new IllegalArgumentException("command-required");
-        boolean masked="apply".equals(args[0])||"verify".equals(args[0]);
+        boolean masked="apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0]);
         int prefix=masked?2:1;
         if(args.length==prefix+2){
             selectedSlot=Integer.parseInt(args[prefix]);selectedSub=Integer.parseInt(args[prefix+1]);
             if(selectedSlot<0||selectedSlot>7||selectedSub<0)throw new IllegalArgumentException("invalid-selection");
             args=java.util.Arrays.copyOf(args,prefix);
         }
-        if(args.length>=1&&("clear".equals(args[0])||"snapshot".equals(args[0])||"apply".equals(args[0])||"verify".equals(args[0])||"verify-restored".equals(args[0])))requireOwner();
-        if(args.length==1&&"check".equals(args[0])){checkProfile();System.out.println("profile=SUPPORTED");System.exit(0);return;}
+        if(args.length>=1&&("clear".equals(args[0])||"snapshot".equals(args[0])||"apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0])||"verify-restored".equals(args[0])||"persistence-adopt".equals(args[0])||"persistence-restore".equals(args[0])))requireOwner();
+        if(args.length==1&&"check".equals(args[0]))checkProfile();
         if(args.length>=1&&("apply".equals(args[0])||"snapshot".equals(args[0])||"baseline-check".equals(args[0])))checkProfile();
         IBinder service=ServiceManager.getService("carrier_config");
         if(service==null)throw new IllegalStateException("carrier-service-unavailable");
         Class<?> api=Class.forName("com.android.internal.telephony.ICarrierConfigLoader");
         Object loader=Class.forName(api.getName()+"$Stub").getMethod("asInterface",IBinder.class).invoke(null,service);
-        if(args.length==1&&"baseline-check".equals(args[0])){
+        if(new File(BASELINE.getParentFile(),"persistence.properties").isFile()&&!"persistence-probe".equals(args[0]))
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).requireIdentity(CarrierOverrideFiles.target(context(),selectedInfo(),api,loader));
+        if(args.length==1&&"check".equals(args[0])){
+            System.out.println("profile=SUPPORTED");
+        }else if(args.length==1&&"persistence-probe".equals(args[0])){
+            OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader);
+            System.out.println("persistence-schema=RUNTIME_SELECTED_FILE");
+            System.out.println("selected-override-present="+target.file.isFile());
+            int others=0;for(File file:target.directory.listFiles())if(file.getName().startsWith("carrierconfig-")&&file.getName().contains("-override-")&&!file.equals(target.file))others++;
+            System.out.println("other-override-count="+others);
+        }else if(args.length==1&&"persistence-adopt".equals(args[0])){
+            checkProfile();PersistableBundle original=baseline();
+            for(String key:KEYS)for(String value:VALUES)if(value.equals(original.getString(key)))throw new IllegalStateException("replacement-baseline-refused");
+            OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader);
+            if(!OverrideFileStore.containsReplacement(target.file,VALUES))throw new IllegalStateException("persistence-selection-unconfirmed");
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).adopt(target,new File(BASELINE.getParentFile(),"baseline"));
+            System.out.println("persistence-adoption=ACK");
+        }else if(args.length==1&&"persistence-restore".equals(args[0])){
+            OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader);
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).restore(target);
+            CarrierOverrideFiles.restoreLabel(target);
+            System.out.println("persistence-restoration=ACK");
+        }else if(args.length==2&&"persistence-verify".equals(args[0])){
+            int mask=Integer.parseInt(args[1]);if(mask<1||mask>7)throw new IllegalArgumentException("invalid-components");
+            OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader);
+            PersistableBundle disk=CarrierOverrideFiles.readBundle(target.file),before=mask==7?null:baseline();
+            for(int i=0;i<KEYS.length;i++)if(!java.util.Objects.equals((mask&BITS[i])!=0?VALUES[i]:before.getString(KEYS[i]),disk.getString(KEYS[i])))throw new IllegalStateException("selected-persistence-unconfirmed");
+            System.out.println("persistence-verification=ACK");
+        }else if(args.length==1&&"baseline-check".equals(args[0])){
             // App-root may retain an isolated mount namespace. Fail before
             // creating a transaction if the phone's backup directory is hidden.
             if(ownedOverrideOnDisk())throw new IllegalStateException("untracked-replacement-refused");
@@ -80,6 +108,7 @@ public final class CarrierTrial {
                 if(matches){restored=true;break;}Thread.sleep(500);
             }
             if(!restored)throw new IllegalStateException("provider-restoration-not-observed");
+            if(new File(BASELINE.getParentFile(),"persistence.properties").isFile())CarrierOverrideFiles.store(BASELINE.getParentFile()).verifyRestored(CarrierOverrideFiles.target(context(),selectedInfo(),api,loader));
             System.out.println("provider-restoration=ACK");
         }else if(args.length==1&&"clear".equals(args[0])){
             if(Build.VERSION.SDK_INT!=30||!"raphael".equals(Build.DEVICE)||!new File(BASELINE.getParentFile(),"transaction").isFile())throw new SecurityException("rollback-transaction-required");
@@ -105,6 +134,9 @@ public final class CarrierTrial {
             throw new IllegalStateException("override-disk-clear-not-observed");
         }else if(args.length==1&&"snapshot".equals(args[0])){
             if(BASELINE.exists())throw new IllegalStateException("provider-snapshot-exists");
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).snapshot(CarrierOverrideFiles.target(context(),selectedInfo(),api,loader));
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).verifyRestored(CarrierOverrideFiles.target(context(),selectedInfo(),api,loader));
+            checkProfile();
             PersistableBundle before=config(api,loader),saved=new PersistableBundle();
             for(String key:KEYS)saved.putString(key,before.getString(key));
             Parcel parcel=Parcel.obtain();
@@ -146,18 +178,15 @@ public final class CarrierTrial {
         try{parcel.unmarshall(bytes,0,bytes.length);parcel.setDataPosition(0);return parcel.readTypedObject(PersistableBundle.CREATOR);}
         finally{parcel.recycle();}
     }
-    private static boolean ownedOverrideOnDisk()throws IOException{
-        File[] files=new File("/data/user_de/0/com.android.phone/files").listFiles();
-        if(files==null)throw new IOException("override-directory-unavailable");
-        for(File file:files){
-            String name=file.getName();
-            if(!name.startsWith("carrierconfig-")||!name.contains("-override-")||!name.endsWith(".xml"))continue;
-            if(file.length()>1048576)throw new IOException("override-file-too-large");
-            ByteArrayOutputStream output=new ByteArrayOutputStream();
-            try(InputStream stream=new FileInputStream(file)){byte[] buffer=new byte[4096];int count;while((count=stream.read(buffer))>=0)output.write(buffer,0,count);}
-            String xml=output.toString("UTF-8");
-            for(String value:VALUES)if(xml.contains(value))return true;
-        }
-        return false;
+    private static Context context()throws Exception{selectedInfo();return context;}
+    private static boolean ownedOverrideOnDisk()throws Exception{
+        IBinder service=ServiceManager.getService("carrier_config");
+        if(service==null)throw new IllegalStateException("carrier-service-unavailable");
+        Class<?> api=Class.forName("com.android.internal.telephony.ICarrierConfigLoader");
+        Object loader=Class.forName(api.getName()+"$Stub").getMethod("asInterface",IBinder.class).invoke(null,service);
+        OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader);
+        // Persistence-clear observation concerns this SIM only. Another selected
+        // SIM's replacement must not prevent or participate in this rollback.
+        return OverrideFileStore.containsReplacement(target.file,VALUES);
     }
 }

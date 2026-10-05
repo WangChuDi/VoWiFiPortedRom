@@ -24,15 +24,41 @@ to explicit ownership; it still manages one global transaction at a time.
   Reload/enable require selecting that owner; rollback explicitly targets the
   owner even when viewing another slot. Selecting another SIM clears UI results.
 
-The backup XML directory, IWLAN operation mode, phone-process restart, SMS test
-package policy and companion receiver remain global. This protocol does not
-allow two independent transactions or promise dual-active registration.
+## Selected persisted file (0.6.0)
+
+The helper now snapshots/restores only the selected card's exact override XML.
+The root-private record binds its directory, filename and SIM fingerprint, and
+verifies the original backup with SHA256. Identifiers and paths containing them
+are never printed. Restoring an existing original uses a same-directory staging
+file, verifies and syncs it, then atomically replaces the selected target. Only
+that target is relabeled. An originally absent file is removed only for its
+recorded owner; another card's XML is never copied or deleted.
+
+Filename choice requires runtime evidence: the current override or platform
+cache must match a unique candidate. AOSP's current loader uses the specific
+carrier ID, while this MIUI uses MCC/MNC 23415 despite its carrier ID being 28.
+Both candidates are checked, not presumed equivalent. ICCID-only, ambiguous or
+unobserved layouts remain refused. Source:
+[CarrierConfigLoader](https://android.googlesource.com/platform/packages/services/Telephony/+/master/src/com/android/phone/CarrierConfigLoader.java).
+The master source is not evidence of every Android release's implementation.
+
+Old active transactions adopt the original selected file from their preserved
+legacy baseline, never the current replacement. PREPARING failures archive
+partial snapshots without clearing providers; retries create a fresh state.
+Copy/restore interruption tests preserve the live file. Real-device migration,
+clear, exact-file restoration, provider restoration and a fresh trial passed
+on the connected MIUI profile. Tests with two artificial SIM identities verify
+file isolation; they are not simultaneous live dual-SIM registration tests.
+
+The transaction directory, IWLAN operation mode, phone-process restart, SMS test
+package policy and companion receiver remain global. The controller still does
+not allow two independent active transactions or promise dual-active registration.
 
 ## Remaining requirements
 
-1. Make persisted override ownership and baseline restoration subscription-local
-   without restoring/removing another card's override files. Handle removal,
-   relocation and subscription database resets with explicit recovery evidence.
+1. Extend selected-file ownership into separate transaction directories. Handle
+   removal, relocation and subscription database resets with explicit recovery
+   evidence; the current helper safely refuses owner/identity changes.
 2. Coordinate global mode/reload/companion lifetime across a set of selected
    subscriptions; ending one selection must preserve another active selection.
 3. Exercise simultaneous feature/registration/tunnel lifecycles on two active

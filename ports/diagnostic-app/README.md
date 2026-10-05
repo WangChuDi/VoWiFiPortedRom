@@ -63,6 +63,14 @@ slot1/sub1. One global transaction remains; simultaneous dual-card replacement
 is still work in progress. The app keeps mutation controls disabled when paired
 with an older controller that lacks the explicit-identity protocol.
 
+Version 0.4.0 embeds controller 0.6.0, which backs up and restores only the
+selected subscription's confirmed persisted override file. A private identity
+record and original-file hash prevent another card's file from being restored
+as this one. Interrupted preparation archives evidence without clearing live
+providers; interrupted staged restoration preserves the live target. Unknown
+filename layouts remain refused. This is file isolation, not two active
+transactions; see [ownership and remaining work](../android11/stack/TRANSACTIONS.md).
+
 Root revalidates the device, live SIM, subscription and operator immediately
 before apply/enable/reload; UI results alone do not authorize a changed SIM.
 Trials last at most five minutes and may roll back earlier on failure. Enable
