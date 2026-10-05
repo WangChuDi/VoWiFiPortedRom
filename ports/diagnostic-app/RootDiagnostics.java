@@ -209,10 +209,11 @@ public final class RootDiagnostics {
         for(String line:status.split("[\r\n]+")){
             int equals=line.indexOf('=');
             if(equals>0){String key=line.substring(0,equals);
-                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
+                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
             }
         }
-        if(!provider.has("mode")||!provider.has("transaction"))throw new IOException("controller-status-unavailable");
+        if(!provider.has("mode")||!provider.has("config_ims_mmtel_package_override_string"))throw new IOException("controller-status-unavailable");
+        if(!provider.has("transaction"))provider.put("transaction","INACTIVE");
         out.put("controller",true).put("providers",provider).put("providers_slot",1);
         return provider;
     }

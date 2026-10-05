@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.*;
 import android.system.OsConstants;
 import android.telephony.*;
+import dev.codex.vowifi.common.StackProfile;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +22,7 @@ public final class EpdgSession {
     private static final String IKE="android.net.ipsec.ike.";
     private final Context context;
     private final int slot;
+    private final int expectedSub;
     private final Listener listener;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final ScheduledExecutorService timer=Executors.newSingleThreadScheduledExecutor();
@@ -33,7 +35,10 @@ public final class EpdgSession {
     private volatile boolean opened;
     private String stage="initialization";
     public EpdgSession(Context context,int slot,Listener listener) {
-        this.context=context; this.slot=slot; this.listener=listener;
+        this(context,slot,-1,listener);
+    }
+    public EpdgSession(Context context,int slot,int expectedSub,Listener listener) {
+        this.context=context; this.slot=slot; this.expectedSub=expectedSub; this.listener=listener;
     }
     private static Class<?> type(String name)throws Exception{return Class.forName(name);}
     private static Object call(Object o,String method,Class<?>[] types,Object...args)throws Exception {
@@ -60,10 +65,10 @@ public final class EpdgSession {
         worker.execute(()->{try{connect();}catch(Throwable e){fail(stage+"/"+errorType(e));}});
     }
     private void connect()throws Exception {
-        if(slot!=1)throw new IllegalStateException("unsupported-slot");
-        SubscriptionInfo info=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoForSimSlotIndex(slot);
+        SubscriptionInfo info=StackProfile.selectedSubscription(context,slot);
         if(info==null)throw new IllegalStateException("no-sim");
         int subId=info.getSubscriptionId();
+        if(expectedSub>=0&&expectedSub!=subId)throw new IllegalStateException("subscription-changed");
         TelephonyManager tm=context.getSystemService(TelephonyManager.class).createForSubscriptionId(subId);
         if(!"23415".equals(tm.getSimOperator()))throw new IllegalStateException("unsupported-operator");
         ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
@@ -87,13 +92,13 @@ public final class EpdgSession {
         Object eb=make("android.net.eap.EapSessionConfig$Builder");
         call(eb,"setEapAkaConfig",new Class<?>[]{int.class,int.class},subId,TelephonyManager.APPTYPE_USIM);
         call(eb,"setEapIdentity",new Class<?>[]{byte[].class},(Object)nai.getBytes(StandardCharsets.US_ASCII));
-        Object ib=type(IKE+"IkeSessionParams$Builder").getConstructor(Context.class).newInstance(context);
+        Object ib=IkeApiCompat.newIkeBuilder(type(IKE+"IkeSessionParams$Builder"),Context.class,context);
         call(ib,"setServerHostname",new Class<?>[]{String.class},remote.getHostAddress());
         call(ib,"setNetwork",new Class<?>[]{Network.class},wifi);
         call(ib,"setLocalIdentification",new Class<?>[]{type(IKE+"IkeIdentification")},type(IKE+"IkeRfc822AddrIdentification").getConstructor(String.class).newInstance(nai));
         call(ib,"setRemoteIdentification",new Class<?>[]{type(IKE+"IkeIdentification")},type(IKE+"IkeFqdnIdentification").getConstructor(String.class).newInstance("ims"));
         call(ib,"setAuthEap",new Class<?>[]{java.security.cert.X509Certificate.class,type("android.net.eap.EapSessionConfig")},null,get(eb,"build"));
-        call(ib,"addSaProposal",new Class<?>[]{type(IKE+"IkeSaProposal")},proposal(false));
+        IkeApiCompat.addIkeProposal(ib,proposal(false),type(IKE+"IkeSaProposal"));
         integer(ib,"addIkeOption",type(IKE+"IkeSessionParams").getField("IKE_OPTION_EAP_ONLY_AUTH").getInt(null));
         integer(ib,"addIkeOption",type(IKE+"IkeSessionParams").getField("IKE_OPTION_ACCEPT_ANY_REMOTE_ID").getInt(null));
         integer(ib,"addPcscfServerRequest",OsConstants.AF_INET);
@@ -112,7 +117,8 @@ public final class EpdgSession {
             if(m.getDeclaringClass()==Object.class)return objectMethod(p,m.getName(),a);
             switch(m.getName()){
                 case "onOpened": pcscf=new ArrayList<>((List<InetAddress>)get(a[0],"getPcscfServers"));break;
-                case "onClosedExceptionally": fail(errorType((Throwable)a[0]));cleanup();break;
+                case "onClosedExceptionally":
+                case "onClosedWithException": fail(errorType((Throwable)a[0]));cleanup();break;
                 case "onClosed": fail("session-closed");cleanup();break;
             }
             return null;
@@ -132,12 +138,15 @@ public final class EpdgSession {
                     case "onIpSecTransformDeleted": transforms.remove((IpSecTransform)a[0]);((IpSecTransform)a[0]).close();break;
                     case "onOpened":
                         if(stopping.get())break;
+                        SubscriptionInfo current=StackProfile.selectedSubscription(context,slot);
+                        if(current==null||current.getSubscriptionId()!=subId)throw new IllegalStateException("subscription-changed");
                         List<LinkAddress> addresses=new ArrayList<>((List<LinkAddress>)get(a[0],"getInternalAddresses"));
                         List<InetAddress> dns=new ArrayList<>((List<InetAddress>)get(a[0],"getInternalDnsServers"));
                         if(addresses.isEmpty()||pcscf.isEmpty())throw new IllegalStateException("missing-network-parameters");
                         for(LinkAddress la:addresses)tunnel.addAddress(la.getAddress(),la.getPrefixLength());
                         opened=true;listener.opened(tunnel.getInterfaceName(),addresses,dns,new ArrayList<>(pcscf));break;
-                    case "onClosedExceptionally": fail(errorType((Throwable)a[0]));break;
+                    case "onClosedExceptionally":
+                    case "onClosedWithException": fail(errorType((Throwable)a[0]));break;
                     case "onClosed": fail("child-closed");break;
                 }
             }catch(Throwable e){fail(errorType(e));}
@@ -147,6 +156,8 @@ public final class EpdgSession {
         stage="IKE-session";
         synchronized(resourceLock){
             if(stopping.get())return;
+            SubscriptionInfo current=StackProfile.selectedSubscription(context,slot);
+            if(current==null||current.getSubscriptionId()!=subId)throw new IllegalStateException("subscription-changed");
             session=type(IKE+"IkeSession").getConstructor(Context.class,type(IKE+"IkeSessionParams"),type(IKE+"ChildSessionParams"),Executor.class,type(IKE+"IkeSessionCallback"),type(IKE+"ChildSessionCallback"))
                     .newInstance(context,get(ib,"build"),get(cb,"build"),worker,ikeCb,childCb);
         }
@@ -169,8 +180,8 @@ public final class EpdgSession {
     }
     private void fail(String reason){if(notified.compareAndSet(false,true))listener.closed(reason);close();}
     public void close(){
-        stopping.set(true);
-        Object current=session;
+        final Object current;
+        synchronized(resourceLock){stopping.set(true);current=session;}
         if(current==null){cleanup();return;}
         try{get(current,"close");}catch(Exception ignored){}
         if(!timer.isShutdown())try{timer.schedule(()->{try{get(current,"kill");}catch(Exception ignored){}cleanup();},3,TimeUnit.SECONDS);}catch(RejectedExecutionException ignored){}

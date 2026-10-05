@@ -48,10 +48,16 @@ emergency calling, handover, DTMF, supplementary services or every SMS format.
 * SMS uses ImsSmsImplBase. Android handles storage, multipart assembly and
   notifications. RP replies use the saved network RP reference, which differs
   from TP messageRef; rejected delivery produces RP-ERROR.
-* `CarrierTrial.java`: persistent Binder overrides; API30 production `cmd phone
-  cc` is debug-gated on this ROM.
+* `CarrierTrial.java`: platform Binder interface reflection for persistent
+  overrides; API30 production `cmd phone cc` is debug-gated on this ROM. Trials
+  snapshot the four effective provider values and reject untracked replacement
+  values or an inaccessible backup directory. Rollback clears the loader's live
+  and persisted override, waits for deletion, restores original XML, reloads
+  phone and verifies the effective values before discarding the transaction.
 * `module/`: persisted override XML backup, AP-assisted mode, phone reload,
-  timed watchdog, persistent supervisor and rollback. Independent Magisk
+  timed watchdog, persistent supervisor and rollback. Mutations share a kernel
+  flock; every background worker carries a unique transaction token, so an old
+  watchdog cannot roll back a newer trial. Independent Magisk
   service.d recovery uses a root-private controller copy after disable/removal
   at normal boot. Magisk safe mode can suppress service.d too.
 
@@ -87,12 +93,18 @@ do not run overlapping probes/trials.
 ```sh
 su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh status'
 su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial'
+# Optional mask: IWLAN=1, QNS=2, IMS=4; combine bits, default=7.
+# An IMS-only diagnostic trial preserves the original IWLAN/QNS and mode:
+# su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial 4'
 # Automatically rolls back after five minutes.
 su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh rollback'
 ```
 
 Trial refuses an active call. Its deadline can interrupt test calls; finish
-before timeout. After live verification, `control.sh enable` during an active
+before timeout. Partial masks are compatibility experiments, cannot be retained
+by `enable`, and do not imply functioning voice/SMS. The actual app-controlled
+IMS-only trial selected only IMS, but did not register WLAN on this MIUI.
+After live verification, `control.sh enable` during a full-mask active
 transaction retains replacements and renews gates across boots. Rollback
 restores the original providers/mode and companion. Root-private state resides
 at `/data/adb/codex_vowifi_stack`; retain it during an active transaction.
@@ -138,6 +150,12 @@ allow-info is a separate reversible short-code policy override during a trial;
 rollback restores the saved policy. It is not a permanent permission grant.
 
 ## Scope and provenance
+
+Service features, registrations, alarms and network sessions now retain their
+slot/subscription identity; same-boot leases can be independent. This controller
+still authorizes only the tested slot/subscription. The global operation mode,
+whole-phone reload and rollback are not independent dual-SIM transactions.
+See [framework samples and contract tests](../../compatibility/README.md).
 
 Other SIM slots/operators, IPv6-only access, Android12–17 and other devices
 are not validated or enabled by this fixed-device installer. Android12 IWLAN

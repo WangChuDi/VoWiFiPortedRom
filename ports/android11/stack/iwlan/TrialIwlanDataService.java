@@ -9,8 +9,10 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.telephony.DataFailCause;
+import android.telephony.SubscriptionInfo;
 import android.telephony.data.*;
 import android.util.Log;
+import dev.codex.vowifi.common.StackProfile;
 import java.net.*;
 import java.util.*;
 
@@ -52,19 +54,28 @@ public final class TrialIwlanDataService extends DataService {
         DataCallResponse active;
         DataServiceCallback pending;
         int generation;
+        int sessionSub=-1;
         boolean closed;
         Provider(int slot){super(slot);cid=1000+slot;}
         @Override public void setupDataCall(int rat,DataProfile profile,boolean roaming,boolean allowRoaming,int reason,LinkProperties source,DataServiceCallback callback){
             handler.post(()->setup(profile,callback));
         }
         private void setup(DataProfile profile,DataServiceCallback callback){
-            if(closed||getSlotIndex()!=1||profile==null||!"ims".equalsIgnoreCase(profile.getApn())){
+            SubscriptionInfo selected=StackProfile.selectedSubscription(TrialIwlanDataService.this,getSlotIndex());
+            if(closed||selected==null||profile==null||!"ims".equalsIgnoreCase(profile.getApn())){
                 callback.onSetupDataCallComplete(DataServiceCallback.RESULT_ERROR_UNSUPPORTED,null);return;
+            }
+            if(sessionSub>=0&&sessionSub!=selected.getSubscriptionId()){
+                generation++;if(session!=null)session.close();session=null;active=null;sessionSub=-1;
+                DataServiceCallback stale=pending;pending=null;
+                if(stale!=null)stale.onSetupDataCallComplete(DataServiceCallback.RESULT_ERROR_ILLEGAL_STATE,null);
+                notifyDataCallListChanged(Collections.emptyList());
             }
             if(active!=null){callback.onSetupDataCallComplete(DataServiceCallback.RESULT_SUCCESS,active);return;}
             if(pending!=null){callback.onSetupDataCallComplete(DataServiceCallback.RESULT_ERROR_BUSY,null);return;}
             pending=callback;final int expected=++generation;
-            session=new EpdgSession(TrialIwlanDataService.this,getSlotIndex(),new EpdgSession.Listener(){
+            sessionSub=selected.getSubscriptionId();
+            session=new EpdgSession(TrialIwlanDataService.this,getSlotIndex(),sessionSub,new EpdgSession.Listener(){
                 @Override public void opened(String iface,List<LinkAddress> addresses,List<InetAddress> dns,List<InetAddress> pcscf){
                     handler.post(()->{
                         if(closed||expected!=generation)return;
@@ -88,7 +99,7 @@ public final class TrialIwlanDataService extends DataService {
         private void failed(int expected,String reason){
             if(expected!=generation||closed)return;
             Log.w(TAG,"slot="+getSlotIndex()+" closed="+reason);
-            DataServiceCallback cb=pending;pending=null;active=null;
+            DataServiceCallback cb=pending;pending=null;active=null;sessionSub=-1;
             EpdgSession old=session;session=null;generation++;
             if(old!=null)old.close();
             if(cb!=null)cb.onSetupDataCallComplete(DataServiceCallback.RESULT_SUCCESS,new DataCallResponse.Builder()
@@ -97,7 +108,7 @@ public final class TrialIwlanDataService extends DataService {
         }
         @Override public void deactivateDataCall(int id,int reason,DataServiceCallback callback){handler.post(()->{
             if(id!=cid){callback.onDeactivateDataCallComplete(DataServiceCallback.RESULT_ERROR_INVALID_ARG);return;}
-            generation++;if(session!=null)session.close();session=null;active=null;
+            generation++;if(session!=null)session.close();session=null;active=null;sessionSub=-1;
             if(pending!=null){pending.onSetupDataCallComplete(DataServiceCallback.RESULT_ERROR_ILLEGAL_STATE,null);pending=null;}
             callback.onDeactivateDataCallComplete(DataServiceCallback.RESULT_SUCCESS);
             notifyDataCallListChanged(Collections.emptyList());
@@ -106,7 +117,7 @@ public final class TrialIwlanDataService extends DataService {
             DataServiceCallback.RESULT_SUCCESS,active==null?Collections.emptyList():Collections.singletonList(active)));}
         @Override public void setInitialAttachApn(DataProfile p,boolean r,DataServiceCallback cb){cb.onSetInitialAttachApnComplete(DataServiceCallback.RESULT_SUCCESS);}
         @Override public void setDataProfile(List<DataProfile> p,boolean r,DataServiceCallback cb){cb.onSetDataProfileComplete(DataServiceCallback.RESULT_SUCCESS);}
-        @Override public void close(){handler.post(()->{closed=true;generation++;if(session!=null)session.close();session=null;active=null;
+        @Override public void close(){handler.post(()->{closed=true;generation++;if(session!=null)session.close();session=null;active=null;sessionSub=-1;
             if(pending!=null){pending.onSetupDataCallComplete(DataServiceCallback.RESULT_ERROR_ILLEGAL_STATE,null);pending=null;}});}
     }
 }

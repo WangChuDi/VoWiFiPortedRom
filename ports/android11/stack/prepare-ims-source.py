@@ -13,10 +13,11 @@ for p in dest.rglob('*'):
     if p.suffix=='.java':t=t.replace('Rlog.','PortLog.')
     t=t.replace('android.util.Log.e(', 'me.phh.ims.PortLog.e(')
     p.write_text(t,encoding='utf-8',newline='\n')
-for name in ('PhhImsService.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt'):
+for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt'):
     shutil.copyfile(B/'ims'/name,dest/'me/phh/ims'/name)
 shutil.copyfile(B/'ims/Api30SipTcpServer.kt',dest/'me/phh/sip/Api30SipTcpServer.kt')
 shutil.copyfile(B/'ims/RpDeliveryError.kt',dest/'me/phh/sip/RpDeliveryError.kt')
+shutil.copytree(B/'common',dest/'dev/codex/vowifi/common')
 
 def edit(rel,old,new,expected=1):
     p=dest/rel;t=p.read_text(encoding='utf-8')
@@ -24,18 +25,28 @@ def edit(rel,old,new,expected=1):
     p.write_text(t.replace(old,new,expected),encoding='utf-8',newline='\n')
 
 feature='me/phh/ims/PhhMmTelFeature.kt'
+edit(feature,'class PhhMmTelFeature(val slotId: Int) :','class PhhMmTelFeature(val slotId: Int, private val selectedSubId:Int) :')
+edit(feature,'return PhhMmTelFeature(slotId)','require(slotId==this.slotId)\n        return PhhMmTelFeature(slotId,selectedSubId)')
+edit(feature,'sipHandler = SipHandler(imsService, slotId)','sipHandler = SipHandler(imsService, slotId, selectedSubId)')
+edit(feature,'val imsService = PhhImsService.Companion.instance!!','''val imsService = PhhImsService.Companion.instance!!
+        val imsRegistration=imsService.getRegistrationForSubscription(slotId,selectedSubId)''')
+edit(feature,'imsService.getRegistration(slotId)','imsRegistration',expected=3)
 edit(feature,'import android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE','import android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN')
 p=dest/feature;t=p.read_text(encoding='utf-8').replace('REGISTRATION_TECH_LTE','REGISTRATION_TECH_IWLAN')
-t=t.replace('imsService.getRegistration(slotId).onDeregistered(null)', '''imsService.getRegistration(slotId).onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
+t=t.replace('imsRegistration.onDeregistered(null)', '''imsRegistration.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
             reportRegistrationCapabilities(false)
             android.util.Log.i("Api30PhhIms","registration=DOWN slot=$slotId")''')
-t=t.replace('imsService.getRegistration(slotId).onRegistered(REGISTRATION_TECH_IWLAN)', '''imsService.getRegistration(slotId).onRegistered(REGISTRATION_TECH_IWLAN)
+t=t.replace('imsRegistration.onRegistered(REGISTRATION_TECH_IWLAN)', '''imsRegistration.onRegistered(REGISTRATION_TECH_IWLAN)
             reportRegistrationCapabilities(true)
-            imsService.armPeriodicRegisterAlarm()
+            imsService.armPeriodicRegisterAlarm(slotId)
             android.util.Log.i("Api30PhhIms","registration=REGISTERED tech=IWLAN slot=$slotId")''')
-t=t.replace('Rlog.d(TAG, "$slotId onFeatureRemoved")','Rlog.d(TAG, "$slotId onFeatureRemoved")\n        if(this::sipHandler.isInitialized) sipHandler.shutdown()')
+t=t.replace('Rlog.d(TAG, "$slotId onFeatureRemoved")','Rlog.d(TAG, "$slotId onFeatureRemoved")\n        if(this::sipHandler.isInitialized) sipHandler.shutdown()\n        PhhImsService.instance?.releaseFeature(slotId,this)')
 p.write_text(t,encoding='utf-8',newline='\n')
 edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHandler: SipHandler
+    private val readinessHandler=android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile private var removed=false
+    private var initialized=false
+    private val retryReady=Runnable{if(!removed)onFeatureReady()}
     private var callListener: ImsCallSessionListener? = null
     private var outgoingCallProfile: ImsCallProfile? = null
     private var activeCallState = ImsCallSessionImplBase.State.IDLE
@@ -80,13 +91,23 @@ edit(feature,'        sipHandler.onSmsReceived = imsSms::onSmsReceived','''     
             android.util.Log.i("Api30PhhIms","sms-received token=$token bytes=${pdu.size}")
             imsSms.onSmsReceived(token,format,pdu)
         }''')
-edit(feature,'        if(this::sipHandler.isInitialized) return','''        try { onFeatureReadyInner() } catch(t:Throwable) {
+edit(feature,'        if(this::sipHandler.isInitialized) return','''        if(removed||initialized)return
+        readinessHandler.removeCallbacks(retryReady)
+        val owner=PhhImsService.instance ?: return
+        if(dev.codex.vowifi.common.StackProfile.selectedSubscription(owner,slotId)?.subscriptionId!=selectedSubId){
+            readinessHandler.postDelayed(retryReady,2000)
+            return
+        }
+        try { onFeatureReadyInner();initialized=true;setFeatureState(ImsFeature.STATE_READY) } catch(t:Throwable) {
             android.util.Log.e("Api30PhhIms","feature-ready-error="+t.javaClass.simpleName)
-            throw t
+            setFeatureState(ImsFeature.STATE_UNAVAILABLE)
         }
     }
     private fun onFeatureReadyInner(){
         if(this::sipHandler.isInitialized) return''')
+edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()','''        removed=true
+        readinessHandler.removeCallbacksAndMessages(null)
+        if(this::sipHandler.isInitialized) sipHandler.shutdown()''')
 sms='me/phh/ims/PhhImsSms.kt'
 edit(sms,'            // called when android tries to send a sms?','''            android.util.Log.i("Api30PhhIms","framework-send-sms token=$token format=$format")
             // called when android tries to send a sms?''')
@@ -110,9 +131,14 @@ t=t.replace('public class PhhMmTelFeatureProtected extends MmTelFeature {','''pu
         notifyCapabilitiesStatusChanged(value);
     }''')
 t=t.replace('capabilities.addCapabilities(this.capabilities);','if (registered) capabilities.addCapabilities(this.capabilities);')
+t=t.replace('Rlog.d(TAG, "Final capabilities: " + this.capabilities);','android.util.Log.i("Api30PhhIms", "capability-change slot="+slotId+" mask="+this.capabilities+" registered="+registered);')
 p.write_text(t,encoding='utf-8',newline='\n')
 
 sip='me/phh/sip/SipHandler.kt'
+edit(sip,'class SipHandler(val ctxt: Context, slotId: Int) {','class SipHandler(val ctxt: Context, slotId: Int, expectedSubId:Int) {')
+edit(sip,'subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId)','dev.codex.vowifi.common.StackProfile.selectedSubscription(ctxt,slotId)')
+edit(sip,'''        telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''','''        require(activeSubscription.subscriptionId==expectedSubId) { "IMS subscription changed" }
+        telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''')
 edit(sip,'    private val smsHeadersMap = mutableMapOf<Int, smsHeaders>()','    private val smsHeadersMap = mutableMapOf<Int, Pair<smsHeaders,Byte>>()')
 edit(sip,'        val sms = request.body.SipSmsDecode()','''        val sms = try { request.body.SipSmsDecode() } catch(_:RuntimeException){null}
         if(sms!=null)android.util.Log.i("Api30PhhIms","sms-rp type=${sms.type} ref=${sms.ref.toInt() and 255} cause=${sms.cause}")''')
@@ -317,7 +343,6 @@ t=t.replace('''        CoroutineScope(Dispatchers.IO).launch {
 t=t.replace('serverSocketUdp.socket.receive(dgramPacketIn)','capturedUdp.socket.receive(dgramPacketIn)')
 t=t.replace('serverSocketUdp.socket.send(dgramPacketOut)','capturedUdp.socket.send(dgramPacketOut)')
 p.write_text(t,encoding='utf-8',newline='\n')
-edit('me/phh/ims/PhhImsBroadcastReceiver.kt','imsService.mmTelFeature?.sipHandler?.register()','imsService.mmTelFeature?.sipHandler?.refreshRegistration()')
 edit(sip,'    val callStopped = AtomicBoolean(false)','''    private val encoding=AtomicBoolean(false)
     private val decoding=AtomicBoolean(false)
     @Volatile private var activeAudioRecord:AudioRecord?=null

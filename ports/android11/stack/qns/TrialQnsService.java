@@ -14,6 +14,7 @@ import android.telephony.TelephonyManager;
 import android.telephony.data.ApnSetting;
 import android.telephony.data.QualifiedNetworksService;
 import android.telephony.ims.ImsMmTelManager;
+import dev.codex.vowifi.common.StackProfile;
 import android.util.Log;
 import java.util.Collections;
 
@@ -24,14 +25,8 @@ public final class TrialQnsService extends QualifiedNetworksService {
         return new Provider(slot);
     }
     private boolean eligible(int slot) {
-        if (slot != 1) return false;
-        long remaining = Settings.Global.getLong(getContentResolver(),"codex_wfc_stack_trial_until",0)
-                - SystemClock.elapsedRealtime();
-        int trialBoot = Settings.Global.getInt(getContentResolver(),"codex_wfc_stack_trial_boot",-1);
-        int boot = Settings.Global.getInt(getContentResolver(),Settings.Global.BOOT_COUNT,-2);
-        if (remaining <= 0 || remaining > 120000 || boot != trialBoot) return false;
         try {
-            SubscriptionInfo info = getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoForSimSlotIndex(slot);
+            SubscriptionInfo info = StackProfile.selectedSubscription(this,slot);
             if (info == null) return false;
             TelephonyManager tm = getSystemService(TelephonyManager.class).createForSubscriptionId(info.getSubscriptionId());
             if (!"23415".equals(tm.getSimOperator())) return false;

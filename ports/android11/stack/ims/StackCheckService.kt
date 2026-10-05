@@ -30,7 +30,7 @@ class StackCheckService:Service(){
             maybeSendInfo()
         }
         override fun onRegistering(transport:Int){registered=false;Log.i("Api30StackCheck","framework-registering transport=$transport")}
-        override fun onUnregistered(reason:android.telephony.ims.ImsReasonInfo){registered=false}
+        override fun onUnregistered(reason:android.telephony.ims.ImsReasonInfo){registered=false;Log.i("Api30StackCheck","framework-unregistered code="+reason.code)}
     }
     private val capability=object:ImsMmTelManager.CapabilityCallback(){
         override fun onCapabilitiesStatusChanged(c:MmTelFeature.MmTelCapabilities){

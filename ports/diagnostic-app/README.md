@@ -34,7 +34,12 @@ and exports no SMS bodies, authentication material or raw device dumps.
 Root is requested by the tool's own UID: authorizing ADB Shell is insufficient.
 MIUI's app_process needs an explicit telephony bootstrap and active-list slot
 lookup. Root commands have bounded waits and IPC output is captured through a
-pipe. A failed action clears old button state; inspect again before proceeding.
+pipe. Where advertised by `su --help`, the tool uses the implementation's
+global mount namespace (`-t 0` on the tested Magisk alpha, or `--mount-master`).
+MIUI's app-data isolation otherwise hides the phone's CarrierConfig directory
+even after acquiring root. Without either option, the default root path remains
+available for diagnostics; the controller refuses a hidden backup directory
+before mutation. A failed action clears old button state; inspect again before proceeding.
 Optional telephony-bootstrap, controller and per-stage failures are isolated.
 An inaccessible stage leaves the other results visible. Empty or inaccessible
 subscriptions still permit physical-Wi-Fi/controller checks, while replacement
@@ -44,7 +49,8 @@ actions require a freshly observed SIM_READY in the tested profile.
 
 The APK embeds the already-built `vowifi-stack-api30-services.zip`. Install it
 with the app's explicit button, reboot, inspect, then start a timed trial. The
-tested engine's three components are offered together. Current profile:
+three components can be selected independently for a timed experiment. Only the
+complete tested combination can be retained across boots. Current profile:
 
 `API30 / raphael / VOXI 23415 / slot index1 / subId1`.
 
@@ -55,8 +61,12 @@ retains an existing trial. Reload refuses active calls. Rollback restores the
 original provider overrides/mode and resumes the preserved SMS companion.
 Controller recovery remains visible when selecting an empty/unsupported SIM.
 
-Individual component combinations and Android12–17 replacement engines are
-not enabled. They require provider/routing compatibility validation; installing
+Partial combinations preserve unselected effective provider values, and change
+global operation mode only when IWLAN is selected. They are compatibility
+experiments rather than proven working stacks. The actual IMS-only UI trial did
+not register WLAN; the full combination restored registration and capabilities.
+Android12–17 replacement engines remain disabled. They require device and
+provider/routing compatibility validation; installing
 the diagnostic APK does not establish it. No modem/vendor/APN replacement is
 performed. See [engine build, validation and recovery](../android11/stack/README.md).
 
@@ -115,3 +125,12 @@ addresses and WLAN voice/SMS capabilities. Empty SIM1 retains physical Wi-Fi and
 controller status without claiming SIM2's IMS network. Android12–17 behavior and
 inaccessible-interface branches still need device validation; this source/API
 review does not enable the replacement engine on those versions.
+
+The 0.2.0 UI was separately exercised through its own root invocation: native
+rollback, IMS-only selection, a second native rollback, full selection and
+persistence, and installation of the embedded 0.4.0 module update. Polling no
+longer launches a full diagnostic with a shortened final timeout; an accepted
+controller action and an incomplete observation are reported separately. The
+root error panel contains only whitelisted status metadata. The eight pinned
+framework samples resolve all 301 Android/internal references from the services
+and tool; reflection, hidden APIs, permissions and hardware are separate checks.

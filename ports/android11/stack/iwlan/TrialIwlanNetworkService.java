@@ -3,6 +3,7 @@ package dev.codex.vowifi.iwlan;
 
 import android.net.*;
 import android.telephony.*;
+import dev.codex.vowifi.common.StackProfile;
 import java.util.Collections;
 
 public final class TrialIwlanNetworkService extends NetworkService {
@@ -23,6 +24,7 @@ public final class TrialIwlanNetworkService extends NetworkService {
                 NetworkCapabilities nc=cm.getNetworkCapabilities(n);
                 if(nc!=null&&nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)&&!nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)){wifi=true;break;}
             }
+            wifi=wifi&&StackProfile.enabled(TrialIwlanNetworkService.this,getSlotIndex());
             NetworkRegistrationInfo info=new NetworkRegistrationInfo.Builder().setDomain(NetworkRegistrationInfo.DOMAIN_PS)
                 .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WLAN)
                 .setRegistrationState(wifi?NetworkRegistrationInfo.REGISTRATION_STATE_HOME:NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_OR_SEARCHING)

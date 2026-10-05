@@ -3,6 +3,28 @@
 保留 `android11-companion-0.2.0-baseline`。旧模块仍采用原厂隧道与语音，
 加独立短信接收程序；本目录是另一套可回退的 IWLAN／QNS／MMTEL 替换。
 
+## 0.4.0 事务与兼容性修正（2026-10-06）
+
+- 控制器支持 IWLAN=1、QNS=2、IMS=4 的组合掩码；未选择的 provider 保留
+  原有效值，仅选 IWLAN 时才改全局 operation mode。部分组合限时试用，禁止常驻。
+- CarrierConfig 使用平台 Binder 接口反射，不硬编码 transaction 编号。回退先清
+  内存与持久覆盖并确认异步删除，再还原文件，重载后核对原有效配置。
+- 防止把遗留替换 provider 当作原配置；目录不可读时在建事务前拒绝修改。
+  已保留异常备份并恢复较早的原始备份，实际确认 provider 清除与 legacy 还原。
+- 修改操作使用 flock 串行化；每个监督／超时进程携带事务 token，旧超时事件不能
+  删除新试验。实际调用旧 token 的 expire 返回 STALE，新事务保持完整。
+- IMS 按 slot/subscription 分离 feature、registration、config、alarm。功能发布
+  检查授权订阅，初始化另等 SIM READY；旧回调持有原 registration 对象。
+- IWLAN 在建链与发布 child 前重查订阅；兼容新旧 IKE proposal/异常回调名字，
+  仅接口不存在时回退。创建与关闭 session 共用资源锁，防止并发遗漏清理。
+- 新增固定版本的 Android11–17 框架样本检查、反射回退与租约契约测试；服务
+  235 项引用、包含工具 301 项引用均无缺失。静态通过不等于新 ROM 实机通过。
+- 工具自身 root 界面已实际测试 IMS-only、原配置回退、完整组合和常驻；IMS-only
+  未恢复 WLAN，完整组合恢复语音/SMS 注册。控制器仍只开放当前已验证卡槽。
+- 最终 0.4.0 模块和三 APK 的在机 SHA256 与构建一致；实际重启后自动建链。
+  INFO→85075 发送 RESULT_OK，四段回复经系统接收、四个 RP-ACK 获 SIP202，
+  合并为一个收件箱记录并生成 Google Messages 通知，短码策略恢复原值 0。
+
 ## 新增实现
 
 - IWLAN APK：API30 DataService／NetworkService，SIM EAP-AKA、自建 ePDG

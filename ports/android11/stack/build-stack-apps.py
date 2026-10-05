@@ -31,9 +31,10 @@ def package(name,manifest,dirs,deps=(),target=28):
     with zipfile.ZipFile(dex)as src,zipfile.ZipFile(apk,'a')as dst:
         for entry in src.namelist():dst.writestr(entry,src.read(entry))
     print('Unsigned app:',apk.name)
-iwlan=compile_java('iwlan',sorted((B/'iwlan').glob('*.java')))
+common=sorted((B/'common').glob('*.java'))
+iwlan=compile_java('iwlan',common+sorted((B/'iwlan').glob('*.java')))
 package('iwlan',B/'iwlan/AndroidManifest.xml',[iwlan])
-qns=compile_java('qns',sorted((B/'qns').glob('*.java')))
+qns=compile_java('qns',common+sorted((B/'qns').glob('*.java')))
 package('qns',B/'qns/AndroidManifest.xml',[qns],target=30)
 run('ims-source',[sys.executable,B/'prepare-ims-source.py'])
 src=OUT/'ims-src'
