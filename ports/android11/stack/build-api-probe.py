@@ -7,7 +7,7 @@ from build_common import JAVA, TOOLS
 out = B / 'out'
 out.mkdir(exist_ok=True)
 classes = out / 'probe-classes'
-subprocess.run([JAVA, '-jar', str(TOOLS/'ecj.jar'), '-source', '8', '-target', '8',
+subprocess.run([JAVA, '-jar', str(TOOLS/'ecj.jar'), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
     '-proc:none', '-classpath', str(TOOLS/'android-all-11.jar'), '-d', str(classes),
     str(B/'StackApiProbe.java'), str(B/'IndependentEpdgProbe.java'), str(B/'CarrierTrial.java'), str(B/'SmsTestPolicy.java'), str(B/'EndTestCall.java')], check=True)
 jar = out / 'api-probe-classes.jar'

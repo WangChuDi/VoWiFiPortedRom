@@ -17,7 +17,7 @@ def compile_java(name,sources,extra=None):
     d=OUT/(name+'-classes')
     if d.exists():shutil.rmtree(d)
     cp=os.pathsep.join(map(str,[ANDROID,* (extra or [])]))
-    run(name,[JAVA,'-jar',TOOLS/'ecj.jar','-source','8','-target','8','-proc:none','-classpath',cp,'-d',d,*sources])
+    run(name,[JAVA,'-jar',TOOLS/'ecj.jar','-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',cp,'-d',d,*sources])
     return d
 def package(name,manifest,dirs,deps=(),target=28):
     jar=OUT/(name+'-classes.jar')

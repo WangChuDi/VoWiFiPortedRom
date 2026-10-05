@@ -444,6 +444,14 @@ t=t.replace('    fun getChannel(): SelectableChannel {','''    fun close(){
     fun getChannel(): SelectableChannel {''')
 p.write_text(t,encoding='utf-8',newline='\n')
 edit(connection,'        socket.connect(InetSocketAddress(remoteAddr, remotePort))','        socket.connect(InetSocketAddress(remoteAddr, remotePort), 12000)')
+edit(connection,'''        if (_localAddr != null) {
+            socket.bind(InetSocketAddress(_localAddr, _localPort))
+        }''','''        try {
+            if (_localAddr != null) socket.bind(InetSocketAddress(_localAddr, _localPort))
+        } catch(t:Throwable) {
+            try{socket.close()}catch(_:Throwable){}
+            throw t
+        }''',expected=1)
 edit(connection,'    override fun close() {\n        socket.close()\n    }','''    override fun close() {
         socket.close()
         if(this::inTransform.isInitialized) inTransform.close()

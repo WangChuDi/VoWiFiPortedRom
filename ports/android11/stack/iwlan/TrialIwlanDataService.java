@@ -2,6 +2,9 @@
 package dev.codex.vowifi.iwlan;
 
 import android.net.*;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +17,19 @@ import java.util.*;
 public final class TrialIwlanDataService extends DataService {
     private static final String TAG="Api30IwlanData";
     private EpdgSession diagnostic;
+    @Override public void onCreate(){
+        super.onCreate();
+        // MIUI AutoLockOffClean can kill even a bound telephony service.
+        // A visible foreground service plus the root supervisor protects the
+        // process that owns the tunnel; no unrelated power policy is changed.
+        String channel="vowifi_connection";
+        getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel(channel,"Wi-Fi 通话连接",NotificationManager.IMPORTANCE_LOW));
+        startForeground(30,new Notification.Builder(this,channel)
+            .setSmallIcon(android.R.drawable.stat_sys_phone_call)
+            .setContentTitle("Wi-Fi 通话连接")
+            .setContentText("正在保持运营商 Wi-Fi 连接")
+            .setOngoing(true).setOnlyAlertOnce(true).build());
+    }
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent!=null&&"dev.codex.vowifi.iwlan.PROBE".equals(intent.getAction())&&diagnostic==null){
             diagnostic=new EpdgSession(this,1,new EpdgSession.Listener(){

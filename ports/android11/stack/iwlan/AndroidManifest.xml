@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
     <uses-permission android:name="android.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application android:label="API30 IWLAN" android:allowBackup="false" android:directBootAware="true" android:defaultToDeviceProtectedStorage="true">
         <uses-library android:name="android.net.ipsec.ike" android:required="true" />
         <service android:name=".TrialIwlanDataService" android:exported="true" android:permission="android.permission.BIND_TELEPHONY_DATA_SERVICE">

@@ -110,6 +110,21 @@ Phone reload invalidates registration listeners. The diagnostic reconnects
 callbacks while waiting for WLAN+SMS readiness. Check capability and SMS
 permissions in the same phone-process lifetime.
 
+MIUI AutoLockOffClean was observed killing the IWLAN process while telephony
+retained its old LinkProperties. The kernel IPsec interface disappeared and SIP
+reconnect failed at socket bind. IWLAN now runs with a visible foreground
+notification. Persistent supervision detects missing replacement processes and
+requests an idle-only phone reload, at most once per five minutes. A controlled
+IWLAN process termination recovered automatically to a new IPsec interface and
+WLAN voice/SMS registration. Long unattended lock-screen stability still needs
+observation. TCP bind failures also close their partially constructed socket.
+
+CarrierTrial rechecks the actual fixed device/SIM/operator before mutations;
+provider-apply or gate failures trigger immediate rollback of the transaction.
+The companion remains preserved. A separate optional
+[diagnostic application](../../diagnostic-app/README.md) exposes read-only
+per-SIM status and explicit engine controls.
+
 ## Diagnostics and authorized traffic
 
 StackApiProbe only inventories APIs. IndependentEpdgProbe --connect-once is a

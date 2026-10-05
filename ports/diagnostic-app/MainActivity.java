@@ -1,0 +1,179 @@
+// SPDX-License-Identifier: GPL-2.0
+package dev.codex.vowifi.tool;
+
+import android.Manifest;
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.*;
+import android.telephony.*;
+import android.view.View;
+import android.widget.*;
+import org.json.JSONObject;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** Standalone front end. Read-only checks and replacement actions are separate. */
+public final class MainActivity extends Activity {
+    private static final String CONTROL="/data/adb/modules/codex_vowifi_stack_api30/control.sh";
+    private LinearLayout body,results;
+    private Spinner sims;
+    private TextView summary,actionStatus;
+    private final ArrayList<Integer> slots=new ArrayList<>();
+    private final ExecutorService worker=Executors.newSingleThreadExecutor();
+    private JSONObject last;
+    private boolean busy;
+    private Button trial,enable,reload,rollback,install;
+    public void onCreate(Bundle saved){
+        super.onCreate(saved);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);
+        body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(20),dp(30),dp(20),dp(25));
+        body.setBackgroundColor(Color.rgb(244,247,252));scroll.addView(body);setContentView(scroll);
+        TextView title=text("VoWiFi 工具",28);body.addView(title);
+        body.addView(text("按 SIM 检查网络、IMS 和短信能力",15));
+        sims=new Spinner(this);body.addView(sims);
+        sims.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){last=null;setActions(false);if(results!=null)results.removeAllViews();if(summary!=null)summary.setText("SIM 已选择，请运行只读检查。");}
+            public void onNothingSelected(android.widget.AdapterView<?> p){}
+        });
+        summary=text("先选择 SIM，再运行只读检查。需要在 Magisk 中允许本应用使用 root。",14);body.addView(summary);
+        body.addView(button("只读检查链路",v->diagnose()));
+        results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
+        body.addView(text("可选替换",21));
+        body.addView(text("已验证的组合：IWLAN + QNS + IMS。当前引擎仅开放 Android 11 / raphael / VOXI / SIM2。其他 SIM 可诊断；其他系统及单组件替换尚未开放。",14));
+        actionStatus=text("运行检查后开放适配的操作。",14);body.addView(actionStatus);
+        trial=button("试用三个替代组件 · 最多 5 分钟自动回退",v->action("trial"));body.addView(trial);
+        enable=button("保留当前试验并常驻",v->action("enable"));body.addView(enable);
+        reload=button("重新拉起 · 空闲时重载电话服务",v->action("reload"));body.addView(reload);
+        rollback=button("恢复原来的组件和短信模块",v->action("rollback"));body.addView(rollback);
+        install=button("安装配套模块更新 · 需要重启",v->installModule());body.addView(install);
+        body.addView(text("安装更新后，请通过手机电源菜单重启；检查按钮不会拨号、发送短信或读取短信正文。",13));
+        body.addView(button("刷新检查结果",v->diagnose()));
+        setActions(false);loadSims();
+        if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},1);
+    }
+    private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(27,42,62));t.setPadding(0,dp(8),0,dp(8));return t;}
+    private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
+    private Button button(String label,View.OnClickListener click){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(click);return b;}
+    private void loadSims(){
+        slots.clear();ArrayList<String> labels=new ArrayList<>();
+        TelephonyManager tm=getSystemService(TelephonyManager.class);
+        int count=Math.max(1,tm.getPhoneCount());
+        SubscriptionManager sm=getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> active=null;
+        try{active=sm.getActiveSubscriptionInfoList();}catch(SecurityException ignored){}
+        for(int slot=0;slot<count;slot++){
+            slots.add(slot);String label="SIM"+(slot+1);
+            SubscriptionInfo info=null;
+            if(active!=null)for(SubscriptionInfo candidate:active)if(candidate.getSimSlotIndex()==slot){info=candidate;break;}
+            label+=checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED?" · 等待读取权限":info==null?" · 无活动卡":" · "+info.getCarrierName();
+            labels.add(label);
+        }
+        sims.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));
+        if(count>1)sims.setSelection(1);
+    }
+    public void onRequestPermissionsResult(int request,String[] permissions,int[] granted){super.onRequestPermissionsResult(request,permissions,granted);loadSims();}
+    private String quote(String s){return "'"+s.replace("'","'\\''")+"'";}
+    private void diagnose(){
+        if(busy)return;
+        final int slot=slots.get(sims.getSelectedItemPosition());
+        execute("正在检查所选 SIM…",()->readDiagnostic(slot,30),this::render);
+    }
+    private JSONObject readDiagnostic(int slot,int seconds)throws Exception{
+        String command="CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout "+Math.min(24,seconds-2)+"s app_process /system/bin dev.codex.vowifi.tool.RootDiagnostics "+slot;
+        String response=shell(command,seconds);
+        String json=null;for(String line:response.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))json=line;
+        if(json==null)throw new IOException("diagnostic-result-unavailable");
+        return new JSONObject(json);
+    }
+    private void status(String message){summary.setText(message);if(actionStatus!=null)actionStatus.setText(message);}
+    private void render(JSONObject data){
+        last=data;results.removeAllViews();
+        if(data.has("error")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
+        status("Android API "+data.optInt("sdk")+" · SIM"+(data.optInt("slot")+1)+" · 只读结果");
+        card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
+        card("实体 Wi-Fi",data.optString("wifi","未观测"));
+        card("ePDG DNS",data.optString("dns","未观测"));
+        card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));
+        card("首选互联网 APN",data.optString("apn","不可见"));
+        card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+data.optBoolean("wfc_roaming_setting")+" · 偏好模式 "+data.optInt("wfc_mode"):"不可见 · "+data.optString("settings_error","未知"));
+        card("WLAN 语音 provisioning",data.has("wlan_voice_provisioned")?Boolean.toString(data.optBoolean("wlan_voice_provisioned"))+"（框架配置结果，不代表运营商已接受注册）":"不可见 · "+data.optString("provisioning_error","未知"));
+        JSONObject policy=data.optJSONObject("selected_policy");
+        if(policy!=null)card("所选 SIM 的运营商策略",policy.toString());
+        int networks=data.optInt("ims_network_count");
+        card("所选 SIM 的 IMS 网络",networks+" 个 · 接口 "+data.optString("ims_interface","不可见")+" · P-CSCF "+data.optInt("pcscf_count")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
+        int t=data.optInt("ims_transport",-1);
+        String registration=t==2?"WLAN 已注册":t==1?"蜂窝网络已注册":t==-2?"注册中":t==-3?"未注册":"不可见 / 尚未回调";
+        card("IMS 注册",data.has("ims_error")?"不可见 · "+data.optString("ims_error"):registration);
+        card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
+        card("最近一次系统短信分发",data.optString("sms_dispatcher","未观测"));
+        JSONObject providers=data.optJSONObject("providers");
+        card("替换控制器（当前管理 SIM2）",providers==null?"未加载配套模块":providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+providers.optString("config_ims_mmtel_package_override_string","未替换 IMS"));
+        setActions(data.optBoolean("engine_supported"));
+        boolean active=providers!=null&&"ACTIVE".equals(providers.optString("transaction"));
+        trial.setEnabled(data.optBoolean("engine_supported")&&data.optBoolean("controller")&&!active);
+        enable.setEnabled(data.optBoolean("engine_supported")&&active&&!"ENABLED".equals(providers.optString("persistent")));
+        reload.setEnabled(data.optBoolean("engine_supported")&&active);
+        rollback.setEnabled(active); // Recovery is available even after selecting another SIM.
+    }
+    private void card(String heading,String value){
+        LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(14),dp(4),dp(14),dp(10));c.setBackgroundColor(Color.WHITE);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(9),0,0);c.setLayoutParams(p);
+        c.addView(text(heading,16));TextView detail=text(value,14);detail.setTextIsSelectable(true);c.addView(detail);results.addView(c);
+    }
+    private void setActions(boolean supported){
+        if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
+    }
+    private void action(String action){
+        if(busy)return;
+        if(!Arrays.asList("trial","enable","reload","rollback").contains(action))return;
+        if(!"rollback".equals(action)&&(last==null||!last.optBoolean("engine_supported")))return;
+        final int slot=slots.get(sims.getSelectedItemPosition());
+        execute("正在执行所选操作…",()->{
+            String output=shell("sh "+CONTROL+" "+action,35);
+            if(!action.equals("reload")&&!action.equals("trial"))return new JSONObject().put("action_result",output);
+            runOnUiThread(()->{if(!isFinishing())status("已请求重新拉起，正在等待 IMS 注册…");});
+            long deadline=SystemClock.elapsedRealtime()+45000;
+            JSONObject observation=new JSONObject();
+            while(SystemClock.elapsedRealtime()<deadline-5000){
+                Thread.sleep(2500);
+                int remaining=(int)((deadline-SystemClock.elapsedRealtime())/1000);
+                observation=readDiagnostic(slot,Math.min(30,remaining));
+                if(observation.optInt("ims_transport")==2&&observation.optBoolean("voice")&&observation.optBoolean("sms"))break;
+            }
+            return observation.put("action_result",output);
+        },data->{
+            last=null;setActions(false);
+            if(data.has("sdk")){render(data);status(data.optInt("ims_transport")==2?"已恢复 WLAN 注册；请查看下方最新能力。":"尚未确认 WLAN 注册；请刷新检查结果。");}
+            else{status(data.optString("action_result"));diagnose();}
+        });
+    }
+    private void installModule(){
+        if(busy||last==null||!last.optBoolean("engine_supported"))return;
+        execute("正在安装配套模块更新…",()->{
+            File zip=new File(getCacheDir(),"vowifi-stack-api30-services.zip");
+            try(InputStream in=getAssets().open("vowifi-stack-api30-services.zip");OutputStream out=new FileOutputStream(zip)){byte[] b=new byte[8192];int n;while((n=in.read(b))>=0)out.write(b,0,n);}
+            try{return new JSONObject().put("action_result",shell("/product/bin/magisk --install-module "+quote(zip.getAbsolutePath()),30));}
+            finally{zip.delete();}
+        },data->{status(data.optString("action_result")+"\n安装成功后请手动重启，再运行只读检查。");setActions(false);});
+    }
+    private interface Work{JSONObject run()throws Exception;}
+    private interface Show{void run(JSONObject data);}
+    private void execute(String message,Work work,Show show){
+        busy=true;status(message);sims.setEnabled(false);setActions(false);
+        worker.submit(()->{JSONObject response;try{response=work.run();}catch(Throwable e){response=new JSONObject();try{response.put("error",e.getClass().getSimpleName());}catch(Exception ignored){}}
+            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);if(!isFinishing()){if(result.has("error")){last=null;setActions(false);status("操作未完成："+result.optString("error")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
+        });
+    }
+    private String shell(String command,int seconds)throws Exception{
+        java.lang.Process process=new ProcessBuilder("su","-c",command).redirectErrorStream(true).start();
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        Thread reader=new Thread(()->{try(InputStream in=process.getInputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))>=0){if(output.size()+n<524288)output.write(b,0,n);}}catch(IOException ignored){}});reader.start();
+        if(!process.waitFor(seconds,TimeUnit.SECONDS)){process.destroyForcibly();throw new TimeoutException();}
+        reader.join(1000);
+        if(process.exitValue()!=0)throw new IOException("root-command-failed");
+        return output.toString("UTF-8").trim();
+    }
+    protected void onDestroy(){worker.shutdownNow();super.onDestroy();}
+}

@@ -68,6 +68,7 @@ case "${1:-status}" in
   trial)
     [ "$(getprop ro.product.device)" = raphael ]
     [ "$(getprop ro.build.version.sdk)" = 30 ]
+    carrier check
     [ ! -f "$STATE/transaction" ] || { echo transaction-already-active; exit 1; }
     # Refuse a framework restart during an active call.
     REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
@@ -92,7 +93,7 @@ case "${1:-status}" in
     touch "$STATE/transaction" "$STATE/trial-running"
     nohup sh "$MODDIR/control.sh" watchdog > "$STATE/watchdog.log" 2>&1 < /dev/null &
     echo $! > "$STATE/watchdog.pid"
-    carrier apply
+    if ! carrier apply; then echo provider-apply-failed; rollback; exit 1; fi
     sleep 2
     FOUND=0
     for F in "$FILES"/carrierconfig-*-override-*.xml; do
@@ -100,7 +101,7 @@ case "${1:-status}" in
       grep -q dev.codex.vowifi.iwlan "$F" && FOUND=1
     done
     [ "$FOUND" = 1 ] || { echo persist-format-unverified; rollback; exit 1; }
-    gate
+    if ! gate; then echo trial-gate-failed; rollback; exit 1; fi
     [ ! -f "$COMPANION" ] || sh "$COMPANION" stop
     resetprop -n ro.telephony.iwlan_operation_mode AP-assisted
     restart_phone
@@ -116,6 +117,7 @@ case "${1:-status}" in
     ;;
   enable)
     [ -f "$STATE/transaction" ]
+    carrier check
     [ ! -f "$STATE/enabled" ] || { echo replacement=ALREADY_PERSISTENT; exit 0; }
     touch "$STATE/enabled"
     rm -f "$STATE/trial-running"
@@ -124,16 +126,34 @@ case "${1:-status}" in
     ;;
   supervise)
     [ ! -f "$COMPANION" ] || sh "$COMPANION" stop
+    LAST_RECOVERY=$(( $(cut -d. -f1 /proc/uptime) - 300 ))
     while [ -f "$STATE/enabled" ] && [ -f "$STATE/transaction" ]; do
       if [ ! -d "$MODULE" ] || [ -f "$MODULE/disable" ] || [ -f "$MODULE/remove" ]; then rollback; exit; fi
       # Binder services disappear during shutdown. Preserve the transaction so
       # the next boot can resume it instead of silently undoing persistence.
       gate || { echo supervisor=GATE_UNAVAILABLE; exit 1; }
+      # A killed IWLAN process destroys its tunnel while MIUI may retain stale
+      # LinkProperties. Rebuild bindings only when idle, with a five-minute
+      # backoff, and only while the tested SIM is still installed.
+      MISSING=0
+      for PKG in dev.codex.vowifi.iwlan dev.codex.vowifi.qns me.phh.ims; do
+        pidof "$PKG" >/dev/null 2>&1 || MISSING=1
+      done
+      NOW_SECONDS=$(cut -d. -f1 /proc/uptime)
+      if [ "$MISSING" = 1 ] && [ "$((NOW_SECONDS - LAST_RECOVERY))" -ge 300 ]; then
+        if sh "$MODDIR/control.sh" reload; then
+          echo supervisor=RECOVERED_MISSING_PROCESS
+          LAST_RECOVERY=$NOW_SECONDS
+        else
+          echo supervisor=RECOVERY_DEFERRED
+        fi
+      fi
       sleep 30
     done
     ;;
   reload)
     [ -f "$STATE/transaction" ]
+    carrier check
     REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
     [ -n "$REGISTRY" ] || { echo call-state-unavailable; exit 1; }
     if printf '%s\n' "$REGISTRY" | grep -Eq 'mCallState=[12]'; then echo active-call-refused; exit 1; fi
