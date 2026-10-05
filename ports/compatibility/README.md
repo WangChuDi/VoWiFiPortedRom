@@ -13,6 +13,8 @@ Use the existing Java/ECJ toolchain and build the Android11 stack first:
 python fetch-frameworks.py 12 12L 13 14 15 16 17
 python read-framework-abi.py /path/to/android-all-11.jar out/frameworks/*.jar
 python check-linkage.py --classes ../android11/stack/out/iwlan-classes ../android11/stack/out/qns-classes ../android11/stack/out/ims-java-classes ../android11/stack/out/ims-kotlin-classes --frameworks /path/to/android-all-11.jar out/frameworks/*.jar
+python check-lifecycle.py --classes ../android11/stack/out/iwlan-classes ../android11/stack/out/qns-classes ../android11/stack/out/ims-java-classes ../android11/stack/out/ims-kotlin-classes --frameworks /path/to/android-all-11.jar out/frameworks/*.jar
+python tests/test_lifecycle.py
 python test-contracts.py
 ```
 
@@ -23,10 +25,10 @@ ignored; framework binaries and signing keys are not redistributed.
 
 ## Evidence on 2026-10-06
 
-The newly compiled IWLAN/QNS/IMS service classes contain 235 distinct Android or
+The newly compiled IWLAN/QNS/IMS service classes contain 236 distinct Android or
 internal-framework method/field references. All resolve, including inheritance,
 in the eight pinned framework samples: Android11, 12, 12L, 13, 14, 15, 16 and 17.
-Including the diagnostic app gives 301 distinct references, also with zero
+Including the diagnostic app now gives 302 distinct references, also with zero
 missing references in all eight samples. The two explicitly documented
 core-Java inherited methods are handled separately;
 the checker does not accept an arbitrary missing `java.*` method.
@@ -87,6 +89,24 @@ The ABI inventory now includes DataService, QNS/NetworkAvailabilityProvider and
 NetworkService/NetworkServiceProvider in every pinned sample. This closes the
 earlier inventory gap for those classes; signatures/access flags alone still do
 not prove runtime forwarding, abstract-method coverage or handover behavior.
+
+The additional lifecycle checker follows the complete available superclass chain
+for 20 compiled Android-derived classes. It checks nearest class declarations for
+unimplemented abstract methods, final superclass/method conflicts, static/instance
+collisions and reduced public/protected access. All eight samples have no findings
+or unresolved Android ancestors. A concrete implementation on ContextWrapper,
+for example, satisfies a declaration on Context rather than generating a false
+missing-method report. Fifteen regression scenarios exercise framework evolution
+and the checker boundaries. Reports record framework SHA256 and external ancestor
+boundaries. Interface obligations/default resolution, core Java, reflective calls,
+runtime class verification, permission and Binder behavior are excluded; these
+results do not open the Android12–17 replacement engines.
+
+Package-access abstract obligations are checked even when the leaf cannot inherit
+the declaration. A public override in the declaring package can bridge that
+obligation; returning to the declaring package also preserves final override
+restrictions. These boundaries were checked with the existing Java compiler and
+the [Java language specification](https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.4.8.1).
 
 ## Sources
 

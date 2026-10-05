@@ -145,6 +145,16 @@ Api30StackCheck logs contain status/metadata, not bodies or keys.
 
 StackCheckService CHECK observes only. TEST_INFO sends one real INFO SMS to
 85075 after WLAN registration and SMS capability, with a two-minute cooldown.
+TEST_INFO requires integer extras `slot` and `expectedSubId`; the active identity
+and VOXI operator are rechecked before sending. It never selects a network-test
+subscription by default. Old callbacks and result broadcasts are scoped to their
+run; an additional start during a test is rejected. A CHECK request can use the
+same explicit extras. For example (only after authorization):
+
+```sh
+su -c 'am startservice -n me.phh.ims/.StackCheckService -a me.phh.ims.TEST_INFO --ei slot 1 --ei expectedSubId 1'
+```
+
 Invoke only with authorization for that destination/content. SmsTestPolicy
 allow-info is a separate reversible short-code policy override during a trial;
 rollback restores the saved policy. It is not a permanent permission grant.
