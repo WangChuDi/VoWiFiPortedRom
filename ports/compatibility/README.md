@@ -77,11 +77,16 @@ with any particular Android17 ROM.
   validated service-ready state and advertises transport capabilities only
   after registration.
 
-The controller still authorizes only slot1/sub1 on API30 raphael, even though
-the service code now separates slot/subscription state. Simultaneous dual-active
+The controller now records an explicit selected slot/sub owner on API30 raphael;
+positive device validation still covers slot1/sub1. Simultaneous dual-active
 SIM execution and modern installation/controller profiles need appropriate
 devices. Global IWLAN operation mode, whole-phone reload and transaction-wide
 rollback are not per-SIM operations.
+
+The ABI inventory now includes DataService, QNS/NetworkAvailabilityProvider and
+NetworkService/NetworkServiceProvider in every pinned sample. This closes the
+earlier inventory gap for those classes; signatures/access flags alone still do
+not prove runtime forwarding, abstract-method coverage or handover behavior.
 
 ## Sources
 

@@ -153,8 +153,14 @@ rollback restores the saved policy. It is not a permanent permission grant.
 
 Service features, registrations, alarms and network sessions now retain their
 slot/subscription identity; same-boot leases can be independent. This controller
-still authorizes only the tested slot/subscription. The global operation mode,
+records an explicit active VOXI owner on the validated API30 device; positive
+live testing currently covers slot1/sub1. The global operation mode,
 whole-phone reload and rollback are not independent dual-SIM transactions.
+The controller accepts `trial MASK SLOT SUB`, `enable SLOT SUB`,
+`reload SLOT SUB` and `rollback SLOT SUB`. Wrong owner requests are refused
+before changing settings, configuration or the phone process. Older transactions
+without an owner record are interpreted only as the previously fixed `(1,1)`.
+See [ownership protocol and remaining requirements](TRANSACTIONS.md).
 See [framework samples and contract tests](../../compatibility/README.md).
 
 Other SIM slots/operators, IPv6-only access, Android12–17 and other devices

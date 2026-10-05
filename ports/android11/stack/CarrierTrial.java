@@ -4,7 +4,7 @@ import android.app.ActivityThread;
 import android.content.Context;
 import android.telephony.*;
 import java.io.*;
-/** Root-only, fixed slot1/subId1 provider transaction. No subscriber output. */
+/** Root-only selected-slot provider transaction. No subscriber output. */
 public final class CarrierTrial {
     private static final String[] KEYS={
         "carrier_data_service_wlan_package_override_string",
@@ -14,20 +14,34 @@ public final class CarrierTrial {
     private static final String[] VALUES={"dev.codex.vowifi.iwlan","dev.codex.vowifi.iwlan","dev.codex.vowifi.qns","me.phh.ims"};
     private static final int[] BITS={1,1,2,4};
     private static final File BASELINE=new File("/data/adb/codex_vowifi_stack/providers-before.bin");
+    private static int selectedSlot=1,selectedSub=1;
+    private static Context context;
+    private static SubscriptionInfo selectedInfo()throws Exception {
+        if(context==null){
+            Looper.prepareMainLooper();
+            context=ActivityThread.systemMain().getSystemContext();
+            Class<?> initializer=Class.forName("android.telephony.TelephonyFrameworkInitializer");
+            Class<?> services=Class.forName("android.os.TelephonyServiceManager");
+            if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
+                initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
+        }
+        java.util.List<SubscriptionInfo> active=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
+        if(active!=null)for(SubscriptionInfo info:active)if(info.getSimSlotIndex()==selectedSlot&&info.getSubscriptionId()==selectedSub)return info;
+        throw new IllegalStateException("selected-subscription-changed");
+    }
     private static void checkProfile()throws Exception {
         if(Build.VERSION.SDK_INT!=30||!"raphael".equals(Build.DEVICE))throw new IllegalStateException("unsupported-device");
-        Looper.prepareMainLooper();
-        Context context=ActivityThread.systemMain().getSystemContext();
-        Class<?> initializer=Class.forName("android.telephony.TelephonyFrameworkInitializer");
-        Class<?> services=Class.forName("android.os.TelephonyServiceManager");
-        if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
-            initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
-        SubscriptionInfo info=null;
-        java.util.List<SubscriptionInfo> active=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
-        if(active!=null)for(SubscriptionInfo candidate:active)if(candidate.getSimSlotIndex()==1){info=candidate;break;}
-        if(info==null||info.getSubscriptionId()!=1)throw new IllegalStateException("unsupported-subscription");
-        TelephonyManager tm=context.getSystemService(TelephonyManager.class).createForSubscriptionId(1);
-        if(tm.getSimState()!=TelephonyManager.SIM_STATE_READY||!"23415".equals(tm.getSimOperator()))throw new IllegalStateException("unsupported-operator");
+        selectedInfo();
+        TelephonyManager manager=context.getSystemService(TelephonyManager.class);
+        TelephonyManager tm=manager.createForSubscriptionId(selectedSub);
+        if(manager.getSimState(selectedSlot)!=TelephonyManager.SIM_STATE_READY||!"23415".equals(tm.getSimOperator()))throw new IllegalStateException("unsupported-operator");
+    }
+    private static void requireOwner()throws Exception {
+        File state=BASELINE.getParentFile(),owner=new File(state,"owner");
+        if(!new File(state,"transaction").isFile())throw new IllegalStateException("transaction-required");
+        String value="1:1"; // Proven fixed identity of pre-owner transactions.
+        if(owner.isFile())try(BufferedReader reader=new BufferedReader(new FileReader(owner))){value=reader.readLine();}
+        if(!(selectedSlot+":"+selectedSub).equals(value))throw new IllegalStateException("transaction-owner-mismatch");
     }
     public static void main(String[] args) {
         try{run(args);System.exit(0);}
@@ -35,6 +49,15 @@ public final class CarrierTrial {
     }
     private static void run(String[] args)throws Exception {
         if(android.os.Process.myUid()!=0)throw new SecurityException("root-required");
+        if(args.length<1)throw new IllegalArgumentException("command-required");
+        boolean masked="apply".equals(args[0])||"verify".equals(args[0]);
+        int prefix=masked?2:1;
+        if(args.length==prefix+2){
+            selectedSlot=Integer.parseInt(args[prefix]);selectedSub=Integer.parseInt(args[prefix+1]);
+            if(selectedSlot<0||selectedSlot>7||selectedSub<0)throw new IllegalArgumentException("invalid-selection");
+            args=java.util.Arrays.copyOf(args,prefix);
+        }
+        if(args.length>=1&&("clear".equals(args[0])||"snapshot".equals(args[0])||"apply".equals(args[0])||"verify".equals(args[0])||"verify-restored".equals(args[0])))requireOwner();
         if(args.length==1&&"check".equals(args[0])){checkProfile();System.out.println("profile=SUPPORTED");System.exit(0);return;}
         if(args.length>=1&&("apply".equals(args[0])||"snapshot".equals(args[0])||"baseline-check".equals(args[0])))checkProfile();
         IBinder service=ServiceManager.getService("carrier_config");
@@ -60,7 +83,9 @@ public final class CarrierTrial {
             System.out.println("provider-restoration=ACK");
         }else if(args.length==1&&"clear".equals(args[0])){
             if(Build.VERSION.SDK_INT!=30||!"raphael".equals(Build.DEVICE)||!new File(BASELINE.getParentFile(),"transaction").isFile())throw new SecurityException("rollback-transaction-required");
-            api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader,1,null,true);
+            // A removed or changed SIM must not redirect recovery to another card.
+            selectedInfo();
+            api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader,selectedSub,null,true);
             boolean cleared=false;
             for(int attempt=0;attempt<20;attempt++){
                 Thread.sleep(500);
@@ -95,7 +120,7 @@ public final class CarrierTrial {
             PersistableBundle before=mask==7?null:baseline(),value=new PersistableBundle();
             for(int i=0;i<KEYS.length;i++)value.putString(KEYS[i],(mask&BITS[i])!=0?VALUES[i]:before.getString(KEYS[i]));
             if("apply".equals(args[0])){
-                api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader,1,value,true);
+                api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader,selectedSub,value,true);
                 System.out.println("provider-override=ACK");
             }else{
                 PersistableBundle actual=config(api,loader);
@@ -103,14 +128,15 @@ public final class CarrierTrial {
                 System.out.println("provider-verification=ACK");
             }
         }else if(args.length==1&&"read".equals(args[0])){
+            selectedInfo();
             PersistableBundle value=config(api,loader);
             for(String key:KEYS)System.out.println(key+"="+value.getString(key));
         }else throw new IllegalArgumentException("check|read|snapshot|apply [1..7]");
         System.exit(0);
     }
     private static PersistableBundle config(Class<?> api,Object loader)throws Exception{
-        try{return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class).invoke(loader,1,"android");}
-        catch(NoSuchMethodException missing){return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class,String.class).invoke(loader,1,"android",null);}
+        try{return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class).invoke(loader,selectedSub,"android");}
+        catch(NoSuchMethodException missing){return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class,String.class).invoke(loader,selectedSub,"android",null);}
     }
     private static PersistableBundle baseline()throws IOException{
         if(!BASELINE.isFile()||BASELINE.length()>32768)throw new IOException("provider-snapshot-unavailable");

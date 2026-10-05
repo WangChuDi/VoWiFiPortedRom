@@ -24,6 +24,38 @@ case "${1:-status}" in
     done
     ;;
 esac
+# One global transaction for now. Preserve the proven fixed identity of older
+# transactions; new transactions record their explicit slot:subscription owner.
+OWNER=$(cat "$STATE/owner" 2>/dev/null || echo 1:1)
+OWNER_SLOT=${OWNER%%:*}
+OWNER_SUB=${OWNER#*:}
+validate_selection() {
+  case "$1" in ''|*[!0-9]*) echo invalid-selection; return 1;; esac
+  case "$2" in ''|*[!0-9]*) echo invalid-selection; return 1;; esac
+  [ "$1" -le 7 ] && [ "$2" -le 2147483647 ] || { echo invalid-selection; return 1; }
+}
+validate_selection "$OWNER_SLOT" "$OWNER_SUB"
+case "${1:-status}" in
+  trial)
+    [ "$#" != 3 ] && [ "$#" -le 4 ] || { echo invalid-selection; exit 2; }
+    OWNER_SLOT=${3:-1}; OWNER_SUB=${4:-1}
+    validate_selection "$OWNER_SLOT" "$OWNER_SUB"
+    ;;
+  enable|rollback)
+    if [ "$#" -gt 1 ]; then
+      [ "$#" = 3 ] || { echo invalid-selection; exit 2; }
+      validate_selection "$2" "$3"
+      [ "$2:$3" = "$OWNER_SLOT:$OWNER_SUB" ] || { echo owner-selection-mismatch; exit 1; }
+    fi
+    ;;
+  reload)
+    if [ "$#" -gt 2 ]; then
+      [ "$#" = 3 ] || { echo invalid-selection; exit 2; }
+      validate_selection "$2" "$3"
+      [ "$2:$3" = "$OWNER_SLOT:$OWNER_SUB" ] || { echo owner-selection-mismatch; exit 1; }
+    fi
+    ;;
+esac
 owns_transaction() {
   [ -n "${TOKEN:-}" ] && [ -f "$STATE/transaction" ] && [ "$(cat "$STATE/transaction")" = "$TOKEN" ]
 }
@@ -32,7 +64,7 @@ run_cmd() {
   printf '%s\n' "$OUTPUT"
   return "$STATUS"
 }
-carrier() { CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial "$@"; }
+carrier() { CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial "$@" "$OWNER_SLOT" "$OWNER_SUB"; }
 restart_phone() {
   PID=$(pidof com.android.phone || true)
   [ -z "$PID" ] || kill "$PID"
@@ -42,17 +74,19 @@ gate() {
   case "$BOOT" in ''|*[!0-9]*) return 1;; esac
   NOW=$(awk '{printf "%.0f", $1*1000}' /proc/uptime)
   run_cmd settings put global codex_wfc_stack_trial_boot "$BOOT"
-  run_cmd settings put global codex_wfc_stack_trial_until "$((NOW + 90000))"
-  run_cmd settings put global codex_wfc_stack_slot_1_sub 1
-  run_cmd settings put global codex_wfc_stack_slot_1_boot "$BOOT"
-  run_cmd settings put global codex_wfc_stack_slot_1_until "$((NOW + 90000))"
+  LEGACY_UNTIL=0
+  [ "$OWNER_SLOT:$OWNER_SUB" != 1:1 ] || LEGACY_UNTIL=$((NOW + 90000))
+  run_cmd settings put global codex_wfc_stack_trial_until "$LEGACY_UNTIL"
+  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_sub" "$OWNER_SUB"
+  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_boot" "$BOOT"
+  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_until" "$((NOW + 90000))"
 }
 rollback() {
   [ -f "$STATE/transaction" ] || { echo rollback=NOT_NEEDED; return; }
   run_cmd settings put global codex_wfc_stack_trial_until 0 || true
-  run_cmd settings put global codex_wfc_stack_slot_1_until 0 || true
-  run_cmd settings delete global codex_wfc_stack_slot_1_sub || true
-  run_cmd settings delete global codex_wfc_stack_slot_1_boot || true
+  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_until" 0 || true
+  run_cmd settings delete global "codex_wfc_stack_slot_${OWNER_SLOT}_sub" || true
+  run_cmd settings delete global "codex_wfc_stack_slot_${OWNER_SLOT}_boot" || true
   rm -f "$STATE/enabled" "$STATE/trial-running"
   # A file-only restore can leave the loader's live override selected. Clear
   # both layers and wait for its asynchronous deletion before restoring XML.
@@ -83,7 +117,7 @@ rollback() {
   [ ! -f "$COMPANION" ] || sh "$COMPANION" start
   [ "$POLICY_OK" = 1 ] || { echo rollback=PROVIDERS_RESTORED_POLICY_RETRY_REQUIRED; return 1; }
   rm -f "$STATE/transaction"
-  rm -f "$STATE/providers-before.bin" "$STATE/components"
+  rm -f "$STATE/providers-before.bin" "$STATE/components" "$STATE/owner"
   mv "$STATE/baseline" "$STATE/baseline-restored-$(date +%s)"
   echo rollback=RESTORED
 }
@@ -93,10 +127,17 @@ case "${1:-status}" in
     [ ! -f "$STATE/transaction" ] || echo transaction=ACTIVE
     [ ! -f "$STATE/enabled" ] || echo persistent=ENABLED
     echo component_selection=1
+    echo identity_selection=1
+    if [ -f "$STATE/transaction" ]; then
+      echo "owner_slot=$OWNER_SLOT"
+      echo "owner_sub=$OWNER_SUB"
+      if [ -f "$STATE/owner" ]; then echo owner_schema=EXPLICIT; else echo owner_schema=LEGACY_FIXED; fi
+    fi
     echo "components=$(cat "$STATE/components" 2>/dev/null || echo 7)"
     carrier read
     ;;
   trial)
+    [ ! -f "$STATE/transaction" ] || { echo transaction-already-active; exit 1; }
     [ "$(getprop ro.product.device)" = raphael ]
     [ "$(getprop ro.build.version.sdk)" = 30 ]
     carrier check
@@ -128,6 +169,8 @@ case "${1:-status}" in
     chmod 700 "$STATE/recovery" /data/adb/service.d/codex-vowifi-stack-recovery.sh
     chmod 600 "$STATE/recovery/control.sh" "$STATE/recovery/carrier-trial.zip"
     TOKEN="$(settings get global boot_count)-$(cut -d. -f1 /proc/uptime)-$$"
+    printf '%s\n' "$OWNER_SLOT:$OWNER_SUB" > "$STATE/owner.new"
+    mv "$STATE/owner.new" "$STATE/owner"
     printf '%s\n' "$TOKEN" > "$STATE/transaction"
     touch "$STATE/trial-running"
     printf '%s\n' "$COMPONENTS" > "$STATE/components"
@@ -219,7 +262,7 @@ case "${1:-status}" in
     ;;
   reload)
     [ -f "$STATE/transaction" ]
-    if [ -n "${2:-}" ]; then TOKEN=$2; owns_transaction || { echo worker=STALE; exit 0; }; fi
+    if [ "$#" = 2 ]; then TOKEN=$2; owns_transaction || { echo worker=STALE; exit 0; }; fi
     carrier check
     REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
     [ -n "$REGISTRY" ] || { echo call-state-unavailable; exit 1; }

@@ -3,6 +3,20 @@
 保留 `android11-companion-0.2.0-baseline`。旧模块仍采用原厂隧道与语音，
 加独立短信接收程序；本目录是另一套可回退的 IWLAN／QNS／MMTEL 替换。
 
+## 0.5.0 选卡身份协议（2026-10-06）
+
+- 新事务原子保存 slot/subId，显式传给 CarrierConfig helper 和每槽租约。
+  旧无 owner 事务仅按原本固定的 (1,1) 解释，不从界面当前选卡推断。
+- UI／CLI 重载、常驻、回退核对记录的 owner；helper 再检查实际活动订阅。
+  原卡不可见时回退保留事务和备份，不转而清除另一卡的配置。
+- 实际错误 slot/sub 的重载、常驻、回退、check/read/clear/apply 均被拒绝，
+  事务、备份、常驻标记和电话进程保持不变。UI 空 SIM1 可明确恢复 SIM2；
+  再选 SIM2 建新显式事务，恢复 WLAN 语音/SMS 注册。
+- 当前仍是全局单事务，不宣称双卡同时替换完成。后续要求见 TRANSACTIONS.md。
+- 最终 0.5.0 在机模块与构建逐项哈希一致；真实重启保留 EXPLICIT 归属并自动
+  注册 WLAN 语音/SMS。INFO→85075 返回 RESULT_OK，四段下行系统接受且四个
+  RP-ACK 获 SIP202，合并为一个收件箱记录并生成通知；短码策略恢复原值 0。
+
 ## 0.4.0 事务与兼容性修正（2026-10-06）
 
 - 控制器支持 IWLAN=1、QNS=2、IMS=4 的组合掩码；未选择的 provider 保留

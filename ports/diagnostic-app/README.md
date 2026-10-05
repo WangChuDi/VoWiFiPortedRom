@@ -54,6 +54,15 @@ complete tested combination can be retained across boots. Current profile:
 
 `API30 / raphael / VOXI 23415 / slot index1 / subId1`.
 
+Version 0.3.0 passes the selected slot and freshly observed subscription ID to
+the controller. New transactions record that owner explicitly. Enable/reload
+require selecting the owner; recovery always names and targets the recorded
+owner, even while viewing another slot. The API30 device profile can accept an
+active VOXI in another slot, but positive live validation currently covers only
+slot1/sub1. One global transaction remains; simultaneous dual-card replacement
+is still work in progress. The app keeps mutation controls disabled when paired
+with an older controller that lacks the explicit-identity protocol.
+
 Root revalidates the device, live SIM, subscription and operator immediately
 before apply/enable/reload; UI results alone do not authorize a changed SIM.
 Trials last at most five minutes and may roll back earlier on failure. Enable
@@ -134,3 +143,12 @@ controller action and an incomplete observation are reported separately. The
 root error panel contains only whitelisted status metadata. The eight pinned
 framework samples resolve all 301 Android/internal references from the services
 and tool; reflection, hidden APIs, permissions and hardware are separate checks.
+
+The 0.3.0 tool was tested on the actual empty SIM1 and active SIM2. Empty-slot
+inspection leaves reload/persistence disabled, names SIM2 as the controller
+owner and offers explicit SIM2 recovery. That recovery restored original values;
+selecting SIM2 then created a new explicit owner transaction and restored WLAN
+voice/SMS registration. Real wrong-slot/wrong-subscription requests to controller
+and carrier helper were refused with transaction/baseline/persistence and phone
+PID unchanged. IKE close reasons are now inspected even without an IMS network,
+using only bounded safe error identifiers; logs remain historical observations.

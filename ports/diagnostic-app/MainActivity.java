@@ -43,7 +43,7 @@ public final class MainActivity extends Activity {
         body.addView(button("只读检查链路",v->diagnose()));
         results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
         body.addView(text("可选替换",21));
-        body.addView(text("已验证组合：IWLAN + QNS + IMS。其他组合仅作 5 分钟兼容试验，不能常驻。当前替换引擎限 Android 11 / raphael / VOXI / SIM2；其他 SIM 和版本可先诊断。",14));
+        body.addView(text("已验证组合：IWLAN + QNS + IMS。其他组合仅作 5 分钟兼容试验，不能常驻。替换引擎目前限 Android 11 / raphael / VOXI；操作绑定所选 SIM 与当前订阅。当前一次管理一张卡，另一张卡仍可诊断；双卡同时替换尚未完成。",14));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
         for(int i=0;i<components.length;i++){
             components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setChecked(true);body.addView(components[i]);
@@ -120,15 +120,19 @@ public final class MainActivity extends Activity {
         card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
         card("最近一次系统短信分发",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
-        card("替换控制器（当前管理 SIM2）",providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"所选替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));
+        int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
+        card("替换控制器"+(ownerSlot>=0?"（管理 SIM"+(ownerSlot+1)+"）":""),providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));
         setActions(data.optBoolean("engine_supported"));
         boolean active=providers!=null&&"ACTIVE".equals(providers.optString("transaction"));
-        boolean selectable=providers!=null&&providers.optInt("component_selection")==1;
+        boolean identities=providers!=null&&providers.optInt("identity_selection")==1;
+        boolean selectedOwner=providers!=null&&ownerSlot==data.optInt("slot",-1)&&providers.optInt("owner_sub",-1)==data.optInt("sub_id",-2);
+        boolean selectable=identities&&providers.optInt("component_selection")==1;
         for(CheckBox checkbox:components){checkbox.setEnabled(data.optBoolean("engine_supported")&&selectable&&!active);}
         if(!selectable)for(CheckBox checkbox:components)checkbox.setChecked(true);
         refreshTrialSelection();
-        enable.setEnabled(data.optBoolean("engine_supported")&&active&&providers.optInt("components",7)==7&&!"ENABLED".equals(providers.optString("persistent")));
-        reload.setEnabled(data.optBoolean("engine_supported")&&active);
+        enable.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&providers.optInt("components",7)==7&&!"ENABLED".equals(providers.optString("persistent")));
+        reload.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
+        rollback.setText(ownerSlot>=0?"恢复 SIM"+(ownerSlot+1)+" 原来的组件和短信模块":"恢复原来的组件和短信模块");
         rollback.setEnabled(active); // Recovery is available even after selecting another SIM.
         if(data.has("error")){setActions(false);status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
     }
@@ -146,17 +150,25 @@ public final class MainActivity extends Activity {
     private void refreshTrialSelection(){
         if(trial==null)return;
         JSONObject provider=last==null?null:last.optJSONObject("providers");
-        trial.setEnabled(!busy&&last!=null&&last.optBoolean("engine_supported")&&last.optBoolean("controller")&&provider!=null&&!"ACTIVE".equals(provider.optString("transaction"))&&componentMask()!=0);
+        trial.setEnabled(!busy&&last!=null&&last.optBoolean("engine_supported")&&last.optBoolean("controller")&&provider!=null&&provider.optInt("identity_selection")==1&&!"ACTIVE".equals(provider.optString("transaction"))&&componentMask()!=0);
     }
     private void action(String action){
         if(busy)return;
         if(!Arrays.asList("trial","enable","reload","rollback").contains(action))return;
+        if(last==null)return;
         if(!"rollback".equals(action)&&(last==null||!last.optBoolean("engine_supported")))return;
         final int slot=slots.get(sims.getSelectedItemPosition());
+        JSONObject provider=last.optJSONObject("providers");
+        if(provider==null)return;
+        if(!"rollback".equals(action)&&(last.optInt("slot",-1)!=slot||provider.optInt("identity_selection")!=1))return;
+        final int targetSlot="rollback".equals(action)?provider.optInt("owner_slot",-1):slot;
+        final int targetSub="rollback".equals(action)?provider.optInt("owner_sub",-1):last.optInt("sub_id",-1);
+        if(targetSlot<0||targetSlot>7||targetSub<0)return;
+        if(("enable".equals(action)||"reload".equals(action))&&(provider.optInt("owner_slot",-1)!=targetSlot||provider.optInt("owner_sub",-1)!=targetSub))return;
         final int mask=componentMask();
         if("trial".equals(action)&&mask==0)return;
         execute("正在执行所选操作…",()->{
-            String output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:""),35);
+            String output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:"")+" "+targetSlot+" "+targetSub,35);
             if(!action.equals("reload")&&!action.equals("trial"))return new JSONObject().put("action_result",output);
             runOnUiThread(()->{if(!isFinishing())status("已请求重新拉起，正在等待 IMS 注册…");});
             long deadline=SystemClock.elapsedRealtime()+45000;
@@ -221,7 +233,7 @@ public final class MainActivity extends Activity {
         reader.join(1000);
         if(process.exitValue()!=0){
             StringBuilder reason=new StringBuilder("exit="+process.exitValue());
-            for(String line:output.toString("UTF-8").split("[\\r\\n]+"))if(line.matches("(?:carrier-operation-failed|carrier-error-line|profile|provider-[a-z-]+|trial|rollback|worker)=[A-Za-z0-9_./-]+|(?:invalid-components|stale-baseline-refused|stale-provider-snapshot-refused|persist-format-unverified|partial-components-trial-only|transaction-already-active|controller-busy|active-call-refused|call-state-unavailable|provider-[a-z-]+-failed|trial-gate-failed)"))reason.append("\n").append(line);
+            for(String line:output.toString("UTF-8").split("[\\r\\n]+"))if(line.matches("(?:carrier-operation-failed|carrier-error-line|profile|provider-[a-z-]+|trial|rollback|worker)=[A-Za-z0-9_./-]+|(?:invalid-selection|owner-selection-mismatch|invalid-components|stale-baseline-refused|stale-provider-snapshot-refused|persist-format-unverified|partial-components-trial-only|transaction-already-active|controller-busy|active-call-refused|call-state-unavailable|provider-[a-z-]+-failed|trial-gate-failed)"))reason.append("\n").append(line);
             throw new RootFailure(reason.toString());
         }
         return output.toString("UTF-8").trim();

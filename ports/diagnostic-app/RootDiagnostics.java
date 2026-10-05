@@ -68,7 +68,7 @@ public final class RootDiagnostics {
             }catch(Throwable t){out.put("telephony_error",errorName(t));}
         }
         // The bundled engine is deliberately limited to the actually tested profile.
-        out.put("engine_supported",simState==TelephonyManager.SIM_STATE_READY&&Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE)&&"23415".equals(operator)&&slot==1&&sub==1);
+        out.put("engine_supported",simState==TelephonyManager.SIM_STATE_READY&&Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE)&&"23415".equals(operator)&&slot>=0&&slot<8&&sub>=0);
         Network wifi=null;int imsCount=0,pcscfCount=0,unattributed=0;String iface=null;
         try{
           ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
@@ -158,15 +158,21 @@ public final class RootDiagnostics {
             if(attachedCap)try{manager.unregisterMmTelCapabilityCallback(cap);}catch(Exception ignored){}
         }
         if(provider!=null){
-            if(slot==1){String running=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();if(!out.has("iwlan_observation_error"))out.put("iwlan_process_present",running.matches("[0-9]+"));}
-            if(slot==1&&imsCount>0&&iface!=null&&"dev.codex.vowifi.iwlan".equals(provider.optString("carrier_data_service_wlan_package_override_string"))){
+            boolean selectedOwner=provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub;
+            if(selectedOwner){String running=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();if(!out.has("iwlan_observation_error"))out.put("iwlan_process_present",running.matches("[0-9]+"));}
+            if(selectedOwner&&"dev.codex.vowifi.iwlan".equals(provider.optString("carrier_data_service_wlan_package_override_string"))){
                 String iwlanPid=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();
                 if(iwlanPid.matches("[0-9]+")){
                     String events=observation(out,"iwlan_observation_error",4,"logcat","-b","main","-d","-v","brief","--pid="+iwlanPid,"-s","Api30IwlanData:D","*:S");
                     String latest=null;
                     for(String event:events.split("[\\r\\n]+")){
-                        if(event.contains("slot=1 child=OPENED iface="+iface+" "))latest="本轮进程曾报告 child=OPENED；需结合当前接口和注册状态判断";
-                        if(event.contains("slot=1 closed="))latest="本轮进程最近日志报告已关闭；不是实时 IKE 状态";
+                        if(event.contains("slot="+slot+" child=OPENED iface="))latest=iface!=null&&event.contains("slot="+slot+" child=OPENED iface="+iface+" ")?"本轮进程曾报告 child=OPENED；需结合当前接口和注册状态判断":"本轮进程曾报告 child=OPENED；未匹配到当前所选卡的 IMS 接口";
+                        String marker="slot="+slot+" closed=";int start=event.indexOf(marker);
+                        if(start>=0){
+                            String reason=event.substring(start+marker.length()).trim();
+                            if(reason.matches("[A-Za-z0-9_./=-]{1,240}"))latest="本轮进程最近关闭原因："+reason+"；历史日志，需结合当前接口和注册状态判断";
+                            else latest="本轮进程最近日志报告已关闭；不是实时 IKE 状态";
+                        }
                     }
                     if(latest!=null)out.put("ike",latest);
                 }
@@ -209,12 +215,18 @@ public final class RootDiagnostics {
         for(String line:status.split("[\r\n]+")){
             int equals=line.indexOf('=');
             if(equals>0){String key=line.substring(0,equals);
-                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
+                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.equals("identity_selection")||key.equals("owner_slot")||key.equals("owner_sub")||key.equals("owner_schema")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
+                if(key.equals("carrier-operation-failed"))provider.put("carrier_read_error",line.substring(equals+1));
             }
         }
-        if(!provider.has("mode")||!provider.has("config_ims_mmtel_package_override_string"))throw new IOException("controller-status-unavailable");
+        if(!provider.has("mode"))throw new IOException("controller-status-unavailable");
+        if(!provider.has("config_ims_mmtel_package_override_string")&&!provider.has("carrier_read_error"))throw new IOException("controller-provider-status-unavailable");
         if(!provider.has("transaction"))provider.put("transaction","INACTIVE");
-        out.put("controller",true).put("providers",provider).put("providers_slot",1);
+        // The only old controller format was fixed to slot1/sub1. Report that
+        // provenance explicitly; never infer the owner from the selected SIM.
+        if("ACTIVE".equals(provider.optString("transaction"))&&!provider.has("identity_selection"))provider.put("owner_slot",1).put("owner_sub",1).put("owner_schema","LEGACY_FIXED");
+        out.put("controller",true).put("providers",provider);
+        if(provider.has("owner_slot"))out.put("providers_slot",provider.optInt("owner_slot"));
         return provider;
     }
     private static String command(int seconds,String...args)throws Exception{
