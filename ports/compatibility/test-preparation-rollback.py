@@ -13,7 +13,7 @@ args=parser.parse_args()
 base=Path(__file__).resolve().parent
 fixture='/data/local/tmp/codex-prepare-fixture-'+uuid.uuid4().hex
 state=fixture+'/data-adb/codex_vowifi_stack'
-source=(base.parent/'android11/stack/module/control.sh').read_text(encoding='utf-8')
+source=(base.parent/'android11/stack/module/subscription-control.sh').read_text(encoding='utf-8')
 source=source.replace('/data/adb',fixture+'/data-adb')
 marker='case "${1:-status}" in\n  status)'
 assert source.count(marker)==1

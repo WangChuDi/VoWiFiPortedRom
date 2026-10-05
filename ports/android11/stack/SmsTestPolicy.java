@@ -23,7 +23,10 @@ public final class SmsTestPolicy {
             sms.setPremiumSmsPermission(pkg,mode);
             System.out.println("short-code-policy="+sms.getPremiumSmsPermission(pkg));
         }else if(args.length==1&&"allow-info".equals(args[0])){
-            if(!Files.exists(state.resolveSibling("transaction")))throw new IllegalStateException("trial-required");
+            boolean active=Files.exists(state.resolveSibling("transaction"));
+            java.io.File[] owners=state.getParent().resolve("transactions").toFile().listFiles();
+            if(owners!=null)for(java.io.File owner:owners)if(owner.getName().matches("slot-[0-7]-sub-[0-9]+")&&new java.io.File(owner,"transaction").isFile())active=true;
+            if(!active)throw new IllegalStateException("trial-required");
             if(!Files.exists(state))Files.write(state,Integer.toString(sms.getPremiumSmsPermission(pkg)).getBytes("UTF-8"));
             sms.setPremiumSmsPermission(pkg,3);
             System.out.println("diagnostic-short-code=TEMPORARILY_ALLOWED");

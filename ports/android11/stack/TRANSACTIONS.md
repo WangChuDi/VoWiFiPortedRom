@@ -2,8 +2,8 @@
 
 The final target includes selectable replacement components on Android11–17 and
 dual-SIM devices. Per-slot diagnosis and per-slot service objects alone do not
-complete this target. The current controller is moving from one fixed identity
-to explicit ownership; it still manages one global transaction at a time.
+complete this target. Controller 0.7.0 manages separate subscription transactions
+under a shared coordinator; simultaneous live dual-SIM validation remains pending.
 
 ## Current identity protocol
 
@@ -50,17 +50,54 @@ clear, exact-file restoration, provider restoration and a fresh trial passed
 on the connected MIUI profile. Tests with two artificial SIM identities verify
 file isolation; they are not simultaneous live dual-SIM registration tests.
 
-The transaction directory, IWLAN operation mode, phone-process restart, SMS test
-package policy and companion receiver remain global. The controller still does
-not allow two independent active transactions or promise dual-active registration.
+## Multiple transaction coordinator (0.7.0)
+
+Each active owner has `transactions/slot-N-sub-S/`, with its own original XML,
+provider snapshot, identity record, component mask, lease, transaction token,
+watchdog and persistent supervisor. Renewals recheck actual SIM and backup identity;
+an unavailable owner waits for recovery without extending a mismatched lease.
+One supervisor lock per owner prevents duplicate workers. Background phone reloads
+also share a boot-scoped five-minute cooldown; explicit user reload remains available.
+The Java helper accepts only the exact state
+directory for the explicit slot/sub tuple (or the legacy root during migration),
+rejects symbolic/canonical aliases, and still checks the actual SIM fingerprint.
+The root `control.sh` routes operations; `subscription-control.sh` performs them
+under the shared root lock. A new subscription in an already managed physical
+slot is refused until the original owner is explicitly recovered.
+
+Operation mode, phone-process restart, test-package SMS policy and the old SMS
+companion are device-wide resources. The coordinator records one original mode.
+Ending one owner preserves AP-assisted while another selected IWLAN remains;
+without another IWLAN, it restores the original mode. The companion and test
+policy resume only when the last transaction is restored. Every phone restart
+checks both slots for an active call. Reload rebuilds shared framework bindings
+and may briefly reconnect another card, but does not replace its configuration.
+
+Successful restoration atomically archives the entire subscription directory.
+An interrupted restore retains its original transaction evidence. Stale workers
+are scoped by tuple and token, and cannot expire a later generation. Legacy
+migration verifies copied evidence, commits the slot directory, preserves the
+old state privately, and can resume after interruption during old-file archival.
+Boot recovery, persistence, module removal and the independent recovery hook
+route all owner records rather than one root-level transaction.
+
+The tool reads selected subscription status separately from `active_owners`.
+Recovery uses an explicitly named SIM selector; empty-slot inspection does not
+attribute another card's transaction to that slot or prevent recovery of it.
+
+Android shell fixtures exercise two transactions with isolated carrier/platform
+backends: another owner's token, baseline and lease survive restoration; shared
+mode, partial masks, stale workers, same-slot conflicts, last-owner companion
+restart, rollback-all and interrupted migration are covered. These are controller
+tests, not two real SIMs registered to a carrier. The actual connected device has
+only one active card; do not infer simultaneous registration from those fixtures.
 
 ## Remaining requirements
 
-1. Extend selected-file ownership into separate transaction directories. Handle
-   removal, relocation and subscription database resets with explicit recovery
-   evidence; the current helper safely refuses owner/identity changes.
-2. Coordinate global mode/reload/companion lifetime across a set of selected
-   subscriptions; ending one selection must preserve another active selection.
+1. Handle removal, relocation and subscription database resets with explicit
+   recovery evidence; current recovery safely refuses owner/identity changes.
+2. Verify global mode/reload/companion coordination on two real active cards,
+   including service failure while another card is in a call or receiving SMS.
 3. Exercise simultaneous feature/registration/tunnel lifecycles on two active
    SIMs and verify each card's real calling/SMS delivery and unselected-card
    behavior. The connected device currently has only one active card.
@@ -72,6 +109,11 @@ not allow two independent active transactions or promise dual-active registratio
 5. Extend diagnostics beyond available registration/capability metadata with
    bounded, explicitly requested real traffic tests; do not report unseen stages
    as healthy. Keep message bodies, SIM identity and authentication keys private.
+6. Resolve intermittent post-boot SMS dispatcher synchronization. On the final
+   0.7.0 reboot, its service-up and capability flags were true but registered was
+   false, producing RADIO_OFF before invoking replacement IMS. Independent
+   registration/capability callbacks do not prove dispatcher readiness. An explicit
+   idle reload restored real INFO sending and native multipart delivery/notification.
 
 Working API30 baselines and published source/artifacts remain preserved while
 these requirements are implemented. Full completion requires all of them.

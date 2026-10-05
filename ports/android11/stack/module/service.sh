@@ -35,15 +35,15 @@ until prepare_apps > "$LOG" 2>&1; do
 done
 echo services-prepared >> "$LOG"
 [ "${1:-}" != prepare ] || exit 0
-if [ -f "$STATE/transaction" ]; then
-  if [ -f "$STATE/enabled" ]; then
-    # MIUI can publish conflicting capabilities during the first boot binding.
-    # After boot has settled, rebuild the client connections once, only if idle.
-    COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
-    [ ! -f "$COMPANION" ] || sh "$COMPANION" stop >> "$LOG" 2>&1
-    sh "$MODDIR/control.sh" reload >> "$LOG" 2>&1 || echo boot-reload=SKIPPED >> "$LOG"
-    sh "$MODDIR/control.sh" supervise >> "$LOG" 2>&1
-  else
-    sh "$MODDIR/control.sh" rollback >> "$LOG" 2>&1
-  fi
-fi
+sh "$MODDIR/control.sh" migrate >> "$LOG" 2>&1 || exit 1
+sh "$MODDIR/control.sh" recover-trials >> "$LOG" 2>&1 || echo boot-trial-recovery=DEFERRED >> "$LOG"
+# The phone process is shared. Reload once for a valid persistent owner, then
+# start independent token-scoped supervisors for all retained subscriptions.
+for DIRECTORY in "$STATE"/transactions/slot-*-sub-*; do
+  [ -f "$DIRECTORY/transaction" ] && [ -f "$DIRECTORY/enabled" ] || continue
+  OWNER=$(cat "$DIRECTORY/owner")
+  COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
+  [ ! -f "$COMPANION" ] || sh "$COMPANION" stop >> "$LOG" 2>&1
+  if sh "$MODDIR/control.sh" reload "${OWNER%%:*}" "${OWNER#*:}" >> "$LOG" 2>&1; then break; fi
+done
+sh "$MODDIR/control.sh" resume-all >> "$LOG" 2>&1

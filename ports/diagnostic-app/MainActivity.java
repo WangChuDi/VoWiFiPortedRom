@@ -19,6 +19,8 @@ public final class MainActivity extends Activity {
     private static final String CONTROL="/data/adb/modules/codex_vowifi_stack_api30/control.sh";
     private LinearLayout body,results;
     private Spinner sims;
+    private Spinner recoveries;
+    private final ArrayList<int[]> recoveryOwners=new ArrayList<>();
     private TextView summary,actionStatus;
     private final ArrayList<Integer> slots=new ArrayList<>();
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
@@ -43,7 +45,7 @@ public final class MainActivity extends Activity {
         body.addView(button("只读检查链路",v->diagnose()));
         results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
         body.addView(text("可选替换",21));
-        body.addView(text("已验证组合：IWLAN + QNS + IMS。其他组合仅作 5 分钟兼容试验，不能常驻。替换引擎目前限 Android 11 / raphael / VOXI；操作绑定所选 SIM 与当前订阅。当前一次管理一张卡，另一张卡仍可诊断；双卡同时替换尚未完成。",14));
+        body.addView(text("已验证组合：IWLAN + QNS + IMS。其他组合仅作 5 分钟兼容试验，不能常驻。替换引擎目前限 Android 11 / raphael / VOXI；每张卡分别保存事务与配置，共享的电话服务仅在空闲时重载。双卡同时注册仍需实机验证。",14));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
         for(int i=0;i<components.length;i++){
             components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setChecked(true);body.addView(components[i]);
@@ -53,6 +55,12 @@ public final class MainActivity extends Activity {
         trial=button("试用所选组件 · 最多 5 分钟自动回退",v->action("trial"));body.addView(trial);
         enable=button("保留当前试验并常驻",v->action("enable"));body.addView(enable);
         reload=button("重新拉起 · 空闲时重载电话服务",v->action("reload"));body.addView(reload);
+        body.addView(text("选择要恢复原配置的 SIM",14));
+        recoveries=new Spinner(this);body.addView(recoveries);
+        recoveries.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){refreshRecovery();}
+            public void onNothingSelected(android.widget.AdapterView<?> p){refreshRecovery();}
+        });
         rollback=button("恢复原来的组件和短信模块",v->action("rollback"));body.addView(rollback);
         install=button("安装配套模块更新 · 需要重启",v->installModule());body.addView(install);
         body.addView(text("安装更新后，请通过手机电源菜单重启；检查按钮不会拨号、发送短信或读取短信正文。",13));
@@ -132,8 +140,19 @@ public final class MainActivity extends Activity {
         refreshTrialSelection();
         enable.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&providers.optInt("components",7)==7&&!"ENABLED".equals(providers.optString("persistent")));
         reload.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
-        rollback.setText(ownerSlot>=0?"恢复 SIM"+(ownerSlot+1)+" 原来的组件和短信模块":"恢复原来的组件和短信模块");
-        rollback.setEnabled(active); // Recovery is available even after selecting another SIM.
+        recoveryOwners.clear();ArrayList<String> recoveryLabels=new ArrayList<>();int recoveryIndex=0;
+        org.json.JSONArray owners=providers==null?null:providers.optJSONArray("active_owners");
+        if(owners!=null)for(int index=0;index<owners.length();index++){
+            JSONObject owner=owners.optJSONObject(index);if(owner==null)continue;
+            int recoverySlot=owner.optInt("slot",-1),recoverySub=owner.optInt("sub",-1);
+            if(recoverySlot<0||recoverySlot>7||recoverySub<0)continue;
+            if(recoverySlot==data.optInt("slot",-1))recoveryIndex=recoveryOwners.size();
+            recoveryOwners.add(new int[]{recoverySlot,recoverySub});recoveryLabels.add("SIM"+(recoverySlot+1));
+        }
+        if(recoveryLabels.isEmpty())recoveryLabels.add("无待恢复事务");
+        recoveries.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,recoveryLabels));
+        recoveries.setSelection(recoveryIndex);refreshRecovery();
+        if(recoveryOwners.size()>1)card("其他卡的替换事务",recoveryOwners.size()+" 张卡分别管理；恢复所选事务后，其他卡的配置和租约保留。电话服务重载会短暂重建两张卡的连接。");
         if(data.has("error")){setActions(false);status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
     }
     private void card(String heading,String value){
@@ -144,6 +163,13 @@ public final class MainActivity extends Activity {
     private void setActions(boolean supported){
         if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
         for(CheckBox checkbox:components)if(checkbox!=null)checkbox.setEnabled(false);
+        if(recoveries!=null)recoveries.setEnabled(false);
+    }
+    private void refreshRecovery(){
+        if(rollback==null||recoveries==null)return;
+        int index=recoveries.getSelectedItemPosition();boolean available=!busy&&last!=null&&index>=0&&index<recoveryOwners.size();
+        recoveries.setEnabled(!busy&&!recoveryOwners.isEmpty());rollback.setEnabled(available);
+        rollback.setText(available?"恢复 SIM"+(recoveryOwners.get(index)[0]+1)+" 原来的组件和短信模块":"恢复原来的组件和短信模块");
     }
     private int componentMask(){int mask=0;for(int i=0;i<components.length;i++)if(components[i].isChecked())mask|=1<<i;return mask;}
     private String componentNames(int mask){ArrayList<String> names=new ArrayList<>();if((mask&1)!=0)names.add("IWLAN");if((mask&2)!=0)names.add("QNS");if((mask&4)!=0)names.add("IMS");return String.join(" + ",names);}
@@ -161,8 +187,10 @@ public final class MainActivity extends Activity {
         JSONObject provider=last.optJSONObject("providers");
         if(provider==null)return;
         if(!"rollback".equals(action)&&(last.optInt("slot",-1)!=slot||provider.optInt("identity_selection")!=1))return;
-        final int targetSlot="rollback".equals(action)?provider.optInt("owner_slot",-1):slot;
-        final int targetSub="rollback".equals(action)?provider.optInt("owner_sub",-1):last.optInt("sub_id",-1);
+        int recoveryIndex=recoveries.getSelectedItemPosition();
+        if("rollback".equals(action)&&(recoveryIndex<0||recoveryIndex>=recoveryOwners.size()))return;
+        final int targetSlot="rollback".equals(action)?recoveryOwners.get(recoveryIndex)[0]:slot;
+        final int targetSub="rollback".equals(action)?recoveryOwners.get(recoveryIndex)[1]:last.optInt("sub_id",-1);
         if(targetSlot<0||targetSlot>7||targetSub<0)return;
         if(("enable".equals(action)||"reload".equals(action))&&(provider.optInt("owner_slot",-1)!=targetSlot||provider.optInt("owner_sub",-1)!=targetSub))return;
         final int mask=componentMask();

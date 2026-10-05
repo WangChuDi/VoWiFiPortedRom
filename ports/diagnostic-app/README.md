@@ -59,8 +59,9 @@ the controller. New transactions record that owner explicitly. Enable/reload
 require selecting the owner; recovery always names and targets the recorded
 owner, even while viewing another slot. The API30 device profile can accept an
 active VOXI in another slot, but positive live validation currently covers only
-slot1/sub1. One global transaction remains; simultaneous dual-card replacement
-is still work in progress. The app keeps mutation controls disabled when paired
+slot1/sub1. Version 0.5.0 uses selected status plus an active-owner list, allowing
+separate transactions through controller 0.7.0. Simultaneous live dual-card
+registration remains untested. The app keeps mutation controls disabled when paired
 with an older controller that lacks the explicit-identity protocol.
 
 Version 0.4.0 embeds controller 0.6.0, which backs up and restores only the
@@ -68,8 +69,12 @@ selected subscription's confirmed persisted override file. A private identity
 record and original-file hash prevent another card's file from being restored
 as this one. Interrupted preparation archives evidence without clearing live
 providers; interrupted staged restoration preserves the live target. Unknown
-filename layouts remain refused. This is file isolation, not two active
-transactions; see [ownership and remaining work](../android11/stack/TRANSACTIONS.md).
+filename layouts remain refused. Controller 0.7.0 adds separate owner directories,
+shared mode/companion coordination, token-scoped workers, atomic directory archival
+and boot recovery for all owners. A recovery SIM selector explicitly names the
+transaction being restored, including when inspecting an empty slot. Isolated
+two-owner controller tests passed; there is still only one actual active card for
+live testing. See [ownership and remaining work](../android11/stack/TRANSACTIONS.md).
 
 Root revalidates the device, live SIM, subscription and operator immediately
 before apply/enable/reload; UI results alone do not authorize a changed SIM.

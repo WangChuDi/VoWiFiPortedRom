@@ -44,7 +44,6 @@ public final class RootDiagnostics {
     private static void collect(JSONObject out,Context context,int slot)throws Exception{
         out.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
         JSONObject provider=null;
-        try{provider=controller(out);}catch(Throwable t){out.put("controller_error",errorName(t));}
         SubscriptionInfo info=null;
         try{
             SubscriptionManager subscriptions=context.getSystemService(SubscriptionManager.class);
@@ -53,6 +52,7 @@ public final class RootDiagnostics {
             if(active!=null)for(SubscriptionInfo candidate:active)if(candidate.getSimSlotIndex()==slot){info=candidate;break;}
         }catch(Throwable t){out.put("subscription_error",errorName(t));}
         int sub=info==null?-1:info.getSubscriptionId();
+        try{provider=controller(out,slot,sub);}catch(Throwable t){out.put("controller_error",errorName(t));}
         String operator="";int simState=TelephonyManager.SIM_STATE_UNKNOWN;
         out.put("sim",info==null?(out.has("subscription_error")?"订阅信息不可见":"无活动 SIM"):"活动订阅存在，SIM 状态未知");
         if(info!=null){
@@ -208,14 +208,14 @@ public final class RootDiagnostics {
     private static String observation(JSONObject out,String key,int seconds,String...args)throws Exception{
         try{return command(seconds,args);}catch(Throwable t){out.put(key,errorName(t));return "";}
     }
-    private static JSONObject controller(JSONObject out)throws Exception{
+    private static JSONObject controller(JSONObject out,int slot,int sub)throws Exception{
         if(!new File(CONTROLLER).isFile()){out.put("controller",false);return null;}
-        String status=command(8,"sh",CONTROLLER,"status");
+        String status=command(8,"sh",CONTROLLER,"status",Integer.toString(slot),Integer.toString(sub));
         JSONObject provider=new JSONObject();
         for(String line:status.split("[\r\n]+")){
             int equals=line.indexOf('=');
             if(equals>0){String key=line.substring(0,equals);
-                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.equals("identity_selection")||key.equals("owner_slot")||key.equals("owner_sub")||key.equals("owner_schema")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
+                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.equals("identity_selection")||key.equals("owner_slot")||key.equals("owner_sub")||key.equals("owner_schema")||key.equals("multi_transaction_selection")||key.equals("migration_required")||key.matches("active_owner_(?:count|[0-7]_(?:slot|sub))")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
                 if(key.equals("carrier-operation-failed"))provider.put("carrier_read_error",line.substring(equals+1));
             }
         }
@@ -225,6 +225,16 @@ public final class RootDiagnostics {
         // The only old controller format was fixed to slot1/sub1. Report that
         // provenance explicitly; never infer the owner from the selected SIM.
         if("ACTIVE".equals(provider.optString("transaction"))&&!provider.has("identity_selection"))provider.put("owner_slot",1).put("owner_sub",1).put("owner_schema","LEGACY_FIXED");
+        org.json.JSONArray owners=new org.json.JSONArray();
+        int count=provider.optInt("active_owner_count",0);
+        if(count<0||count>8)throw new IOException("controller-owners-unavailable");
+        for(int index=0;index<count;index++){
+            int ownerSlot=provider.optInt("active_owner_"+index+"_slot",-1),ownerSub=provider.optInt("active_owner_"+index+"_sub",-1);
+            if(ownerSlot<0||ownerSlot>7||ownerSub<0)throw new IOException("controller-owner-invalid");
+            owners.put(new JSONObject().put("slot",ownerSlot).put("sub",ownerSub));
+        }
+        if(count==0&&"ACTIVE".equals(provider.optString("transaction")))owners.put(new JSONObject().put("slot",provider.optInt("owner_slot",-1)).put("sub",provider.optInt("owner_sub",-1)));
+        provider.put("active_owners",owners);
         out.put("controller",true).put("providers",provider);
         if(provider.has("owner_slot"))out.put("providers_slot",provider.optInt("owner_slot"));
         return provider;

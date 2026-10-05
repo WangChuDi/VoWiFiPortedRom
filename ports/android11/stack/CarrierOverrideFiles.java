@@ -19,7 +19,7 @@ public final class CarrierOverrideFiles {
             return PersistableBundle.restoreFromXml(parser);
         }
     }
-    public static OverrideFileStore.Target target(Context context,SubscriptionInfo selected,Class<?> api,Object loader)throws Exception {
+    public static OverrideFileStore.Target target(Context context,SubscriptionInfo selected,Class<?> api,Object loader,File state)throws Exception {
         TelephonyManager manager=context.getSystemService(TelephonyManager.class).createForSubscriptionId(selected.getSubscriptionId());
         String serial=selected.getIccId();
         if(serial==null||serial.isEmpty())serial=manager.getSimSerialNumber();
@@ -42,7 +42,6 @@ public final class CarrierOverrideFiles {
         if(found!=null)return found;
         // A confirmed transaction keeps its exact filename across the loader's
         // asynchronous delete, instead of guessing a new filename at clear.
-        File state=new File("/data/adb/codex_vowifi_stack");
         if(new File(state,"persistence.properties").isFile())return store(state).savedTarget(directory,carrierPackage,serial);
         // The same loader naming scheme applies to its ordinary platform cache.
         // This supplies evidence before the first override exists.

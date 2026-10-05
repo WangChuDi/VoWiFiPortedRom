@@ -8,7 +8,7 @@ replace modem firmware, vendor libraries, APNs or the IPsec APEX.
 The working SMS companion is preserved at tag
 `android11-companion-0.2.0-baseline`, commit
 `ccd2aa0b54cdad5d7d357a83b594f55402ab944f`. The controller pauses the companion
-while replacements are selected and resumes it on rollback. Private snapshots
+while replacements are selected and resumes it after the last owner rolls back. Private snapshots
 stay outside this repository.
 
 ## Verified on the device, 2026-10-05
@@ -28,6 +28,12 @@ stay outside this repository.
 
 The first reboot registered but later lost dispatcher SMS capability; the
 post-boot idle phone reload now passes an actual reboot and native SMS test.
+On the final 0.7.0 reboot on 2026-10-06, the first native SMS instead failed
+with RADIO_OFF(2): the dispatcher reported up=true/registered=false/capable=true
+although independent callbacks reported WLAN registration and SMS capability.
+An explicit idle reload restored dispatch; INFO sending, four reply acknowledgements,
+one native inbox row and its notification then passed. Automatic post-boot dispatcher
+synchronization remains intermittent; the older success above does not resolve it.
 Audible speech still needs user confirmation. Registration alone does not prove audio,
 emergency calling, handover, DTMF, supplementary services or every SMS format.
 
@@ -91,20 +97,20 @@ Installation alone does not select replacement providers. Keep working ADB;
 do not run overlapping probes/trials.
 
 ```sh
-su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh status'
-su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial'
-# Optional mask: IWLAN=1, QNS=2, IMS=4; combine bits, default=7.
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh status 1 1'
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial 7 1 1'
+# Mask: IWLAN=1, QNS=2, IMS=4; combine bits. Slot/sub must be explicit.
 # An IMS-only diagnostic trial preserves the original IWLAN/QNS and mode:
-# su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial 4'
+# su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial 4 1 1'
 # Automatically rolls back after five minutes.
-su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh rollback'
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh rollback 1 1'
 ```
 
 Trial refuses an active call. Its deadline can interrupt test calls; finish
 before timeout. Partial masks are compatibility experiments, cannot be retained
 by `enable`, and do not imply functioning voice/SMS. The actual app-controlled
 IMS-only trial selected only IMS, but did not register WLAN on this MIUI.
-After live verification, `control.sh enable` during a full-mask active
+After live verification, `control.sh enable SLOT SUB` during a full-mask active
 transaction retains replacements and renews gates across boots. Rollback
 restores the original providers/mode and companion. Root-private state resides
 at `/data/adb/codex_vowifi_stack`; retain it during an active transaction.
@@ -112,12 +118,17 @@ at `/data/adb/codex_vowifi_stack`; retain it during an active transaction.
 Manual recovery with Magisk running, even if the module is disabled:
 
 ```sh
-su -c 'sh /data/adb/codex_vowifi_stack/recovery/control.sh rollback'
+su -c 'sh /data/adb/codex_vowifi_stack/recovery/control.sh rollback 1 1'
+# Explicit all-owner recovery after module removal:
+# su -c 'sh /data/adb/codex_vowifi_stack/recovery/control.sh rollback-all'
 ```
 
 The boot service waits for boot completion, prepares permissions, and reloads
 the phone clients once when idle before supervising. During shutdown, missing
 Settings/Binder services stop supervision without discarding persistent state.
+Each owner has a token-scoped supervisor. Renewals check the live SIM and private
+identity record before extending its gate; unavailable owners are retried without
+changing the saved transaction or renewing a mismatched card's lease.
 Phone reload invalidates registration listeners. The diagnostic reconnects
 callbacks while waiting for WLAN+SMS readiness. Check capability and SMS
 permissions in the same phone-process lifetime.
@@ -164,8 +175,11 @@ rollback restores the saved policy. It is not a permanent permission grant.
 Service features, registrations, alarms and network sessions now retain their
 slot/subscription identity; same-boot leases can be independent. This controller
 records an explicit active VOXI owner on the validated API30 device; positive
-live testing currently covers slot1/sub1. The global operation mode,
-whole-phone reload and rollback are not independent dual-SIM transactions.
+live testing currently covers slot1/sub1. Controller 0.7.0 stores independent
+subscription transactions and coordinates the global operation mode, whole-phone
+reload, temporary SMS policy and old companion. Two-owner shell fixtures cover
+state isolation and shared-resource coordination; simultaneous live dual-SIM
+registration is still unverified.
 The controller accepts `trial MASK SLOT SUB`, `enable SLOT SUB`,
 `reload SLOT SUB` and `rollback SLOT SUB`. Wrong owner requests are refused
 before changing settings, configuration or the phone process. Older transactions

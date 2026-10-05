@@ -1,279 +1,181 @@
 #!/system/bin/sh
-# Fixed-device reversible experiment. Backups stay root-private on the device.
+# Root coordinator. Shared mutations are serialized by subscription-control.sh.
 set -eu
 MODDIR=${0%/*}
-STATE=/data/adb/codex_vowifi_stack
-COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
-MODULE=/data/adb/modules/codex_vowifi_stack_api30
+ROOT=/data/adb/codex_vowifi_stack
 umask 077
-mkdir -p "$STATE"
-chmod 700 "$STATE"
-# Serialize mutations with a kernel lock. A process exit or reboot releases it.
-# Background workers close FD9 and always carry their own transaction token.
-case "${1:-status}" in
-  trial|enable|reload|rollback|renew|expire|rollback-owner)
-    exec 9>"$STATE/control.lock"
-    LOCK_WAIT=0
-    # Android mksh marks exec-opened descriptors close-on-exec. Explicitly
-    # duplicate FD9 for flock so the child can lock the parent's open file.
-    until flock -n 9 9>&9 2>/dev/null; do
-      LOCK_WAIT=$((LOCK_WAIT + 1))
-      [ "$LOCK_WAIT" -lt 20 ] || { echo controller-busy; exit 1; }
-      sleep 1
-    done
-    ;;
-esac
-# One global transaction for now. Preserve the proven fixed identity of older
-# transactions; new transactions record their explicit slot:subscription owner.
-OWNER=$(cat "$STATE/owner" 2>/dev/null || echo 1:1)
-OWNER_SLOT=${OWNER%%:*}
-OWNER_SUB=${OWNER#*:}
-validate_selection() {
+[ ! -L "$ROOT/transactions" ] || { echo state-path-refused; exit 1; }
+mkdir -p "$ROOT/transactions"
+chmod 700 "$ROOT" "$ROOT/transactions"
+valid() {
   case "$1" in ''|*[!0-9]*) echo invalid-selection; return 1;; esac
   case "$2" in ''|*[!0-9]*) echo invalid-selection; return 1;; esac
   [ "$1" -le 7 ] && [ "$2" -le 2147483647 ] || { echo invalid-selection; return 1; }
 }
-validate_selection "$OWNER_SLOT" "$OWNER_SUB"
-case "${1:-status}" in
-  trial)
-    [ "$#" != 3 ] && [ "$#" -le 4 ] || { echo invalid-selection; exit 2; }
-    OWNER_SLOT=${3:-1}; OWNER_SUB=${4:-1}
-    validate_selection "$OWNER_SLOT" "$OWNER_SUB"
-    ;;
-  enable|rollback)
-    if [ "$#" -gt 1 ]; then
-      [ "$#" = 3 ] || { echo invalid-selection; exit 2; }
-      validate_selection "$2" "$3"
-      [ "$2:$3" = "$OWNER_SLOT:$OWNER_SUB" ] || { echo owner-selection-mismatch; exit 1; }
-    fi
-    ;;
-  reload)
-    if [ "$#" -gt 2 ]; then
-      [ "$#" = 3 ] || { echo invalid-selection; exit 2; }
-      validate_selection "$2" "$3"
-      [ "$2:$3" = "$OWNER_SLOT:$OWNER_SUB" ] || { echo owner-selection-mismatch; exit 1; }
-    fi
-    ;;
-esac
-owns_transaction() {
-  [ -n "${TOKEN:-}" ] && [ -f "$STATE/transaction" ] && [ "$(cat "$STATE/transaction")" = "$TOKEN" ]
-}
-run_cmd() {
-  if OUTPUT=$("$@" 2>&1); then STATUS=0; else STATUS=$?; fi
-  printf '%s\n' "$OUTPUT"
-  return "$STATUS"
-}
-carrier() { CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial "$@" "$OWNER_SLOT" "$OWNER_SUB"; }
-restart_phone() {
-  PID=$(pidof com.android.phone || true)
-  [ -z "$PID" ] || kill "$PID"
-}
-archive_transaction() {
-  ARCHIVE="$STATE/baseline-${1}-$(date +%s)-$$"
-  if [ -d "$STATE/baseline" ]; then mv "$STATE/baseline" "$ARCHIVE"; else mkdir -p "$ARCHIVE"; fi
-  for NAME in providers-before.bin providers-before.bin.new persistence.properties persistence.properties.new override-before.xml owner components phase transaction; do
-    [ ! -f "$STATE/$NAME" ] || mv "$STATE/$NAME" "$ARCHIVE/$NAME"
+owners() {
+  for DIRECTORY in "$ROOT"/transactions/slot-*-sub-*; do
+    [ -f "$DIRECTORY/transaction" ] || continue
+    [ ! -L "$DIRECTORY" ] || { echo state-path-refused >&2; return 1; }
+    OWNER=$(cat "$DIRECTORY/owner")
+    SLOT=${OWNER%%:*}; SUB=${OWNER#*:}
+    valid "$SLOT" "$SUB" >&2 || return 1
+    [ "$DIRECTORY" = "$ROOT/transactions/slot-$SLOT-sub-$SUB" ] || { echo state-record-invalid >&2; return 1; }
+    printf '%s\n' "$OWNER"
   done
 }
-gate() {
-  BOOT=$(settings get global boot_count 2>&1)
-  case "$BOOT" in ''|*[!0-9]*) return 1;; esac
-  NOW=$(awk '{printf "%.0f", $1*1000}' /proc/uptime)
-  run_cmd settings put global codex_wfc_stack_trial_boot "$BOOT"
-  LEGACY_UNTIL=0
-  [ "$OWNER_SLOT:$OWNER_SUB" != 1:1 ] || LEGACY_UNTIL=$((NOW + 90000))
-  run_cmd settings put global codex_wfc_stack_trial_until "$LEGACY_UNTIL"
-  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_sub" "$OWNER_SUB"
-  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_boot" "$BOOT"
-  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_until" "$((NOW + 90000))"
+select_owner() {
+  valid "$1" "$2"
+  SLOT=$1; SUB=$2
+  STATE="$ROOT/transactions/slot-$SLOT-sub-$SUB"
+  [ ! -L "$STATE" ] || { echo state-path-refused; return 1; }
 }
-rollback() {
-  [ -f "$STATE/transaction" ] || { echo rollback=NOT_NEEDED; return; }
-  if [ "$(cat "$STATE/phase" 2>/dev/null || true)" = PREPARING ]; then
-    # Snapshot failure cannot justify clearing a live override that was never
-    # modified by this transaction. Preserve its partial evidence privately.
-    archive_transaction prepare-failed
-    rm -f "$STATE/trial-running"
-    echo rollback=PREPARATION_DISCARDED_NO_PROVIDER_CHANGE
-    return
-  fi
-  REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
-  [ -n "$REGISTRY" ] || { echo call-state-unavailable; return 1; }
-  if printf '%s\n' "$REGISTRY" | grep -Eq 'mCallState=[12]'; then echo active-call-refused; return 1; fi
-  # Old directory-wide baselines are adopted once, while the original card and
-  # its selected replacement file still prove which filename belongs to it.
-  if [ ! -f "$STATE/persistence.properties" ]; then
-    if ! carrier persistence-adopt; then echo rollback=SUBSCRIPTION_MIGRATION_RETRY_REQUIRED; return 1; fi
-  fi
-  run_cmd settings put global codex_wfc_stack_trial_until 0 || true
-  run_cmd settings put global "codex_wfc_stack_slot_${OWNER_SLOT}_until" 0 || true
-  run_cmd settings delete global "codex_wfc_stack_slot_${OWNER_SLOT}_sub" || true
-  run_cmd settings delete global "codex_wfc_stack_slot_${OWNER_SLOT}_boot" || true
-  rm -f "$STATE/enabled" "$STATE/trial-running"
-  # A file-only restore can leave the loader's live override selected. Clear
-  # both layers and wait for its asynchronous deletion before restoring XML.
-  if ! carrier clear; then echo rollback=OVERRIDE_CLEAR_RETRY_REQUIRED; return 1; fi
-  if ! carrier persistence-restore; then echo rollback=SELECTED_FILE_RESTORE_RETRY_REQUIRED; return 1; fi
-  resetprop -n ro.telephony.iwlan_operation_mode "$(cat "$STATE/mode-before")"
-  POLICY_OK=1
-  if [ -f "$STATE/sms-policy-before" ]; then
-    CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin SmsTestPolicy restore || POLICY_OK=0
-  fi
-  restart_phone
-  sleep 8
-  if ! carrier verify-restored; then echo rollback=PROVIDER_RESTORE_RETRY_REQUIRED; return 1; fi
-  [ ! -f "$COMPANION" ] || sh "$COMPANION" start
-  [ "$POLICY_OK" = 1 ] || { echo rollback=PROVIDERS_RESTORED_POLICY_RETRY_REQUIRED; return 1; }
-  archive_transaction restored
-  echo rollback=RESTORED
+find_single() {
+  LIST=$(owners)
+  COUNT=$(printf '%s\n' "$LIST" | grep -c ':' || true)
+  [ "$COUNT" -le 1 ] || { echo explicit-owner-required; return 1; }
+  if [ "$COUNT" = 1 ]; then select_owner "${LIST%%:*}" "${LIST#*:}"; else select_owner 1 1; fi
 }
-case "${1:-status}" in
+lock() {
+  exec 9>"$ROOT/control.lock"
+  ATTEMPT=0
+  until flock -n 9 9>&9 2>/dev/null; do
+    ATTEMPT=$((ATTEMPT + 1))
+    [ "$ATTEMPT" -lt 20 ] || { echo controller-busy; return 1; }
+    sleep 1
+  done
+}
+migrate() {
+  lock
+  [ -f "$ROOT/transaction" ] || { echo migration=NOT_NEEDED; return; }
+  mkdir -p "$ROOT/recovery" /data/adb/service.d
+  for NAME in control.sh subscription-control.sh carrier-trial.zip recovery-boot.sh; do
+    cp "$MODDIR/$NAME" "$ROOT/recovery/$NAME.new"
+    chmod 600 "$ROOT/recovery/$NAME.new"
+    mv "$ROOT/recovery/$NAME.new" "$ROOT/recovery/$NAME"
+  done
+  cp "$MODDIR/recovery-boot.sh" /data/adb/service.d/codex-vowifi-stack-recovery.sh.new
+  chmod 700 /data/adb/service.d/codex-vowifi-stack-recovery.sh.new
+  mv /data/adb/service.d/codex-vowifi-stack-recovery.sh.new /data/adb/service.d/codex-vowifi-stack-recovery.sh
+  OWNER=$(cat "$ROOT/owner" 2>/dev/null || cat "$ROOT/migration-owner" 2>/dev/null || echo 1:1)
+  select_owner "${OWNER%%:*}" "${OWNER#*:}"
+  if [ ! -d "$STATE" ]; then
+    CODEX_WFC_STATE="$ROOT" CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial check "$SLOT" "$SUB"
+    [ -f "$ROOT/persistence.properties" ] || CODEX_WFC_STATE="$ROOT" CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial persistence-adopt "$SLOT" "$SUB"
+    [ -z "$(owners)" ] || { echo legacy-migration-conflict; return 1; }
+    STAGE="$ROOT/transactions/.migration-slot-$SLOT-sub-$SUB"
+    [ ! -e "$STAGE" ] || mv "$STAGE" "$ROOT/migration-preparation-failed-$(date +%s)-$$"
+    printf '%s\n' "$OWNER" > "$ROOT/migration-owner"
+    mkdir "$STAGE"
+    for NAME in owner components phase transaction enabled trial-running providers-before.bin persistence.properties override-before.xml mode-before; do
+      [ ! -f "$ROOT/$NAME" ] || cp -p "$ROOT/$NAME" "$STAGE/$NAME"
+    done
+    [ ! -d "$ROOT/baseline" ] || cp -a "$ROOT/baseline" "$STAGE/baseline"
+    [ -f "$STAGE/owner" ] || printf '%s\n' "$SLOT:$SUB" > "$STAGE/owner"
+    for NAME in components transaction providers-before.bin persistence.properties mode-before; do
+      [ -f "$STAGE/$NAME" ] || { echo legacy-migration-evidence-missing; return 1; }
+      cmp -s "$ROOT/$NAME" "$STAGE/$NAME" || { echo legacy-migration-copy-mismatch; return 1; }
+    done
+    for NAME in owner phase enabled trial-running override-before.xml; do
+      [ ! -f "$ROOT/$NAME" ] || cmp -s "$ROOT/$NAME" "$STAGE/$NAME" || { echo legacy-migration-copy-mismatch; return 1; }
+    done
+    cp -p "$ROOT/mode-before" "$ROOT/shared-mode-before.new"
+    mv "$ROOT/shared-mode-before.new" "$ROOT/shared-mode-before"
+    mv "$STAGE" "$STATE"
+  fi
+  [ "$(cat "$ROOT/transaction")" = "$(cat "$STATE/transaction")" ] || { echo legacy-migration-conflict; return 1; }
+  [ -f "$ROOT/shared-mode-before" ] || { echo shared-mode-baseline-unavailable; return 1; }
+  CODEX_WFC_STATE="$STATE" CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial check "$SLOT" "$SUB"
+  ARCHIVE="$ROOT/legacy-state-$(date +%s)-$$"
+  mkdir "$ARCHIVE"
+  for NAME in baseline owner components phase enabled trial-running providers-before.bin persistence.properties override-before.xml mode-before; do
+    [ ! -e "$ROOT/$NAME" ] || mv "$ROOT/$NAME" "$ARCHIVE/$NAME"
+  done
+  mv "$ROOT/transaction" "$ARCHIVE/transaction"
+  rm -f "$ROOT/migration-owner"
+  echo migration=SUBSCRIPTION_STATE_READY
+}
+ACTION=${1:-status}
+case "$ACTION" in
+  migrate) migrate; exit;;
   status)
     echo "mode=$(getprop ro.telephony.iwlan_operation_mode)"
-    [ ! -f "$STATE/transaction" ] || echo transaction=ACTIVE
-    [ ! -f "$STATE/enabled" ] || echo persistent=ENABLED
     echo component_selection=1
     echo identity_selection=1
     echo subscription_file_selection=1
-    if [ -f "$STATE/transaction" ]; then
-      echo "owner_slot=$OWNER_SLOT"
-      echo "owner_sub=$OWNER_SUB"
-      if [ -f "$STATE/owner" ]; then echo owner_schema=EXPLICIT; else echo owner_schema=LEGACY_FIXED; fi
-    fi
-    echo "components=$(cat "$STATE/components" 2>/dev/null || echo 7)"
-    carrier read
-    ;;
-  trial)
-    [ ! -f "$STATE/transaction" ] || { echo transaction-already-active; exit 1; }
-    [ "$(getprop ro.product.device)" = raphael ]
-    [ "$(getprop ro.build.version.sdk)" = 30 ]
-    carrier check
-    # Never turn an orphaned replacement override into the original baseline.
-    # Recovery of an older broken transaction must preserve its saved original.
-    carrier baseline-check
-    COMPONENTS=${2:-7}
-    case "$COMPONENTS" in 1|2|3|4|5|6|7) ;; *) echo invalid-components; exit 2;; esac
-    [ ! -f "$STATE/transaction" ] || { echo transaction-already-active; exit 1; }
-    [ ! -f "$STATE/providers-before.bin" ] || { echo stale-provider-snapshot-refused; exit 1; }
-    # Refuse a framework restart during an active call.
-    REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
-    [ -n "$REGISTRY" ] || { echo call-state-unavailable; exit 1; }
-    printf '%s\n' "$REGISTRY" > "$STATE/registry-before.txt"
-    if grep -Eq 'mCallState=[12]' "$STATE/registry-before.txt"; then echo active-call-refused; exit 1; fi
-    mkdir -p "$STATE/baseline"
-    # This directory is used only for this transaction; stale snapshots are rejected.
-    [ ! -f "$STATE/baseline/ready" ] || { echo stale-baseline-refused; exit 1; }
-    touch "$STATE/baseline/ready"
-    getprop ro.telephony.iwlan_operation_mode > "$STATE/mode-before"
-    # Remains available if the module is disabled/removed at the next normal boot.
-    mkdir -p "$STATE/recovery" /data/adb/service.d
-    cp "$MODDIR/control.sh" "$STATE/recovery/control.sh"
-    cp "$MODDIR/carrier-trial.zip" "$STATE/recovery/carrier-trial.zip"
-    cp "$MODDIR/recovery-boot.sh" /data/adb/service.d/codex-vowifi-stack-recovery.sh
-    chmod 700 "$STATE/recovery" /data/adb/service.d/codex-vowifi-stack-recovery.sh
-    chmod 600 "$STATE/recovery/control.sh" "$STATE/recovery/carrier-trial.zip"
-    TOKEN="$(settings get global boot_count)-$(cut -d. -f1 /proc/uptime)-$$"
-    printf '%s\n' "$OWNER_SLOT:$OWNER_SUB" > "$STATE/owner.new"
-    mv "$STATE/owner.new" "$STATE/owner"
-    printf '%s\n' "$TOKEN" > "$STATE/transaction"
-    printf '%s\n' PREPARING > "$STATE/phase"
-    touch "$STATE/trial-running"
-    printf '%s\n' "$COMPONENTS" > "$STATE/components"
-    if ! carrier snapshot; then echo provider-snapshot-failed; rollback; exit 1; fi
-    printf '%s\n' OVERRIDE_ATTEMPTED > "$STATE/phase"
-    nohup sh "$MODDIR/control.sh" watchdog "$TOKEN" 9>&- > "$STATE/watchdog.log" 2>&1 < /dev/null &
-    echo $! > "$STATE/watchdog.pid"
-    if ! carrier apply "$COMPONENTS"; then echo provider-apply-failed; rollback; exit 1; fi
-    sleep 2
-    if ! carrier verify "$COMPONENTS"; then echo provider-verify-failed; rollback; exit 1; fi
-    if ! carrier persistence-verify "$COMPONENTS"; then echo persist-format-unverified; rollback; exit 1; fi
-    if ! gate; then echo trial-gate-failed; rollback; exit 1; fi
-    [ ! -f "$COMPANION" ] || sh "$COMPANION" stop
-    # Operation mode is global. Change it only for a replacement data service.
-    if [ "$((COMPONENTS & 1))" != 0 ]; then resetprop -n ro.telephony.iwlan_operation_mode AP-assisted; fi
-    restart_phone
-    printf '%s\n' ACTIVE > "$STATE/phase"
-    echo trial=STARTED
-    ;;
-  watchdog)
-    TOKEN=${2:-}
-    owns_transaction || exit 0
-    DEADLINE=$(( $(cut -d. -f1 /proc/uptime) + 300 ))
-    while owns_transaction && [ -f "$STATE/trial-running" ] && [ "$(cut -d. -f1 /proc/uptime)" -lt "$DEADLINE" ]; do
-      sh "$MODDIR/control.sh" renew "$TOKEN" || break
-      sleep 6
+    echo multi_transaction_selection=1
+    LIST=$(owners); INDEX=0
+    for OWNER in $LIST; do
+      echo "active_owner_${INDEX}_slot=${OWNER%%:*}"
+      echo "active_owner_${INDEX}_sub=${OWNER#*:}"
+      INDEX=$((INDEX + 1))
     done
-    sh "$MODDIR/control.sh" expire "$TOKEN"
-    ;;
-  renew)
-    TOKEN=${2:-}
-    owns_transaction || { echo worker=STALE; exit 1; }
-    gate
-    ;;
-  expire)
-    TOKEN=${2:-}
-    owns_transaction || { echo worker=STALE; exit 0; }
-    [ -f "$STATE/enabled" ] || rollback
-    ;;
-  rollback-owner)
-    TOKEN=${2:-}
-    owns_transaction || { echo worker=STALE; exit 0; }
-    rollback
-    ;;
-  enable)
-    [ -f "$STATE/transaction" ]
-    carrier check
-    [ "$(cat "$STATE/components" 2>/dev/null || echo 7)" = 7 ] || { echo partial-components-trial-only; exit 1; }
-    [ ! -f "$STATE/enabled" ] || { echo replacement=ALREADY_PERSISTENT; exit 0; }
-    touch "$STATE/enabled"
-    rm -f "$STATE/trial-running"
-    TOKEN=$(cat "$STATE/transaction")
-    nohup sh "$MODDIR/control.sh" supervise "$TOKEN" 9>&- > "$STATE/supervisor.log" 2>&1 < /dev/null &
-    echo replacement=PERSISTENT
-    ;;
-  supervise)
-    TOKEN=${2:-$(cat "$STATE/transaction" 2>/dev/null || true)}
-    owns_transaction || exit 0
-    LAST_RECOVERY=$(( $(cut -d. -f1 /proc/uptime) - 300 ))
-    while [ -f "$STATE/enabled" ] && owns_transaction; do
-      if [ ! -d "$MODULE" ] || [ -f "$MODULE/disable" ] || [ -f "$MODULE/remove" ]; then sh "$MODDIR/control.sh" rollback-owner "$TOKEN"; exit; fi
-      # Binder services disappear during shutdown. Preserve the transaction so
-      # the next boot can resume it instead of silently undoing persistence.
-      sh "$MODDIR/control.sh" renew "$TOKEN" || { echo supervisor=GATE_UNAVAILABLE; exit 1; }
-      # A killed IWLAN process destroys its tunnel while MIUI may retain stale
-      # LinkProperties. Rebuild bindings only when idle, with a five-minute
-      # backoff, and only while the tested SIM is still installed.
-      MISSING=0
-      for PKG in dev.codex.vowifi.iwlan dev.codex.vowifi.qns me.phh.ims; do
-        pidof "$PKG" >/dev/null 2>&1 || MISSING=1
+    echo "active_owner_count=$INDEX"
+    if [ -f "$ROOT/transaction" ]; then
+      echo migration_required=1
+      CODEX_WFC_STATE="$ROOT" sh "$MODDIR/subscription-control.sh" status || true
+      exit
+    fi
+    if [ "$#" = 3 ] && [ "$3" != -1 ]; then
+      select_owner "$2" "$3"
+    elif [ "$#" = 3 ]; then
+      valid "$2" 0
+      MATCH=
+      for OWNER in $LIST; do
+        if [ "${OWNER%%:*}" = "$2" ]; then
+          [ -z "$MATCH" ] || { echo slot-recovery-ambiguous; exit 1; }
+          MATCH=$OWNER
+        fi
       done
-      NOW_SECONDS=$(cut -d. -f1 /proc/uptime)
-      if [ "$MISSING" = 1 ] && [ "$((NOW_SECONDS - LAST_RECOVERY))" -ge 300 ]; then
-        if sh "$MODDIR/control.sh" reload "$TOKEN"; then
-          echo supervisor=RECOVERED_MISSING_PROCESS
-          LAST_RECOVERY=$NOW_SECONDS
+      if [ -n "$MATCH" ]; then select_owner "${MATCH%%:*}" "${MATCH#*:}"; else select_owner "$2" 0; fi
+    elif [ "$#" = 1 ]; then find_single
+    else echo invalid-selection; exit 2
+    fi
+    if [ -f "$STATE/transaction" ]; then
+      CODEX_WFC_STATE="$STATE" sh "$MODDIR/subscription-control.sh" status || true
+    else
+      echo transaction=INACTIVE
+      CODEX_WFC_STATE="$STATE" CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin CarrierTrial read "$SLOT" "$SUB" || true
+    fi
+    exit;;
+  rollback-all|resume-all|recover-trials)
+    [ ! -f "$ROOT/transaction" ] || { echo legacy-state-needs-migration; exit 1; }
+    LIST=$(owners); RESULT=0
+    for OWNER in $LIST; do
+      select_owner "${OWNER%%:*}" "${OWNER#*:}"
+      if [ "$ACTION" = rollback-all ] || { [ "$ACTION" = recover-trials ] && [ ! -f "$STATE/enabled" ]; }; then
+        sh "$MODDIR/control.sh" rollback "$SLOT" "$SUB" || RESULT=1
+      elif [ "$ACTION" = resume-all ]; then
+        if [ -f "$STATE/enabled" ]; then
+          TOKEN=$(cat "$STATE/transaction")
+          nohup sh "$MODDIR/control.sh" supervise "$TOKEN" "$SLOT" "$SUB" > "$STATE/supervisor.log" 2>&1 < /dev/null &
         else
-          echo supervisor=RECOVERY_DEFERRED
+          sh "$MODDIR/control.sh" rollback "$SLOT" "$SUB" || RESULT=1
         fi
       fi
-      sleep 30
     done
-    ;;
-  reload)
-    [ -f "$STATE/transaction" ]
-    if [ "$#" = 2 ]; then TOKEN=$2; owns_transaction || { echo worker=STALE; exit 0; }; fi
-    carrier check
-    REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
-    [ -n "$REGISTRY" ] || { echo call-state-unavailable; exit 1; }
-    if printf '%s\n' "$REGISTRY" | grep -Eq 'mCallState=[12]'; then echo active-call-refused; exit 1; fi
-    # Migrate an active pre-0.4 transaction without changing its saved baseline.
-    if [ ! -s "$STATE/transaction" ]; then
-      printf '%s\n' "$(settings get global boot_count)-$(cut -d. -f1 /proc/uptime)-$$" > "$STATE/transaction"
+    exit "$RESULT";;
+  trial)
+    [ "$#" = 4 ] || { echo explicit-owner-required; exit 2; }
+    select_owner "$3" "$4";;
+  enable|rollback|reload)
+    if [ "$#" = 3 ]; then select_owner "$2" "$3"
+    elif [ "$#" = 1 ]; then find_single; set -- "$ACTION" "$SLOT" "$SUB"
+    else echo explicit-owner-required; exit 2; fi;;
+  watchdog|supervise|renew|expire|rollback-owner|reload-owner)
+    [ "$#" = 4 ] || { echo explicit-owner-required; exit 2; }
+    TOKEN=$2; select_owner "$3" "$4"
+    if [ ! -f "$STATE/transaction" ] || [ "$(cat "$STATE/transaction")" != "$TOKEN" ]; then
+      echo worker=STALE
+      [ "$ACTION" != renew ] || exit 1
+      exit 0
     fi
-    gate
-    restart_phone
-    echo framework-reload=REQUESTED
-    ;;
-  rollback) rollback ;;
-  *) echo 'status|trial|enable|reload|rollback'; exit 2 ;;
+    if [ "$ACTION" = reload-owner ]; then export CODEX_BACKGROUND_RELOAD=1; set -- reload "$TOKEN"; fi;;
+  *) echo 'status|trial MASK SLOT SUB|enable SLOT SUB|reload SLOT SUB|rollback SLOT SUB'; exit 2;;
 esac
+[ ! -f "$ROOT/transaction" ] || { echo legacy-state-needs-migration; exit 1; }
+if [ "$ACTION" = trial ]; then
+  for OWNER in $(owners); do
+    [ "${OWNER%%:*}" != "$SLOT" ] || [ "$OWNER" = "$SLOT:$SUB" ] || { echo slot-owner-conflict; exit 1; }
+  done
+fi
+CODEX_WFC_STATE="$STATE" exec sh "$MODDIR/subscription-control.sh" "$@"
