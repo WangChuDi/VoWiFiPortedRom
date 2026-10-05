@@ -154,3 +154,7 @@ that the referenced port's full functionality has been reproduced.
 This directory builds independently of the repository's Android 17 `code/` module.
 It does not include a replacement IWLAN or QNS implementation. A complete application-side
 IWLAN/QNS/MMTEL replacement remains future work; do not install the Android 17 APKs on API30.
+
+The separate [stack experiment](stack/README.md) now contains an API30 capability
+probe, a successfully tested independent ePDG tunnel probe and an unsigned trial
+QNS build. Those artifacts are not part of this working companion module.

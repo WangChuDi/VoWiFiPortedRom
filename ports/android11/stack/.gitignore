@@ -1,0 +1,6 @@
+/out/
+*.log
+*.apk
+*.jar
+*.zip
+__pycache__/

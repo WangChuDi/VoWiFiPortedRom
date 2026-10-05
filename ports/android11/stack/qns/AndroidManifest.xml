@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.codex.vowifi.qns" android:versionCode="1" android:versionName="0.1-experiment">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+    <application android:label="API30 IWLAN Trial QNS" android:allowBackup="false"
+        android:directBootAware="true" android:defaultToDeviceProtectedStorage="true">
+        <service android:name=".TrialQnsService" android:exported="true"
+            android:permission="android.permission.BIND_TELEPHONY_DATA_SERVICE">
+            <intent-filter><action android:name="android.telephony.data.QualifiedNetworksService" /></intent-filter>
+        </service>
+    </application>
+</manifest>
