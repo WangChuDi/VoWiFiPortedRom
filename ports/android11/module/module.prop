@@ -1,0 +1,6 @@
+id=codex_vowifi_sms
+name=VOXI WiFi SMS Receiver (Android 11 Trial)
+version=0.2.0-trial
+versionCode=2
+author=Local experimental build
+description=Receive single-part IMS SMS through Android framework and default SMS app. Keeps native voice IMS. Action toggles receiver. Experimental; sending unsupported.

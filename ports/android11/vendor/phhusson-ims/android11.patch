@@ -1,0 +1,523 @@
+diff --git a/app/src/main/java/me/phh/ims/PhhImsConfig.kt b/app/src/main/java/me/phh/ims/PhhImsConfig.kt
+index bc25b22..8b5e68e 100644
+--- a/app/src/main/java/me/phh/ims/PhhImsConfig.kt
++++ b/app/src/main/java/me/phh/ims/PhhImsConfig.kt
+@@ -3,7 +3,6 @@ package me.phh.ims
+ 
+ import android.os.PersistableBundle
+ import android.telephony.Rlog
+-import android.telephony.ims.RcsClientConfiguration
+ import android.telephony.ims.stub.ImsConfigImplBase
+ 
+ class PhhImsConfig() : ImsConfigImplBase() {
+@@ -35,10 +34,6 @@ class PhhImsConfig() : ImsConfigImplBase() {
+     override fun updateImsCarrierConfigs(bundle: PersistableBundle) {
+         Rlog.d(TAG, "updateImsCarrierConfigs")
+     }
+-    override fun setRcsClientConfiguration(rcc: RcsClientConfiguration) {
+-        Rlog.d(TAG, "setRcsClientConfiguration")
+-    }
+-    override fun triggerAutoConfiguration() {
+-        Rlog.d(TAG, "triggerAutoConfiguration")
+-    }
++    // API 30 has no RCS client/autoconfiguration callbacks. This service's
++    // createRcsFeature returns null; keep its MMTEL configuration callbacks.
+ }
+diff --git a/app/src/main/java/me/phh/ims/PhhImsService.kt b/app/src/main/java/me/phh/ims/PhhImsService.kt
+index 8fea1d6..fcb9bee 100644
+--- a/app/src/main/java/me/phh/ims/PhhImsService.kt
++++ b/app/src/main/java/me/phh/ims/PhhImsService.kt
+@@ -14,7 +14,6 @@ import android.telephony.ims.feature.MmTelFeature
+ import android.telephony.ims.feature.RcsFeature
+ import android.telephony.ims.stub.ImsConfigImplBase
+ import android.telephony.ims.stub.ImsRegistrationImplBase
+-import android.telephony.imsmedia.ImsMediaManager
+ 
+ class PhhImsService : ImsService() {
+     companion object {
+@@ -29,7 +28,10 @@ class PhhImsService : ImsService() {
+ 
+         val intentFilter = IntentFilter()
+         intentFilter.addAction(receiver.ALARM_PERIODIC_REGISTER)
+-        this.registerReceiver(receiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
++        // API 30 lacks RECEIVER_NOT_EXPORTED. Require a privileged sender
++        // instead of exposing registration refresh to arbitrary apps.
++        this.registerReceiver(receiver, intentFilter,
++            android.Manifest.permission.MODIFY_PHONE_STATE, null)
+ 
+         this.armPeriodicRegisterAlarm()
+     }
+diff --git a/app/src/main/java/me/phh/ims/PhhImsSms.kt b/app/src/main/java/me/phh/ims/PhhImsSms.kt
+index bc265f7..28563dd 100644
+--- a/app/src/main/java/me/phh/ims/PhhImsSms.kt
++++ b/app/src/main/java/me/phh/ims/PhhImsSms.kt
+@@ -26,7 +26,7 @@ class PhhImsSms(val slotId: Int) : ImsSmsImplBase() {
+     ) {
+         try {
+             // called when android tries to send a sms?
+-            Rlog.d(TAG, "$slotId sendSms $token, $messageRef, $format, $smsc")
++            Rlog.d(TAG, "$slotId sendSms token=$token ref=$messageRef format=$format")
+             if (format != "3gpp") {
+                 // we only know how to send 3gpp formatted sms.
+                 // Android should do that correctly, error if not that will
+@@ -71,6 +71,8 @@ class PhhImsSms(val slotId: Int) : ImsSmsImplBase() {
+             )
+         } catch(t: Throwable) {
+             android.util.Log.e(TAG, "Failed sending sms", t)
++            onSendSmsResultError(token, messageRef, ImsSmsImplBase.SEND_STATUS_ERROR,
++                SmsManager.RESULT_ERROR_GENERIC_FAILURE, RESULT_NO_NETWORK_ERROR)
+         }
+     }
+     override fun acknowledgeSms(token: Int, messageRef: Int, result: Int) {
+diff --git a/app/src/main/java/me/phh/ims/PhhMmTelFeature.kt b/app/src/main/java/me/phh/ims/PhhMmTelFeature.kt
+index 7a670aa..cdff689 100644
+--- a/app/src/main/java/me/phh/ims/PhhMmTelFeature.kt
++++ b/app/src/main/java/me/phh/ims/PhhMmTelFeature.kt
+@@ -117,7 +117,7 @@ class PhhMmTelFeature(val slotId: Int) : PhhMmTelFeatureProtected(slotId) {
+         // call onRegistering first then
+         // register SIP here and call onRegistered after .. register.
+         val imsService = PhhImsService.Companion.instance!!
+-        sipHandler = SipHandler(imsService)
++        sipHandler = SipHandler(imsService, slotId)
+         sipHandler.imsFailureCallback = { imsService.getRegistration(slotId).onDeregistered(null) }
+         sipHandler.imsReadyCallback = {
+             imsService.getRegistration(slotId).onRegistered(REGISTRATION_TECH_LTE)
+diff --git a/app/src/main/java/me/phh/sip/SipHandler.kt b/app/src/main/java/me/phh/sip/SipHandler.kt
+index d95e9af..22cfdf7 100644
+--- a/app/src/main/java/me/phh/sip/SipHandler.kt
++++ b/app/src/main/java/me/phh/sip/SipHandler.kt
+@@ -16,7 +16,6 @@ import android.telephony.Rlog
+ import android.telephony.SmsManager
+ import android.telephony.SubscriptionManager
+ import android.telephony.TelephonyManager
+-import android.telephony.imsmedia.*
+ import kotlinx.coroutines.CoroutineScope
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.launch
+@@ -35,37 +34,30 @@ private data class smsHeaders(
+     val cseq: String,
+ )
+ 
+-class SipHandler(val ctxt: Context) {
++class SipHandler(val ctxt: Context, slotId: Int) {
+     companion object {
+         private const val TAG = "PHH SipHandler"
+     }
+ 
+     val myHandler = Handler(HandlerThread("PhhMmTelFeature").apply { start() }.looper)
+     val myExecutor = Executor { p0 -> myHandler.post(p0) }
+-    val imsMediaManager = ImsMediaManager(ctxt, myExecutor, object:
+-        ImsMediaManager.OnConnectedCallback {
+-        override fun onConnected() {
+-            Rlog.d(TAG, "ImsMediaManager connected")
+-        }
+-
+-        override fun onDisconnected() {
+-            Rlog.d(TAG, "ImsMediaManager disconnected")
+-        }
+-    })
+ 
+     private val subscriptionManager: SubscriptionManager
++    private val activeSubscription: android.telephony.SubscriptionInfo
+     private val telephonyManager: TelephonyManager
+     private val connectivityManager: ConnectivityManager
+     private val ipSecManager: IpSecManager
+     init {
+         subscriptionManager = ctxt.getSystemService(SubscriptionManager::class.java)
++        activeSubscription = requireNotNull(subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId)) {
++            "No active subscription for requested IMS slot"
++        }
+         telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)
++            .createForSubscriptionId(activeSubscription.subscriptionId)
+         connectivityManager = ctxt.getSystemService(ConnectivityManager::class.java)
+         ipSecManager = ctxt.getSystemService(IpSecManager::class.java)
+     }
+ 
+-    @SuppressLint("MissingPermission")
+-    private val activeSubscription = subscriptionManager.activeSubscriptionInfoList[0]
+     private val imei = telephonyManager.getDeviceId(activeSubscription.simSlotIndex)
+     private val subId = activeSubscription.subscriptionId
+     private val mcc = telephonyManager.simOperator.substring(0 until 3)
+@@ -146,6 +138,20 @@ class SipHandler(val ctxt: Context) {
+     private val smsLock = ReentrantLock()
+     private var smsToken = 0
+     private val smsHeadersMap = mutableMapOf<Int, smsHeaders>()
++    @Volatile private var learnedSmscPsi: String? = null
++    private class PendingSms(val callId: String, val success: () -> Unit, val failure: () -> Unit) {
++        val state = SmsSubmission()
++        var timeout: Runnable? = null
++    }
++    private val pendingSms = mutableMapOf<Int, PendingSms>()
++    private fun completeSms(ref: Int, pending: PendingSms, result: Boolean?) {
++        if (result == null) return
++        smsLock.withLock { if (pendingSms[ref] === pending) pendingSms.remove(ref) }
++        pending.timeout?.let { myHandler.removeCallbacks(it) }
++        cbLock.withLock { responseCallbacks -= pending.callId }
++        try { if (result) pending.success() else pending.failure() }
++        catch (t: Throwable) { Rlog.w(TAG, "SMS completion callback failed") }
++    }
+ 
+     fun setRequestCallback(method: SipMethod, cb: (SipRequest) -> Int) {
+         cbLock.withLock { requestCallbacks += (method to cb) }
+@@ -454,9 +460,8 @@ class SipHandler(val ctxt: Context) {
+         // TODO add something similar for VoWifi ipsec tunnel?
+         Rlog.d(TAG, "Requesting IMS network")
+         connectivityManager.requestNetwork(NetworkRequest.Builder()
+-            //.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+-            //.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+-            //.setNetworkSpecifier(subId.toString())
++            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
++            .setNetworkSpecifier(TelephonyNetworkSpecifier.Builder().setSubscriptionId(subId).build())
+             .addCapability(NetworkCapabilities.NET_CAPABILITY_IMS)
+             //.addCapability(NetworkCapabilities.NET_CAPABILITY_MMTEL)
+             .build(),
+@@ -783,7 +788,6 @@ a=sendrecv
+         callStopped.set(true)
+         Rlog.d(TAG, "Cancelled call ${request.headers["call-id"]!![0]}")
+ 
+-        currentCall?.imsMediaSession?.let { imsMediaManager.closeSession(it) }
+ 
+         // We're supposed to add an additional answer SIP/2.0 487 Request Terminated
+         onCancelledCall?.invoke(Object(), "", emptyMap())
+@@ -801,8 +805,7 @@ a=sendrecv
+         val rtpRemoteAddr: InetAddress,
+         val rtpRemotePort: Int,
+         val rtpSocket: DatagramSocket,
+-        val hasEarlyMedia: Boolean,
+-        val imsMediaSession: ImsMediaSession? = null
++        val hasEarlyMedia: Boolean
+     )
+ 
+ 
+@@ -1010,7 +1013,6 @@ a=sendrecv
+ 
+     fun terminateCall() {
+         // IDK what packet do we send, but at least we're close rtp
+-        currentCall?.imsMediaSession?.let { imsMediaManager.closeSession(it) }
+         callStopped.set(true)
+ 
+         onCancelledCall?.invoke(Object(), "", emptyMap())
+@@ -1517,7 +1519,7 @@ a=des:qos mandatory local sendrecv
+ a=des:qos mandatory remote sendrecv
+ a=conf:qos remote sendrecv
+ a=sendrecv
+-                       """.trim().toByteArray()
++                       """.trim().toByteArray())
+ 
+             val myHeaders = commonHeaders + //Require: precondition
+                 """
+@@ -1545,62 +1547,9 @@ a=sendrecv
+                 hasEarlyMedia = hasEarlyMedia,
+             )
+ 
+-            if(false) {
+-                val fakeRtcpSocket = DatagramSocket(0, localAddr) //useless but annoying ImsMediaManager
+-                imsMediaManager.openSession(
+-                    rtpSocket, fakeRtcpSocket,
+-                    ImsMediaSession.SESSION_TYPE_AUDIO,
+-                    AudioConfig.Builder()
+-                        .setCodecType(AudioConfig.CODEC_AMR)
+-                        .setRxPayloadTypeNumber(amrTrack.toByte())
+-                        .setTxPayloadTypeNumber(amrTrack.toByte())
+-                        .setRemoteRtpAddress(
+-                            InetSocketAddress(
+-                                rtpRemoteAddr,
+-                                rtpRemotePort.toInt()
+-                            )
+-                        )
+-                        .setSamplingRateKHz(8)
+-                        .setAmrParams(
+-                            AmrParams.Builder()
+-                                .setOctetAligned(false)
+-                                .setAmrMode(AmrParams.AMR_MODE_7)
+-                                .build()
+-                        )
+-                        .setMediaDirection(RtpConfig.MEDIA_DIRECTION_SEND_RECEIVE)
+-                        .build(),
+-                    myExecutor,
+-                    object: AudioSessionCallback() {
+-                        override fun onOpenSessionSuccess(session: ImsMediaSession) {
+-                            Rlog.d(TAG, "Opened session $session")
+-                            currentCall = Call(
+-                                outgoing = false,
+-                                amrTrack = amrTrack,
+-                                amrTrackDesc = amrTrackDesc,
+-                                dtmfTrack = dtmfTrack,
+-                                dtmfTrackDesc = dtmfTrackDesc,
+-                                callHeaders = myHeaders - "require" - "content-type" + "Supported: 100rel, replaces, timer".toSipHeadersMap(),
+-                                rtpRemoteAddr = rtpRemoteAddr,
+-                                rtpRemotePort = rtpRemotePort.toInt(),
+-                                rtpSocket = rtpSocket,
+-                                sdp = mySdp,
+-                                imsMediaSession = session,
+-                                hasEarlyMedia = hasEarlyMedia
+-                            )
+-                        }
+-
+-                        override fun onOpenSessionFailure(error: Int) {
+-                            Rlog.d(TAG, "Failed to open session $error")
+-                        }
+-                        override fun onSessionClosed() {
+-                            Rlog.d(TAG, "Session closed")
+-                        }
+-                    }
+-                )
+-            } else {
+-                callDecodeThread()
+-                callEncodeThread()
+-            }
++            // API30 uses the existing RTP path; IMS media framework is unavailable.
++            callDecodeThread()
++            callEncodeThread()
+ 
+ 
+             synchronized(prAckWaitLock) {
+@@ -1667,6 +1616,10 @@ P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=4500620f331a5e06
+                 val callId = request.headers["call-id"]!![0]
+                 val cseq = request.headers["cseq"]!![0]
+                 smsHeadersMap[token] = smsHeaders(dest, callId, cseq)
++                normalizeSmsPsi(dest)?.let { psi ->
++                    if (psi.substringAfter('@').removePrefix("sip:").endsWith(".$realm"))
++                        learnedSmscPsi = psi
++                }
+                 try {
+                     receivedCb(token, "3gpp", sms.pdu!!)
+                 } catch(t: Throwable) {
+@@ -1674,14 +1627,15 @@ P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=4500620f331a5e06
+                 }
+             }
+             SmsType.RP_ACK_FROM_NETWORK -> {
+-                try {
+-                    onSmsStatusReportReceived?.invoke(sms.ref.toInt(), "3gpp", ByteArray(2))
+-                } catch(t: Throwable) {
+-                    Rlog.d(TAG, "Failed sending SMS ACK to framework", t)
+-                }
++                val ref = sms.ref.toInt() and 255
++                val pending = smsLock.withLock { pendingSms[ref] }
++                if (pending != null) completeSms(ref, pending, pending.state.onRp(true))
+             }
+             SmsType.RP_ERROR_FROM_NETWORK -> {
+-                Rlog.d(TAG, "SMS error from network")
++                Rlog.d(TAG, "SMS RP error ref=${sms.ref.toInt() and 255} cause=${sms.cause}")
++                val ref = sms.ref.toInt() and 255
++                val pending = smsLock.withLock { pendingSms[ref] }
++                if (pending != null) completeSms(ref, pending, pending.state.onRp(false))
+             }
+             else -> return 500
+         }
+@@ -1695,56 +1649,30 @@ P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=4500620f331a5e06
+         successCb: (() -> Unit),
+         failCb: (() -> Unit)
+     ) {
+-        val decodableSmsc = try {
+-            PhoneNumberUtils.numberToCalledPartyBCD(smsSmsc, PhoneNumberUtils.BCD_EXTENDED_TYPE_CALLED_PARTY); true
+-        } catch (t:Throwable) { false }
+-
+         val smsManager =
+-            ctxt.getSystemService(SmsManager::class.java).createForSubscriptionId(subId)
++            SmsManager.getSmsManagerForSubscriptionId(subId)
+         val smscIdentity = try {
+-            val i = smsManager
++            normalizeSmsPsi(smsManager
+                 .javaClass.getMethod("getSmscIdentity")
+-                .invoke(smsManager) as Uri
+-            if (i.host == null) null else i
++                .invoke(smsManager)?.toString())
+         } catch (t: Throwable) { null }
+-        Rlog.d(TAG, "Got smscIdentity $smscIdentity")
+-        // make ref up?
+-        val smsc =
+-            if (smsSmsc != null && decodableSmsc) smsSmsc
+-            else if (forceSmsc != null) forceSmsc
+-            else {
+-                try {
+-                    Rlog.d(TAG, "Got smsc $smscIdentity // host is ${smscIdentity?.host} // ${smscIdentity?.scheme} // ${smscIdentity?.path}")
+-                    smscIdentity!!.host!!
+-                } catch(t: Throwable) {
+-                    try {
+-                        Rlog.d(TAG, "getSmscIdentity failed", t)
+-                        val smscStr = smsManager.smscAddress
+-                        val smscMatchRegex = Regex("([0-9]+)")
+-                        Rlog.d(TAG, "Got smsc $smscStr, match ${smscMatchRegex.find(smscStr!!)}")
+-                        val match = smscMatchRegex.find(smscStr!!)!!
+-                        match.groupValues[1]
+-                    } catch(t: Throwable) {
+-                        Rlog.d(TAG, "smscAddress failed", t)
+-                        null
+-                    }
+-                }
+-            }
+-
+-        // smsc
+-        val data = SipSmsEncodeSms(ref.toByte(), if(smsc == null) "" else "+$smsc", pdu)
+-        Rlog.d(TAG, "sending sms ${data.toHex()} to smsc $smsc")
+-        val dest =
+-            if(smscIdentity != null)
+-                "sip:$smscIdentity"
+-            else
+-                "sip:+$smsc@$realm"
++        val smsc = normalizeSmsc(smsSmsc) ?: normalizeSmsc(forceSmsc?.let { "+$it" })
++            ?: try { normalizeSmsc(smsManager.smscAddress) } catch (t: Throwable) { null }
++        if (mcc + mnc == "234015" && smsc == null) {
++            Rlog.w(TAG, "Missing usable SMSC for VOXI; refusing malformed RP-DATA")
++            failCb()
++            return
++        }
++        val data = SipSmsEncodeSms(ref.toByte(), smsc, pdu)
++        // Experimental VOXI PSI from the referenced port; delivery is not yet validated here.
++        val dest = smscIdentity ?: learnedSmscPsi ?: if (mcc + mnc == "234015")
++            "sip:ipsmms1mc05.ims.mnc015.mcc234.3gppnetwork.org" else "sip:$realm"
+ 
+         // "sip:ipsmgw.lte-lguplus.co.kr",
+         val msg =
+             SipRequest(
+                 SipMethod.MESSAGE,
+-                "sip:${smscIdentity ?: realm}",
++                dest,
+                 commonHeaders +
+                     """
+                     From: <$mySip>
+@@ -1762,19 +1690,28 @@ P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=4500620f331a5e06
+                     """.toSipHeadersMap(),
+                 data
+             )
++        val rpRef = ref and 255
++        val pending = PendingSms(msg.headers["call-id"]!![0], successCb, failCb)
++        val reserved = smsLock.withLock {
++            if (pendingSms.containsKey(rpRef)) false
++            else { pendingSms[rpRef] = pending; true }
++        }
++        if (!reserved) { failCb(); return }
++        val timeout = Runnable { completeSms(rpRef, pending, pending.state.expire()) }
++        pending.timeout = timeout
++        myHandler.postDelayed(timeout, 120000)
+         setResponseCallback(
+-            msg.headers["call-id"]!![0],
++            pending.callId,
+             { resp: SipResponse ->
+-                if (resp.statusCode == 200 || resp.statusCode == 202) {
+-                    successCb()
+-                } else {
+-                    failCb()
+-                }
+-                true
++                completeSms(rpRef, pending, pending.state.onSip(resp.statusCode))
++                resp.statusCode >= 200
+             }
+         )
+-        Rlog.d(TAG, "Sending $msg")
+-        synchronized(socket.gWriter()) { socket.gWriter().write(msg.toByteArray()) }
++        try {
++            synchronized(socket.gWriter()) { socket.gWriter().write(msg.toByteArray()) }
++        } catch (t: Throwable) {
++            completeSms(rpRef, pending, pending.state.expire())
++        }
+     }
+ 
+     fun sendSmsAck(token: Int, ref: Int, error: Boolean): Unit {
+diff --git a/app/src/main/java/me/phh/sip/Sms.kt b/app/src/main/java/me/phh/sip/Sms.kt
+index 6a7d346..e33d877 100644
+--- a/app/src/main/java/me/phh/sip/Sms.kt
++++ b/app/src/main/java/me/phh/sip/Sms.kt
+@@ -32,6 +32,7 @@ data class SipSms(
+     val type: SmsType,
+     val ref: Byte,
+     val pdu: ByteArray?,
++    val cause: Int? = null,
+ )
+ 
+ // catch java.nio.BufferUnderflowException if buffer too small
+@@ -101,7 +102,8 @@ fun ByteArray.SipSmsDecode(): SipSms? {
+         SmsType.RP_ERROR_FROM_NETWORK.value -> {
+             val ref = buf.get()
+ 
+-            return SipSms(SmsType.RP_ERROR_FROM_NETWORK, ref, null)
++            val cause = decodeRpErrorCause(this) ?: return null
++            return SipSms(SmsType.RP_ERROR_FROM_NETWORK, ref, null, cause)
+         }
+         // RP_ERROR_FROM_NETWORK possible
+         else -> {
+diff --git a/app/src/main/java/me/phh/sip/SmsAddress.kt b/app/src/main/java/me/phh/sip/SmsAddress.kt
+new file mode 100644
+index 0000000..8a7cfa0
+--- /dev/null
++++ b/app/src/main/java/me/phh/sip/SmsAddress.kt
+@@ -0,0 +1,49 @@
++// SPDX-License-Identifier: GPL-2.0
++package me.phh.sip
++
++/** Normalize a dialable SMSC or a vendor length/TON/BCD field, without guessing a country. */
++fun normalizeSmsc(raw: String?): String? {
++    val input = raw?.trim() ?: return null
++    // MIUI returns the AT+CSCA representation: "+447785016005",145.
++    val at = Regex("^\"(\\+?[0-9]{1,15})\"\\s*,\\s*(129|145)$").matchEntire(input)
++    if (at != null) {
++        val number = at.groupValues[1]
++        return if (at.groupValues[2] == "145" && !number.startsWith("+")) "+$number" else number
++    }
++    val text = input.removeSurrounding("\"")
++    if (text.startsWith("+"))
++        return text.takeIf { it.substring(1).matches(Regex("[0-9]{1,15}")) }
++    if (text.length >= 6 && text.length % 2 == 0 && text.matches(Regex("[0-9a-fA-F]+"))) {
++        val bytes = text.chunked(2).map { it.toInt(16) }
++        if (bytes[0] in 2..12 && bytes[1] in listOf(0x81, 0x91)) {
++            // Do not reinterpret truncated/overlong vendor fields as telephone numbers.
++            if (bytes[0] != bytes.size - 1) return null
++            val digits = StringBuilder()
++            for (i in 2 until bytes.size) {
++                val low = bytes[i] and 15
++                val high = bytes[i] shr 4
++                if (low > 9) return null
++                digits.append(low)
++                if (high <= 9) digits.append(high)
++                else if (high != 15 || i != bytes.lastIndex) return null
++            }
++            if (digits.length !in 1..15) return null
++            return (if (bytes[1] == 0x91) "+" else "") + digits
++        }
++    }
++    return text.takeIf { it.matches(Regex("[0-9]{1,15}")) }
++}
++
++/** Only accept simple SIP service identities; reject header injection and URI parameters. */
++fun normalizeSmsPsi(raw: String?): String? {
++    val text = raw?.trim()?.removeSurrounding("<", ">") ?: return null
++    return text.takeIf { it.matches(Regex("sip:(?:[+a-zA-Z0-9_.-]+@)?[a-zA-Z0-9.-]+")) }
++}
++
++/** TS 24.011 RP-Cause is LV: the length octet precedes the cause value. */
++fun decodeRpErrorCause(body: ByteArray): Int? {
++    if (body.size < 4 || body[0].toInt() != 5) return null
++    val length = body[2].toInt() and 255
++    if (length !in 1..2 || body.size < 3 + length) return null
++    return body[3].toInt() and 127
++}
+diff --git a/app/src/main/java/me/phh/sip/SmsSubmission.kt b/app/src/main/java/me/phh/sip/SmsSubmission.kt
+new file mode 100644
+index 0000000..15df692
+--- /dev/null
++++ b/app/src/main/java/me/phh/sip/SmsSubmission.kt
+@@ -0,0 +1,23 @@
++// SPDX-License-Identifier: GPL-2.0
++package me.phh.sip
++
++/** SIP acceptance and RP acceptance are separate; neither implies recipient delivery. */
++class SmsSubmission {
++    private var sipAccepted = false
++    private var rpAccepted = false
++    private var finished = false
++    @Synchronized fun onSip(status: Int): Boolean? {
++        if (finished || status < 200) return null
++        if (status != 200 && status != 202) return finish(false)
++        sipAccepted = true
++        return if (rpAccepted) finish(true) else null
++    }
++    @Synchronized fun onRp(accepted: Boolean): Boolean? {
++        if (finished) return null
++        if (!accepted) return finish(false)
++        rpAccepted = true
++        return if (sipAccepted) finish(true) else null
++    }
++    @Synchronized fun expire(): Boolean? = if (finished) null else finish(false)
++    private fun finish(result: Boolean): Boolean { finished = true; return result }
++}

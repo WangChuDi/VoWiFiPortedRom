@@ -1,5 +1,11 @@
 # 移植 ROM 上的 VoWiFi
 
+## 本 fork 的 Android 11 移植
+
+新增 [ports/android11](ports/android11/README.md)：面向 raphael / MIUI Android 11 的 Magisk 常驻短信接收试验模块，包含源码、构建脚本、测试、[修改清单](ports/android11/CHANGES.zh-CN.md)及[来源和许可证](ports/android11/THIRD_PARTY.md)。
+
+此方案依赖原厂已可用的 VoWiFi 隧道，保留原厂语音 IMS；尚未实现独立 IWLAN/QNS/MMTEL 全栈替换，短信发送仍未修复。下文是上游 Android 17 方案的说明，构建及安装入口与 Android 11 目录相互独立。
+
 为 Redmi K50 至尊版的 HyperOS 移植 ROM 提供 VoWiFi 注册与短信通道，打包为一个 KernelSU 模块。
 
 当前维护目标是**收短信、按期产生有效账户活动以保号，以及可以恢复部署**。
