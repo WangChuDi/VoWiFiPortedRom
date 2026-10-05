@@ -1,120 +1,135 @@
-# Android 11 application-side stack experiment
+# Android 11 IWLAN / QNS / IMS replacement
 
-This is a separate experiment, not a replacement for the working SMS companion.
-Baseline: `android11-companion-0.2.0-baseline` / commit
-`ccd2aa0b54cdad5d7d357a83b594f55402ab944f`. The companion directory and installed
-module remain unchanged. Private device/module/config backups are stored outside
-this repository and must not be committed.
+This experimental stack replaces WLAN data/network services, QNS and MMTEL IMS
+on **raphael, MIUI V12.5.1.0.RFKMIXM, API30, VOXI 23415, SIM slot index 1**.
+It builds three privileged APKs and a reversible Magisk module. It does not
+replace modem firmware, vendor libraries, APNs or the IPsec APEX.
 
-## Current result (2026-10-05)
+The working SMS companion is preserved at tag
+`android11-companion-0.2.0-baseline`, commit
+`ccd2aa0b54cdad5d7d357a83b594f55402ab944f`. The controller pauses the companion
+while replacements are selected and resumes it on rollback. Private snapshots
+stay outside this repository.
 
-Device: raphael, MIUI V12.5.1.0.RFKMIXM, API30, VOXI 23415, slot1.
+## Verified on the device, 2026-10-05
 
-- Actual telephony bytecode checks `legacy` or Radio HAL <1.4 in
-  `TransportManager.isInLegacyMode()`. The device exposes standard Radio HAL1.4;
-  its current property is `legacy`. No property was changed.
-- QNS, WLAN DataService and WLAN NetworkService package override keys exist.
-  Their presence is not proof that switching modes/services works end to end.
-- Runtime API inventory confirms EAP-AKA, EAP-only authentication, P-CSCF requests,
-  tunnel-mode child sessions and the API30 IMS SMS callback/acknowledgement APIs.
-- `IndependentEpdgProbe` established its **own** IKE and child session over the
-  physical Wi-Fi network using the system IPsec/IKE library. It obtained two
-  P-CSCF servers and one internal IPv4 address and applied both IPsec transforms
-  to its own tunnel interface. It then closed the session and resources.
-- This does not reuse the vendor IMS network. It also does not register its
-  tunnel as an Android IMS network, send SIP REGISTER, send SMS or make calls.
-- The companion subsequently still reported a successful IMS registration and
-  reception-ready status. The device-default IMS remained `org.codeaurora.ims`,
-  the IWLAN mode remained `legacy`, and I/O pressure averages were zero.
-- API30 trial QNS Java compilation, DEX generation and unsigned APK packaging
-  succeeded. The APK has **not** been installed or selected as a provider.
+| Stage | Actual result |
+| --- | --- |
+| QNS | Framework binds the new provider and selects IMS over IWLAN |
+| IWLAN | New APK performs SIM EAP-AKA, establishes its own ePDG IKE/child session, obtains IPv4 and two P-CSCF addresses |
+| Routing | New DataService returns an IPsec interface; telephony creates the IMS NetworkAgent |
+| IMS | SIP 200; Android reports transport WLAN and voice/SMS capabilities |
+| Voice | System dialer call to authorized 191 creates a normal Telecom connection; INVITE 200, uplink RTP and downlink decoded audio playback observed; hangup returns success, BYE 200, both SIM call states idle |
+| SMS sending | System SmsManager sends authorized INFO to 85075 through IMS; SIP 202, RP-ACK, sent result RESULT_OK |
+| SMS reception | Four reply segments pass through ImsSmsImplBase; framework delivery result 1, matching RP acknowledgements accepted with SIP 202 |
+| System app | Android assembles one inbox message; Google Messages posts its normal notification |
+| Persistence | Actual reboot retains providers/mode, automatically reloads idle phone clients and registers; post-boot INFO SMS sending and multipart reception succeed without a manual reload |
+| Recovery | Five-minute trial and an actual module-disabled reboot restore original providers/mode and restart companion; temporary short-code policy restores original unknown state |
 
-## Components
+The first reboot registered but later lost dispatcher SMS capability; the
+post-boot idle phone reload now passes an actual reboot and native SMS test.
+Audible speech still needs user confirmation. Registration alone does not prove audio,
+emergency calling, handover, DTMF, supplementary services or every SMS format.
 
-`StackApiProbe.java` prints only selected API signatures/constants. It performs
-no subscriber reads or network operations.
+## Implementation
 
-`IndependentEpdgProbe.java` is an explicit, one-shot connection experiment,
-restricted to slot1 / operator23415 / IPv4. It performs real SIM authentication
-and network IKE traffic, but never prints subscriber identity or keys. It uses
-the already-installed Android11 IKE library rather than bundling a newer APEX.
-It uses EAP-only authentication and accepts the peer's IKE identity, matching the
-tested operator flow; these settings are not a generic VPN configuration.
+* `iwlan/`: new API30 DataService/NetworkService and EpdgSession. Uses the installed
+  Android11 IKE library, normal application context, MANAGE_IPSEC_TUNNELS AppOp,
+  SIM EAP-AKA, bounded negotiation and owned-resource cleanup. Never flushes
+  global XFRM state. IPv4/one validated SIM/operator only.
+* `qns/`: minimal physical-Wi-Fi IMS selection, informed by upstream MinQns.
+  Requires VOXI, user WFC enabled and a same-boot elapsed-realtime gate. Root
+  renews a 90-second gate; QNS withdraws on expiry. This is not a complete
+  carrier selection or VoLTE fallback implementation.
+* `ims/` and `prepare-ims-source.py`: reproducible GPL-2.0 overlay on the preserved
+  phhusson snapshot. API30 socket compatibility, WLAN registration/capabilities,
+  network-bound SIP, reconnection/renewal and voice lifecycle adaptations.
+  Unavailable RNNoise JNI is replaced with PCM passthrough.
+* SMS uses ImsSmsImplBase. Android handles storage, multipart assembly and
+  notifications. RP replies use the saved network RP reference, which differs
+  from TP messageRef; rejected delivery produces RP-ERROR.
+* `CarrierTrial.java`: persistent Binder overrides; API30 production `cmd phone
+  cc` is debug-gated on this ROM.
+* `module/`: persisted override XML backup, AP-assisted mode, phone reload,
+  timed watchdog, persistent supervisor and rollback. Independent Magisk
+  service.d recovery uses a root-private controller copy after disable/removal
+  at normal boot. Magisk safe mode can suppress service.d too.
 
-The original app_process attempt failed before network authentication because
-AMS could not find an application record when IKE registered its receiver.
-The root-authorized probe context supplies a directly registered Binder receiver
-on a dedicated HandlerThread. This shim is only for the diagnostic process;
-a real IWLAN APK should use its normal application context.
+API30 labels the IMS NetworkAgent TRANSPORT_CELLULAR even for WLAN DataService.
+IMS requests that framework network and checks IPsec interface/P-CSCF. The
+operation mode is read during TransportManager initialization; resetprop alone
+is insufficient, so the controller reloads the phone process.
 
-`qns/TrialQnsService.java` is a new, gated API30 implementation informed by the
-upstream `code/minqns` approach. It only reports IMS/IWLAN for slot1 with VOXI,
-the user's WFC setting enabled, a physical Wi-Fi internet-capable network, and
-an explicit same-boot trial window of at most120 seconds. It withdraws the report
-when conditions stop matching. It is not a complete carrier selection policy.
-The two trial setting names are `codex_wfc_stack_trial_until` (elapsed-realtime
-milliseconds) and `codex_wfc_stack_trial_boot` (matching Android BOOT_COUNT).
-No script sets them automatically. These gates are not a provider rollback mechanism.
+## Build
 
-## Build and probe
-
-Use the parent directory's documented Java17 / ECJ / D8 / android-all11 toolchain.
-The QNS build additionally needs SDK Build Tools `aapt2`, selectable via `AAPT2`.
-Generated artifacts remain ignored under `out/`.
+Use the parent Java17 / ECJ / Kotlin / D8 / android-all11 toolchain. Generated
+artifacts are ignored under out/. Signing keys are external inputs.
 
 ```sh
 python build-api-probe.py
-python build-qns.py
+python build-stack-apps.py
+export STACK_KEYSTORE=/private/path/stack.jks
+export STACK_KEYSTORE_PASSWORD='your-local-password'
+python package-stack.py
 ```
 
-The QNS result is unsigned. Do not flash it or switch provider configurations:
-the WLAN data/network services and rollback supervisor are not yet implemented.
+Package only after every build succeeds. Output:
+`out/vowifi-stack-api30-services.zip`. Keys, device framework binaries, subscriber
+data, SMS bodies and authentication keys are excluded. Distribute GPL sources
+and retained licenses with builds.
 
-Read-only runtime inventory (after pushing `out/api-probe.zip` to
-`/data/local/tmp/codex-stack-api-probe.zip`):
+## Install and reversible trial
+
+Install the ZIP in Magisk and reboot to mount the three privileged APKs.
+Installation alone does not select replacement providers. Keep working ADB;
+do not run overlapping probes/trials.
 
 ```sh
-su -c 'CLASSPATH=/data/local/tmp/codex-stack-api-probe.zip:/apex/com.android.ipsec/javalib/android.net.ipsec.ike.jar app_process /system/bin StackApiProbe'
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh status'
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh trial'
+# Automatically rolls back after five minutes.
+su -c 'sh /data/adb/modules/codex_vowifi_stack_api30/control.sh rollback'
 ```
 
-Explicit independent tunnel test on the validated device:
+Trial refuses an active call. Its deadline can interrupt test calls; finish
+before timeout. After live verification, `control.sh enable` during an active
+transaction retains replacements and renews gates across boots. Rollback
+restores the original providers/mode and companion. Root-private state resides
+at `/data/adb/codex_vowifi_stack`; retain it during an active transaction.
+
+Manual recovery with Magisk running, even if the module is disabled:
 
 ```sh
-su -g 1000 -G 3003 1000 -c 'CLASSPATH=/data/local/tmp/codex-stack-api-probe.zip:/apex/com.android.ipsec/javalib/android.net.ipsec.ike.jar app_process /system/bin IndependentEpdgProbe --connect-once'
+su -c 'sh /data/adb/codex_vowifi_stack/recovery/control.sh rollback'
 ```
 
-The negotiation wait is35 seconds, followed by a5-second graceful-close window
-and force-close fallback for the owned session. DNS/platform initialization is
-outside that negotiation timer. The process releases its own transforms/tunnel;
-it never flushes global XFRM state. Do not run repeated concurrent probes.
+The boot service waits for boot completion, prepares permissions, and reloads
+the phone clients once when idle before supervising. During shutdown, missing
+Settings/Binder services stop supervision without discarding persistent state.
+Phone reload invalidates registration listeners. The diagnostic reconnects
+callbacks while waiting for WLAN+SMS readiness. Check capability and SMS
+permissions in the same phone-process lifetime.
 
-## Remaining work before selecting replacement providers
+## Diagnostics and authorized traffic
 
-1. Adapt an IWLAN `DataService`/`NetworkService` to the actual API30 signatures;
-   pass interface, internal addresses, DNS and P-CSCF back to telephony. Verify
-   framework-created IMS network routing and cleanup, not merely IKE success.
-2. Package/sign the privileged services and minimal required permission allowlists.
-   Implement scoped, timed rollback of provider overrides and IWLAN mode before
-   any live switch. `legacy` is consulted during framework initialization, so a
-   runtime property change alone is not a validated migration procedure.
-3. Bind a properly adapted IMS MMTEL provider to the new network. Existing phh
-   source exposes `ImsSmsImplBase.onSmsReceived` / `acknowledgeSms`, but binding,
-   delivery, sending and voice are not validated by this experiment. Its voice
-   path also references `rnnoise_jni`, not supplied by this experiment.
-4. Test inbound/outbound SMS acknowledgement through telephony, actual calls,
-   audio, switching, expiry, reboot and rollback. Outgoing test SMS/calls require
-   an explicitly authorized destination.
+StackApiProbe only inventories APIs. IndependentEpdgProbe --connect-once is a
+real one-shot SIM/network diagnostic. Api30PhhIms, Api30TrialQns, Api30Iwlan and
+Api30StackCheck logs contain status/metadata, not bodies or keys.
 
-The reference Android12 IWLAN uses APIs absent here (including 3GPP IKE extensions
-and newer data-call parameters). Reusing its prebuilt APK is not API30 adaptation.
+StackCheckService CHECK observes only. TEST_INFO sends one real INFO SMS to
+85075 after WLAN registration and SMS capability, with a two-minute cooldown.
+Invoke only with authorization for that destination/content. SmsTestPolicy
+allow-info is a separate reversible short-code policy override during a trial;
+rollback restores the saved policy. It is not a permanent permission grant.
 
-## Provenance
+## Scope and provenance
 
-- Architecture and MinQns reference: Suiying6023/VoWiFiPortedRom, retained in this fork.
-- IWLAN candidate: https://android.googlesource.com/platform/packages/services/Iwlan/
-  branch `android12-release`, commit `75c089942bbfb5cab1a9decc30ee535cf5d70699`;
-  inspected, not vendored or installed.
-- Runtime IKE: the device's `/apex/com.android.ipsec/javalib/android.net.ipsec.ike.jar`;
-  private inspection input, not redistributed.
-- IMS source and GPL-2.0 attribution remain in the parent [THIRD_PARTY.md](../THIRD_PARTY.md).
-- New experimental sources are GPL-2.0 under the repository license.
+Other SIM slots/operators, IPv6-only access, Android12–17 and other devices
+are not validated or enabled by this fixed-device installer. Android12 IWLAN
+uses APIs absent in API30 and cannot simply be installed as a backport.
+
+* Architecture/MinQns and voice reference: retained Suiying6023/VoWiFiPortedRom.
+  API30 implementations/build scripts are new.
+* phhusson baseline, notices and GPL-2.0: [THIRD_PARTY.md](../THIRD_PARTY.md).
+* Android12 IWLAN commit 75c089942bbfb5cab1a9decc30ee535cf5d70699 was inspected,
+  not vendored or installed. The device IKE library is not redistributed.

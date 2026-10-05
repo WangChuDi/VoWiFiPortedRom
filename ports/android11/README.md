@@ -152,9 +152,12 @@ that the referenced port's full functionality has been reproduced.
 - [CHANGES.zh-CN.md](CHANGES.zh-CN.md): detailed Chinese change list and limitations.
 
 This directory builds independently of the repository's Android 17 `code/` module.
-It does not include a replacement IWLAN or QNS implementation. A complete application-side
-IWLAN/QNS/MMTEL replacement remains future work; do not install the Android 17 APKs on API30.
+The companion preserves vendor IWLAN/voice. The separate stack below implements
+an API30 replacement; do not install the Android 17 APKs on API30.
 
-The separate [stack experiment](stack/README.md) now contains an API30 capability
-probe, a successfully tested independent ePDG tunnel probe and an unsigned trial
-QNS build. Those artifacts are not part of this working companion module.
+The separate [stack experiment](stack/README.md) builds three privileged
+IWLAN/QNS/IMS APKs and a reversible root controller. Live trials have verified
+independent ePDG, framework IMS routing, WLAN registration, call connection and
+native SMS sending, multipart reception and a Google Messages notification.
+These artifacts are separate from the companion; see the stack document for
+remaining tests and validated device restrictions.

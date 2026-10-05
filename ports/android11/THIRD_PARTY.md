@@ -15,6 +15,11 @@ This repository is a fork of [Suiying6023/VoWiFiPortedRom](https://github.com/Su
 Its PORTING-GUIDE.md informed the application-side IMS and supervised root-module approach.
 The Android 11 companion scripts were written for this port; they do not deploy the original three-APK replacement stack.
 Existing upstream files and attribution remain in place.
+The separate stack experiment implements API30 IWLAN/QNS and generates a
+phhusson IMS overlay without editing the preserved snapshot. Upstream MinQns
+and code/patches/floss-ims-local.patch informed selection and voice adaptation;
+the Android17 prebuilt APKs and unavailable native libraries are not installed.
+stack/prepare-ims-source.py records the additional IMS changes reproducibly.
 
 ## Android 11 additions
 

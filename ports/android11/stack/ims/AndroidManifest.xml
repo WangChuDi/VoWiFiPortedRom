@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="me.phh.ims" android:versionCode="30" android:versionName="0.3-api30-stack">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="28" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+    <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <application android:label="API30 phh IMS" android:allowBackup="false" android:directBootAware="true" android:defaultToDeviceProtectedStorage="true">
+        <service android:name="me.phh.ims.PhhImsService" android:exported="true" android:directBootAware="true" android:permission="android.permission.BIND_IMS_SERVICE">
+            <intent-filter><action android:name="android.telephony.ims.ImsService" /></intent-filter>
+        </service>
+        <service android:name="me.phh.ims.StackCheckService" android:exported="true" android:permission="android.permission.MODIFY_PHONE_STATE" />
+    </application>
+</manifest>

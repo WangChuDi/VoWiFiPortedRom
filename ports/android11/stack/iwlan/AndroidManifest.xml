@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.codex.vowifi.iwlan" android:versionCode="1" android:versionName="0.1-experiment">
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="28" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.MANAGE_IPSEC_TUNNELS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+    <uses-permission android:name="android.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <application android:label="API30 IWLAN" android:allowBackup="false" android:directBootAware="true" android:defaultToDeviceProtectedStorage="true">
+        <uses-library android:name="android.net.ipsec.ike" android:required="true" />
+        <service android:name=".TrialIwlanDataService" android:exported="true" android:permission="android.permission.BIND_TELEPHONY_DATA_SERVICE">
+            <intent-filter><action android:name="android.telephony.data.DataService" /></intent-filter>
+        </service>
+        <service android:name=".TrialIwlanNetworkService" android:exported="true" android:permission="android.permission.BIND_TELEPHONY_NETWORK_SERVICE">
+            <intent-filter><action android:name="android.telephony.NetworkService" /></intent-filter>
+        </service>
+    </application>
+</manifest>
