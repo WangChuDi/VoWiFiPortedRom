@@ -1,0 +1,6 @@
+id=codex_vowifi_stack_modern
+name=Codex VoWiFi modern services (installation stage)
+version=0.1.0
+versionCode=1
+author=Codex / attributed upstream contributors
+description=Android 12+ privileged IWLAN/QNS/IMS payload and reversible permission preparation. Carrier selection and boot supervision are separate unfinished stages.

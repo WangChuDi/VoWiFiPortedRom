@@ -263,3 +263,22 @@ bindings. The AppOp gap is an installation prerequisite, not proof of the cause
 of those absent bindings. No phone, APK or carrier configuration was modified.
 Before/after safe observations are in
 [the installation matrix reports](reports/20261006-installation/final.json).
+
+## Packaged installation and permission recovery
+
+The [modern installation-stage module](../module/README.md) now includes the
+signed services, privilege XML, root helper, SDK/profile-gated scripts and an
+independent permission recovery entry. It is not yet the carrier-selection/boot
+supervisor. New `ModernInstallationTransaction`/`ModernInstallationController`
+prepare/recover fixed package grants, SMS system exemption and effective IPsec
+AppOp with private UID/APK/build snapshots and carrier-lock coordination.
+
+`check-installation-emulator.py` runs different guest SDKs concurrently and
+uses the separate owned fake-SIM fixture. Both API33/API36 passed eight process
+stages, external IPsec change refusal, complete outer fixed-policy/flag cleanup,
+production nonroot/missing-module refusal, Android shell syntax and phone PID
+continuity. Final helper/module hashes and limitations are in
+[installation-stage reports](reports/20261006-installation-module/final.json).
+Library/call/SMS proofs were not repeated; true Magisk mount/reboot/disable/remove,
+modern provider lifecycle/application entry, real carrier behavior and dual active
+SIM remain incomplete. The connected API30 phone and three signed APKs were unchanged.

@@ -40,6 +40,8 @@ sources=[B/'runtime/ModernRuntimeCheck.java',B/'runtime/ModernPermissionPrep.jav
 sources += [B/'controller/ModernProviderTransaction.java',B/'runtime/ModernPersistentFrameworkTrial.java']
 sources += [B/'controller/ModernSystemObservation.java',B/'controller/ModernPhoneIdle.java',B/'runtime/ModernSeededPersistenceTrial.java']
 sources += [B/'controller/ModernCarrierController.java']
+sources += [B/'controller/ModernInstallationTransaction.java', B/'controller/ModernInstallationController.java']
+sources += [B/'runtime/ModernInstallationEmulatorTrial.java']
 subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',str(framework),'-d',str(classes),*map(str,sources)],check=True)
 jar=out/'classes.jar'
 with zipfile.ZipFile(jar,'w') as archive:

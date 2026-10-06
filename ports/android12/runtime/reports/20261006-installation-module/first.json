@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "concurrent_device_workers": 2,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 33,
+      "status": "passed",
+      "stages": {
+        "seed": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resume": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "resume",
+          "new_process_retention_verified": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "restore": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "restore",
+          "original_seeded_policy_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "arm-restore-resume": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "arm-restore-resume",
+          "simulated_restore_handoff_armed": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "recover": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "recover",
+          "restore_resumed_and_repeated": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "a5154c294cadf56b5207b2ed4e5b035c7dc4810c3e5822512e078878668a2865",
+      "module_sha256": "71fd3a266074e8c20b5d52e8a44977b8b0027521cd2b530c1d45b56fd76399c2",
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "status": "passed",
+      "stages": {
+        "seed": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resume": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "resume",
+          "new_process_retention_verified": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "restore": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "restore",
+          "original_seeded_policy_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "arm-restore-resume": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "arm-restore-resume",
+          "simulated_restore_handoff_armed": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "recover": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "recover",
+          "restore_resumed_and_repeated": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "a5154c294cadf56b5207b2ed4e5b035c7dc4810c3e5822512e078878668a2865",
+      "module_sha256": "71fd3a266074e8c20b5d52e8a44977b8b0027521cd2b530c1d45b56fd76399c2",
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false
+    }
+  ]
+}
