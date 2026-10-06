@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "concurrent_device_workers": 2,
+  "agent_dispatch_concurrency_claim": false,
+  "versions": [
+    {
+      "sdk": 33,
+      "status": "observed",
+      "audit_read_only": true,
+      "iwlan_ipsec_appop": "allow",
+      "packages": {
+        "dev.codex.vowifi.iwlan": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true,
+            "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+            "BIND_IMS_SERVICE": true
+          },
+          "declared_library_runtime_lookup_verified": false
+        },
+        "dev.codex.vowifi.qns": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true
+          },
+          "declared_library_runtime_lookup_verified": false
+        },
+        "me.phh.ims": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true,
+            "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+            "MODIFY_PHONE_STATE": true,
+            "RECORD_AUDIO": true,
+            "SEND_SMS": true
+          },
+          "declared_library_runtime_lookup_verified": false,
+          "sms_system_restriction_exemption": true
+        }
+      },
+      "framework_bindings": {
+        "dev.codex.vowifi.iwlan": {
+          "activity_service_record_present": false,
+          "phone_binding_observed": false
+        },
+        "dev.codex.vowifi.qns": {
+          "activity_service_record_present": true,
+          "phone_binding_observed": true
+        },
+        "me.phh.ims": {
+          "activity_service_record_present": false,
+          "phone_binding_observed": false
+        }
+      },
+      "installation_permission_profile_ready": true,
+      "carrier_registration_verified": false,
+      "call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "magisk_installation_verified": false,
+      "observer_payload_staged": true,
+      "agent_dispatch_concurrency_claim": false,
+      "iwlan_mode_observation": {
+        "schema": 1,
+        "sdk": 33,
+        "mode_property_present": false,
+        "mode_property": "empty",
+        "slot": 0,
+        "legacy": false,
+        "cached_wlan_transport": null,
+        "transport_manager_observed": false,
+        "access_networks_manager_observed": true,
+        "legacy_field_absence_proves_wlan_available": false,
+        "read_only": true,
+        "phone_cache_refresh_verified": false,
+        "carrier_registration_verified": false,
+        "call_sms_verified": false,
+        "status": "observed"
+      },
+      "observer_sha256": "3046e489f48e82374e6d081b0eb0c57f82dd76fd54e9c1cb4ab7460462a4a792",
+      "phone_process_unchanged": true,
+      "configuration_read_only": true
+    },
+    {
+      "sdk": 36,
+      "status": "observed",
+      "audit_read_only": true,
+      "iwlan_ipsec_appop": "allow",
+      "packages": {
+        "dev.codex.vowifi.iwlan": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true,
+            "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+            "BIND_IMS_SERVICE": true
+          },
+          "declared_library_runtime_lookup_verified": false
+        },
+        "dev.codex.vowifi.qns": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true
+          },
+          "declared_library_runtime_lookup_verified": false
+        },
+        "me.phh.ims": {
+          "single_privapp_apk": true,
+          "system_app": true,
+          "privileged_app": true,
+          "permissions": {
+            "READ_PHONE_STATE": true,
+            "READ_PRIVILEGED_PHONE_STATE": true,
+            "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+            "MODIFY_PHONE_STATE": true,
+            "RECORD_AUDIO": true,
+            "SEND_SMS": true
+          },
+          "declared_library_runtime_lookup_verified": false,
+          "sms_system_restriction_exemption": true
+        }
+      },
+      "framework_bindings": {
+        "dev.codex.vowifi.iwlan": {
+          "activity_service_record_present": false,
+          "phone_binding_observed": false
+        },
+        "dev.codex.vowifi.qns": {
+          "activity_service_record_present": true,
+          "phone_binding_observed": true
+        },
+        "me.phh.ims": {
+          "activity_service_record_present": false,
+          "phone_binding_observed": false
+        }
+      },
+      "installation_permission_profile_ready": true,
+      "carrier_registration_verified": false,
+      "call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "magisk_installation_verified": false,
+      "observer_payload_staged": true,
+      "agent_dispatch_concurrency_claim": false,
+      "iwlan_mode_observation": {
+        "schema": 1,
+        "sdk": 36,
+        "mode_property_present": false,
+        "mode_property": "empty",
+        "slot": 0,
+        "legacy": null,
+        "cached_wlan_transport": null,
+        "transport_manager_observed": false,
+        "access_networks_manager_observed": true,
+        "legacy_field_absence_proves_wlan_available": false,
+        "read_only": true,
+        "phone_cache_refresh_verified": false,
+        "carrier_registration_verified": false,
+        "call_sms_verified": false,
+        "status": "observed"
+      },
+      "observer_sha256": "3046e489f48e82374e6d081b0eb0c57f82dd76fd54e9c1cb4ab7460462a4a792",
+      "phone_process_unchanged": true,
+      "configuration_read_only": true
+    }
+  ]
+}

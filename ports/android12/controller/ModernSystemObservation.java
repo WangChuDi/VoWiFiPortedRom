@@ -7,7 +7,14 @@ public final class ModernSystemObservation {
     private ModernSystemObservation(){}
     public static String read(String service)throws Exception {
         if(android.os.Process.myUid()!=0||!("carrier_config".equals(service)||"telephony.registry".equals(service)))throw new SecurityException("fixed-root-observation-required");
-        java.lang.Process child=new ProcessBuilder("dumpsys",service).redirectErrorStream(true).start();
+        return run(new String[]{"dumpsys",service});
+    }
+    static String telephonyDebug()throws Exception {
+        if(android.os.Process.myUid()!=0)throw new SecurityException("fixed-root-observation-required");
+        return run(new String[]{"dumpsys","activity","service","com.android.phone/.TelephonyDebugService"});
+    }
+    private static String run(String[] command)throws Exception {
+        java.lang.Process child=new ProcessBuilder(command).redirectErrorStream(true).start();
         ByteArrayOutputStream bytes=new ByteArrayOutputStream();
         final boolean[] overflow={false},readFailed={false};
         Thread reader=new Thread(()->{try(InputStream input=child.getInputStream()){

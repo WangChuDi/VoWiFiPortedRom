@@ -282,3 +282,39 @@ continuity. Final helper/module hashes and limitations are in
 Library/call/SMS proofs were not repeated; true Magisk mount/reboot/disable/remove,
 modern provider lifecycle/application entry, real carrier behavior and dual active
 SIM remain incomplete. The connected API30 phone and three signed APKs were unchanged.
+
+## IWLAN mode and shared-lock continuation
+
+`check-mode-matrix.py` adds a fixed root observation to the concurrent
+installation audit. It stages a hash-checked observer in owned guests' temporary
+directories but does not change phone configuration, request bindings or call
+resetprop. Raw telephony dumps stay in the guest process. The observer invokes
+`dumpsys activity service com.android.phone/.TelephonyDebugService`, since the
+ordinary `dumpsys phone` output does not expose this manager state.
+
+```sh
+python check-mode-matrix.py --adb /path/to/adb \
+  --guest 33:emulator-5574 --guest 36:emulator-5580 \
+  --output /path/to/fresh-mode-matrix.json
+```
+
+The production parser distinguishes nested TransportManager/AccessNetworksManager
+sections, slot ownership and direct fields from deeper local logs. Missing legacy
+or cached-transport fields remain unknown; neither proves WLAN availability.
+Duplicate or contradictory manager state refuses the observation. The pure-Java
+parser tests live in `../controller/tests/ModernIwlanObservationTest.java`.
+
+The permission-recovery checker now includes a coordination stage before its
+previous eight stages. It uses borrowed controller locks, separate-process lock
+contenders, closed-handle/cross-thread refusal and a no-reset shared mode cycle.
+It snapshots and restores an unused carrier transaction, without selecting
+replacement providers. Tests use the fixed owned fake-SIM fixture and restore
+the original permissions and property presence/value. Legacy mode mutation and
+phone-cache reconstruction are not validated by this default-mode run.
+
+Current [parallel reports](reports/20261006-parallel-mode/README.md) distinguish
+the early observation, first integration and final artifacts. Actual guest
+workers ran concurrently; creating more agents was refused by the thread limit.
+Android13 exposes `isInLegacy=false`; Android16 lacks that field. Both permission
+profiles are ready, but only QNS phone binding was observed. Modern production
+selection/watchdog/UI and genuine carrier call/SMS/dual-SIM proof remain pending.

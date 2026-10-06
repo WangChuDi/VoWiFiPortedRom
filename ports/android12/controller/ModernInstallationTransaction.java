@@ -18,8 +18,13 @@ public final class ModernInstallationTransaction implements AutoCloseable {
     private static final String SMS="android.permission.SEND_SMS";
     private static final String IPSEC="android:manage_ipsec_tunnels";
     private final Context context;private final PackageManager pm;private final AppOpsManager ops;
-    private final File state,module;private final RandomAccessFile lockFile,carrierLockFile;private final FileLock lock,carrierLock;
+    private final File state,module;private final RandomAccessFile lockFile;private final FileLock lock;
+    private final ModernControllerLock carrierLock;private final boolean ownsCarrierLock;
+    private final File carrierRoot;private boolean closed;
     public ModernInstallationTransaction(Context context,File module,File state,boolean test)throws Exception {
+        this(context,module,state,test,null);
+    }
+    public ModernInstallationTransaction(Context context,File module,File state,boolean test,ModernControllerLock held)throws Exception {
         if(android.os.Process.myUid()!=0||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37)throw new SecurityException("modern-root-required");
         this.context=context;this.pm=context.getPackageManager();this.ops=context.getSystemService(AppOpsManager.class);
         this.state=state.getAbsoluteFile();this.module=module.getAbsoluteFile();
@@ -36,15 +41,12 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         privateDirectory(this.state);
         File path=file("permissions.lock");lockFile=new RandomAccessFile(path,"rw");
         FileLock acquired=null;try{acquired=lockFile.getChannel().tryLock();if(acquired==null)throw new IOException("installation-busy");}catch(Exception failure){lockFile.close();throw failure;}lock=acquired;
-        RandomAccessFile sharedFile=null;FileLock shared=null;
+        ModernControllerLock shared=null;ownsCarrierLock=held==null;
+        carrierRoot=new File(test?(held==null?this.state.getParentFile().getPath()+"/carrier-coordination":"/data/local/tmp/codex-modern-persistence-tests"):"/data/adb/codex_vowifi_stack_modern/transactions");
         try{
-            File root=new File(test?this.state.getParentFile().getPath()+"/carrier-coordination":"/data/adb/codex_vowifi_stack_modern/transactions");privateDirectory(root);
-            File sharedPath=new File(root,"controller.lock");canonical(sharedPath);
-            if(sharedPath.exists()&&!sharedPath.isFile())throw new IOException("carrier-lock-path-refused");
-            sharedFile=new RandomAccessFile(sharedPath,"rw");android.system.Os.chmod(sharedPath.getPath(),0600);
-            shared=sharedFile.getChannel().tryLock();if(shared==null)throw new IOException("carrier-controller-busy");
-        }catch(Exception failure){if(sharedFile!=null)sharedFile.close();lock.release();lockFile.close();throw failure;}
-        carrierLockFile=sharedFile;carrierLock=shared;
+            shared=ownsCarrierLock?new ModernControllerLock(carrierRoot,test):held;shared.requireHeld(carrierRoot);
+        }catch(Exception failure){if(ownsCarrierLock&&shared!=null)shared.close();lock.release();lockFile.close();throw failure;}
+        carrierLock=shared;
     }
     private static void canonical(File path)throws IOException {
         if(!path.equals(path.getCanonicalFile())||Files.isSymbolicLink(path.toPath()))throw new IOException("installation-alias-refused");
@@ -109,11 +111,13 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         return value;
     }
     public boolean ready()throws Exception {
+        requireLock();
         ApplicationInfo[] apps=installed(payload(),true);
         for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(!granted(i,permission))return false;
         return exemption()&&mode(apps)==AppOpsManager.MODE_ALLOWED;
     }
     public void prepare()throws Exception {
+        requireLock();
         if(new File(module,"disable").exists()||new File(module,"remove").exists())throw new IOException("enabled-installation-module-required");
         ModernPhoneIdle.requireIdle(context);
         Properties before;
@@ -138,6 +142,7 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         if(!ready())throw new IOException("installation-preparation-unconfirmed");before.setProperty("phase","PREPARED");write(before);
     }
     public void restore()throws Exception {
+        requireLock();
         ModernPhoneIdle.requireIdle(context);requireNoSelectedCarrier();Properties before=read();ApplicationInfo[] apps=installed(before,false);
         if("RESTORED".equals(before.getProperty("phase"))){verifyRestored(before,apps);return;}
         int currentMode=mode(apps),originalMode=Integer.parseInt(before.getProperty("ipsec.mode"));
@@ -170,6 +175,7 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(granted(i,permission)!=Boolean.parseBoolean(before.getProperty("grant."+i+"."+permission))||flags(i,permission)!=Integer.parseInt(before.getProperty("flags."+i+"."+permission)))throw new IOException("installation-permission-restore-unconfirmed");
         if(exemption()!=Boolean.parseBoolean(before.getProperty("sms.exemption"))||mode(apps)!=Integer.parseInt(before.getProperty("ipsec.mode")))throw new IOException("installation-policy-restore-unconfirmed");
     }
-    public String phase()throws Exception {return file("baseline.properties").exists()?read().getProperty("phase"):"ABSENT";}
-    @Override public void close()throws IOException {try{carrierLock.release();}finally{try{carrierLockFile.close();}finally{try{lock.release();}finally{lockFile.close();}}}}
+    private void requireLock()throws IOException {if(closed||!lock.isValid())throw new IOException("closed-installation-transaction");carrierLock.requireHeld(carrierRoot);}
+    public String phase()throws Exception {requireLock();return file("baseline.properties").exists()?read().getProperty("phase"):"ABSENT";}
+    @Override public void close()throws IOException {if(closed)return;carrierLock.requireHeld(carrierRoot);closed=true;try{if(ownsCarrierLock)carrierLock.close();}finally{try{lock.release();}finally{lockFile.close();}}}
 }

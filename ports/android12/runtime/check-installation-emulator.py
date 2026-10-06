@@ -5,6 +5,9 @@ from pathlib import Path
 import argparse,hashlib,json,re,stat,subprocess,uuid,zipfile
 B=Path(__file__).resolve().parent
 STAGES={
+    'coordination':('borrowed_carrier_close_keeps_global_lock','borrowed_installation_close_keeps_global_lock',
+        'closed_carrier_handle_refused','closed_installation_handle_refused',
+        'cross_thread_lock_use_refused','shared_mode_no_reset_cycle_preserves_presence_and_value'),
     'seed':('missing_runtime_grant_and_exemption_seeded','denied_ipsec_seeded'),
     'prepare':('installed_permissions_prepared',),
     'resume':('new_process_retention_verified',),
@@ -28,7 +31,8 @@ def trial(adb,sdk,serial,module_zip):
             raise ValueError('named-root-emulator-required')
     def stage(name):
         guard()
-        reply=command('shell','CLASSPATH='+remote+' timeout 35s app_process /system/bin ModernInstallationEmulatorTrial '+name+' '+nonce,check=False,timeout=45)
+        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ('ModernInstallationEmulatorTrial '+name+' '+nonce)
+        reply=command('shell','CLASSPATH='+remote+' timeout 35s app_process /system/bin '+entry,check=False,timeout=45)
         lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
         if len(lines)!=1:raise ValueError('fixture-json-unavailable')
         observation=json.loads(lines[0]);record['stages'][name]=observation
@@ -79,6 +83,15 @@ def trial(adb,sdk,serial,module_zip):
                 record['phone_process_unchanged']=shell('pidof com.android.phone')==phone
                 if not record['phone_process_unchanged']:failure=failure or 'PhoneProcessRestarted'
             except Exception as error:failure=failure or type(error).__name__
+    if not failure:
+        try:
+            observation=command('shell','CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernIwlanModeCheck').stdout
+            lines=[line for line in observation.splitlines() if line.startswith('{') and line.endswith('}')]
+            if len(lines)!=1:raise ValueError('mode-observation-unavailable')
+            mode=json.loads(lines[0])
+            if mode.get('status')!='observed' or mode.get('sdk')!=sdk or mode.get('read_only') is not True:raise ValueError('mode-observation-unconfirmed')
+            record['iwlan_mode_observation']=mode
+        except Exception as error:failure=type(error).__name__
     record.update(status='failed' if failure else 'passed',magisk_mount_verified=False,
                   carrier_call_sms_verified=False,dual_active_sim_verified=False,actual_os_reboot_or_forced_kill_test=False)
     if failure:record['error']=failure

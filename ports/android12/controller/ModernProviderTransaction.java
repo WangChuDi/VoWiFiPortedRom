@@ -3,7 +3,6 @@ import android.content.Context;
 import android.os.*;
 import android.telephony.*;
 import java.io.*;
-import java.nio.channels.*;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -14,25 +13,23 @@ public final class ModernProviderTransaction implements AutoCloseable {
     private static final int[] BITS={1,1,2,4};
     private final Context context;private final int slot,sub;private final boolean test;
     private final File state;private final Class<?> api;
-    private final RandomAccessFile lockFile;private final FileLock lock;
+    private final ModernControllerLock controllerLock;private final boolean ownsLock;private final File lockRoot;private boolean closed;
     public ModernProviderTransaction(Context context,int slot,int sub,File state,boolean emulatorTest)throws Exception {
+        this(context,slot,sub,state,emulatorTest,null);
+    }
+    public ModernProviderTransaction(Context context,int slot,int sub,File state,boolean emulatorTest,ModernControllerLock held)throws Exception {
         if(android.os.Process.myUid()!=0||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37||slot<0||slot>7||sub<0)
             throw new SecurityException("modern-root-owner-required");
         if(emulatorTest&&!"1".equals(SystemProperties.get("ro.kernel.qemu")))throw new SecurityException("test-emulator-required");
         this.context=context;this.slot=slot;this.sub=sub;this.test=emulatorTest;this.state=state.getAbsoluteFile();
         api=Class.forName("com.android.internal.telephony.ICarrierConfigLoader");owner();
         File root=new File(emulatorTest?"/data/local/tmp/codex-modern-persistence-tests":"/data/adb/codex_vowifi_stack_modern/transactions");
+        lockRoot=root;
         String expected="slot-"+slot+"-sub-"+sub;
         if(!root.equals(this.state.getParentFile())||!(emulatorTest?this.state.getName().matches(expected+"-[0-9a-f]{32}"):expected.equals(this.state.getName()))||!this.state.equals(this.state.getCanonicalFile()))
             throw new SecurityException("modern-state-owner-refused");
         privateDirectory(root);privateDirectory(this.state);
-        File lockPath=new File(root,"controller.lock");
-        if(!root.equals(lockPath.getCanonicalFile().getParentFile())||Files.isSymbolicLink(lockPath.toPath())||(lockPath.exists()&&!lockPath.isFile()))throw new IOException("controller-lock-path-refused");
-        lockFile=new RandomAccessFile(lockPath,"rw");
-        FileLock acquired=null;
-        try{acquired=lockFile.getChannel().tryLock();if(acquired==null)throw new IOException("modern-controller-busy");}
-        catch(Exception failure){lockFile.close();throw failure;}
-        lock=acquired;
+        ownsLock=held==null;controllerLock=ownsLock?new ModernControllerLock(root,emulatorTest):held;controllerLock.requireHeld(root);
     }
     private static void privateDirectory(File directory)throws IOException {
         if(!directory.getAbsoluteFile().equals(directory.getCanonicalFile())||Files.isSymbolicLink(directory.toPath()))throw new IOException("private-path-refused");
@@ -89,6 +86,7 @@ public final class ModernProviderTransaction implements AutoCloseable {
         finally{parcel.recycle();}
     }
     public void snapshot()throws Exception {
+        requireLock();
         if(file("phase").exists())throw new IOException("existing-transaction-refused");
         OverrideFileStore.Target target=target();PersistableBundle original=config();
         if(original==null||!original.getBoolean(CarrierConfigManager.KEY_CARRIER_CONFIG_APPLIED_BOOL)||!ModernCarrierBaseline.hasEmptyTransientOverride(slot))throw new IOException("clean-loaded-baseline-required");
@@ -106,6 +104,7 @@ public final class ModernProviderTransaction implements AutoCloseable {
         return true;
     }
     public void apply(int mask)throws Exception {
+        requireLock();
         if(mask<1||mask>7||!"PREPARED".equals(phase()))throw new IOException("prepared-component-selection-required");
         sameProfile();
         OverrideFileStore.Target target=target();CarrierOverrideFiles.store(state).verifyRestored(target);
@@ -133,17 +132,20 @@ public final class ModernProviderTransaction implements AutoCloseable {
     }
     /** Retention checks must match this transaction's recorded component mask. */
     public boolean verifySelection(int mask)throws Exception {
+        requireLock();
         if(mask<1||mask>7||!"ACTIVE".equals(phase()))throw new IOException("active-selection-required");
         sameProfile();File record=file("components");
         if(!record.isFile()||record.length()>8||!Integer.toString(mask).equals(new String(Files.readAllBytes(record.toPath()),"UTF-8")))throw new IOException("selected-components-changed");
         return selected(mask);
     }
     public String statePhase()throws IOException {
+        requireLock();
         sameProfile();String value=phase();
         if(!Arrays.asList("PREPARING","PREPARED","APPLYING","ACTIVE","CLEARING","FILE_RESTORING","RESTORED_FILE","RESTORED").contains(value))throw new IOException("transaction-phase-unverified");
         return value;
     }
     public void restore()throws Exception {
+        requireLock();
         String phase=phase();
         sameProfile();
         OverrideFileStore.Target target=target();OverrideFileStore store=CarrierOverrideFiles.store(state);store.requireIdentity(target);
@@ -169,6 +171,7 @@ public final class ModernProviderTransaction implements AutoCloseable {
     }
     /** Reload this owner's saved carrier layer without killing the shared phone process. */
     public void reloadRestored()throws Exception {
+        requireLock();
         if(!"RESTORED_FILE".equals(phase()))throw new IOException("restored-file-required");
         sameProfile();
         OverrideFileStore.Target target=target();CarrierOverrideFiles.store(state).verifyRestored(target);
@@ -185,11 +188,13 @@ public final class ModernProviderTransaction implements AutoCloseable {
     }
     /** A restored XML alone does not prove the loader consumed the original layer. */
     public boolean confirmRestored()throws Exception {
+        requireLock();
         if(!Arrays.asList("RESTORED_FILE","RESTORED").contains(phase()))throw new IOException("restored-file-required");
         sameProfile();
         OverrideFileStore.Target target=target();CarrierOverrideFiles.store(state).verifyRestored(target);
         if(!same(before(),config())||!ModernCarrierBaseline.hasEmptyTransientOverride(slot))return false;
         phase("RESTORED");return true;
     }
-    @Override public void close()throws IOException {try{lock.release();}finally{lockFile.close();}}
+    private void requireLock()throws IOException {if(closed)throw new IOException("closed-carrier-transaction");controllerLock.requireHeld(lockRoot);}
+    @Override public void close()throws IOException {if(closed)return;controllerLock.requireHeld(lockRoot);closed=true;if(ownsLock)controllerLock.close();}
 }
