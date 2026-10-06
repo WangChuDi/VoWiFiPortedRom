@@ -82,3 +82,16 @@ GPL-2.0 与 phhusson/ims 来源和许可证继续保留。
   发短信或重启，也没有修改 vendor／CNE／基带／APN。
 
 构建、适配边界和下一步见 [README.md](README.md)。
+
+## 续批：安装权限矩阵与 Android16 IPsec AppOp 缺口
+
+- 新增只读并行矩阵脚本，一次核对各版本的系统特权安装、实际权限、短信限制
+  豁免、IPsec AppOp 与电话进程绑定。12 项契约防止把权限请求当授予、把最近
+  调用方或其他客户端当框架绑定，并区分已安装用户和重复的用户摘要。
+- 独立 Android13／16 agent 复核因代理线程上限顺序执行；主线程的两设备矩阵
+  并发执行，没有声称本轮 agent 同时运行。
+- 发现 Android16 模拟器的 MANAGE_IPSEC_TUNNELS 为 deny，核对模拟器身份和
+  固定签名 APK 摘要后只修正该 AppOp；复核两版本安装权限均就绪。
+- 当前只有 QNS 存在电话进程的实际绑定。IWLAN／IMS 自动绑定、真实运营商
+  注册、通话短信及双活动卡仍未验证；不能把安装权限就绪当成 VoWiFi 成功。
+  没有改动实体 API30 手机、服务 APK 或 CarrierConfig。

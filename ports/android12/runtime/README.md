@@ -223,3 +223,43 @@ These are controlled parser tests, not two active real SIMs. Production VOXI
 commands, full modern installer/boot supervision/app UI, abrupt kill/OS reboot,
 real IMS/call/SMS and simultaneous dual-SIM behavior remain unverified. This
 continuation made no changes to the connected API30 phone or three modern APKs.
+
+## Installation audit matrix and AppOp gap
+
+`check-installation-matrix.py` checks explicitly selected owned rooted emulators
+concurrently, without installing, granting, requesting bindings or changing
+CarrierConfig. One invocation covers system/privileged installation, primary-user
+permission grants, the fixed SMS system restriction exemption, the IWLAN IPsec
+AppOp and current phone-process service bindings. Requested permissions and
+service declarations alone do not count as grants or received phone bindings.
+The output contains fixed metadata, never raw package/service dumps. Twelve host
+contracts cover misleading requested permission lines, wrong/incomplete binding
+clients and secondary user blocks. The initial parser mistook the package dump's
+additional `User 0:` summary for a second installed user; it was corrected to
+inspect actual installed-user declarations before recording final observations.
+
+```sh
+python check-installation-matrix.py --adb /path/to/adb \
+  --guest 33:emulator-5574 --guest 36:emulator-5580 \
+  --output /path/to/fresh-installation-matrix.json
+```
+
+Reports require a fresh canonical path, distinct SDKs/serials, SDK31–37,
+`ro.kernel.qemu=1`, exact `CodexVoWiFiApi<SDK>` identity and root. `observed`
+means the observations completed; use `installation_permission_profile_ready`
+for the narrow installation-permission result. Neither means carrier readiness.
+This audit does not repeat the declared-library runtime lookup or establish real
+Magisk mounting, EAP/AKA, IMS registration, voice/SMS or dual active SIMs.
+
+The new independent API33/API36 scout audits ran sequentially because the second
+concurrent agent dispatch hit the thread limit. The consolidated device workers
+ran concurrently. Both guests had the required installed grants and IMS SMS
+exemption. API33's `MANAGE_IPSEC_TUNNELS` AppOp was `allow`; API36's was `deny`.
+The owner corrected only that API36 emulator AppOp after verifying QEMU, SDK,
+owned AVD, root, exact privileged APK path and the signed APK hash. The final
+concurrent audit observed both permission profiles ready. Only QNS showed a
+received binding from `com.android.phone`; IWLAN and IMS did not show active
+bindings. The AppOp gap is an installation prerequisite, not proof of the cause
+of those absent bindings. No phone, APK or carrier configuration was modified.
+Before/after safe observations are in
+[the installation matrix reports](reports/20261006-installation/final.json).
