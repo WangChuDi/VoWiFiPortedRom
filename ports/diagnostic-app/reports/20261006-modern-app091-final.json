@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "concurrent_workers": 2,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 33,
+      "status": "passed",
+      "apk_sha256": "8080b7d4e8ce15cda7b57493a9fa15582f69b102036e188a3debe6eab94ec5b0",
+      "modern_read_only_diagnostic": true,
+      "diagnostic_fields_observed": {
+        "runtime_abi": true,
+        "sim_state": true,
+        "dns": true,
+        "selected_policy": true,
+        "ims_transport": false,
+        "cap_observed": false
+      },
+      "nonroot_diagnostic_refused": true,
+      "nonroot_action_refused": true,
+      "invalid_mask_refused": true,
+      "invalid_slot_refused": true,
+      "invalid_subscription_refused": true,
+      "invalid_action_refused": true,
+      "missing_module_action_refused": true,
+      "production_state_presence_unchanged": true,
+      "actual_modern_module_installation_verified": false,
+      "modern_carrier_selection_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "status": "passed",
+      "apk_sha256": "8080b7d4e8ce15cda7b57493a9fa15582f69b102036e188a3debe6eab94ec5b0",
+      "modern_read_only_diagnostic": true,
+      "diagnostic_fields_observed": {
+        "runtime_abi": true,
+        "sim_state": true,
+        "dns": true,
+        "selected_policy": true,
+        "ims_transport": false,
+        "cap_observed": false
+      },
+      "nonroot_diagnostic_refused": true,
+      "nonroot_action_refused": true,
+      "invalid_mask_refused": true,
+      "invalid_slot_refused": true,
+      "invalid_subscription_refused": true,
+      "invalid_action_refused": true,
+      "missing_module_action_refused": true,
+      "production_state_presence_unchanged": true,
+      "actual_modern_module_installation_verified": false,
+      "modern_carrier_selection_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    }
+  ]
+}

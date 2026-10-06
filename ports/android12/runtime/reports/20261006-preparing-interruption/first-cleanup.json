@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "scope": "manual-follow-up-of-first-failed-preparing-batch",
+  "versions": [
+    {"sdk": 33, "journal_and_start_time_guarded_sigkill": true, "remaining_named_test_processes": 0, "preparing_cleanup_completed": true, "roles_cleanup_completed": true, "supervisor_cleanup_completed": true, "selection_cleanup_completed": true, "entire_outer_permission_observation_restored": true},
+    {"sdk": 36, "journal_and_start_time_guarded_sigkill": true, "remaining_named_test_processes": 0, "preparing_cleanup_completed": true, "roles_cleanup_completed": true, "supervisor_cleanup_completed": true, "selection_cleanup_completed": true, "entire_outer_permission_observation_restored": true}
+  ],
+  "source": "actual-device-command-results-following-terminal-host-session-58707",
+  "phone_modified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "os_reboot_verified": false
+}

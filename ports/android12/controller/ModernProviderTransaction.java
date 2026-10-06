@@ -75,17 +75,30 @@ public final class ModernProviderTransaction implements AutoCloseable {
     }
     private void writeBefore(PersistableBundle before)throws Exception {
         File output=file("config-before.bin");if(output.exists())throw new IOException("snapshot-already-exists");
+        File staged=file("config-before.bin.new");if(staged.exists())throw new IOException("snapshot-already-exists");
         Parcel parcel=Parcel.obtain();
-        try{parcel.writeTypedObject(before,0);byte[] bytes=parcel.marshall();if(bytes.length>1048576)throw new IOException("snapshot-too-large");try(FileOutputStream stream=new FileOutputStream(output)){stream.write(bytes);stream.getFD().sync();}}
+        try{parcel.writeTypedObject(before,0);byte[] bytes=parcel.marshall();if(bytes.length>1048576)throw new IOException("snapshot-too-large");try(FileOutputStream stream=new FileOutputStream(staged)){stream.write(bytes);stream.getFD().sync();}}
         finally{parcel.recycle();}
     }
     private PersistableBundle before()throws Exception {
-        File input=file("config-before.bin");if(!input.isFile()||input.length()>1048576)throw new IOException("snapshot-unavailable");
+        return before(file("config-before.bin"));
+    }
+    private PersistableBundle before(File input)throws Exception {
+        if(!input.isFile()||input.length()==0||input.length()>1048576)throw new IOException("snapshot-unavailable");
         byte[] bytes=Files.readAllBytes(input.toPath());Parcel parcel=Parcel.obtain();
-        try{parcel.unmarshall(bytes,0,bytes.length);parcel.setDataPosition(0);return parcel.readTypedObject(PersistableBundle.CREATOR);}
+        try{parcel.unmarshall(bytes,0,bytes.length);parcel.setDataPosition(0);PersistableBundle value=parcel.readTypedObject(PersistableBundle.CREATOR);if(value==null||parcel.dataAvail()!=0)throw new IOException("snapshot-invalid");return value;}
+        catch(RuntimeException invalid){throw new IOException("snapshot-invalid");}
         finally{parcel.recycle();}
     }
+    interface SnapshotObserver {void checkpoint(String stage)throws Exception;}
     public void snapshot()throws Exception {
+        snapshot(null);
+    }
+    void snapshotForEmulator(SnapshotObserver observer)throws Exception {
+        if(!test||observer==null||!"1".equals(SystemProperties.get("ro.kernel.qemu"))||!("CodexVoWiFiApi"+Build.VERSION.SDK_INT).equals(SystemProperties.get("ro.boot.qemu.avd_name")))throw new SecurityException("owned-snapshot-fixture-required");
+        snapshot(observer);
+    }
+    private void snapshot(SnapshotObserver observer)throws Exception {
         requireLock();
         if(file("phase").exists())throw new IOException("existing-transaction-refused");
         OverrideFileStore.Target target=target();PersistableBundle original=config();
@@ -94,7 +107,11 @@ public final class ModernProviderTransaction implements AutoCloseable {
         // the loader removes that metadata on read. Snapshot a disk-loaded baseline.
         if(original.containsKey("__carrier_config_package_version__"))throw new IOException("carrier-layer-not-loaded-from-disk");
         for(String key:KEYS)for(String value:VALUES)if(value.equals(original.getString(key)))throw new IOException("untracked-replacement-refused");
-        phase("PREPARING");writeText("profile",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);OverrideFileStore store=CarrierOverrideFiles.store(state);store.snapshot(target);store.verifyRestored(target);writeBefore(original);phase("PREPARED");
+        phase("PREPARING");writeText("profile",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);OverrideFileStore store=CarrierOverrideFiles.store(state);store.snapshot(target);store.verifyRestored(target);writeBefore(original);
+        if(observer!=null)observer.checkpoint("bundle-staged");
+        Files.move(file("config-before.bin.new").toPath(),file("config-before.bin").toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        if(observer!=null)observer.checkpoint("snapshot-complete");
+        phase("PREPARED");
     }
     private void override(PersistableBundle value)throws Exception {target();api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader(),sub,value,true);}
     static boolean same(PersistableBundle left,PersistableBundle right){
@@ -149,6 +166,18 @@ public final class ModernProviderTransaction implements AutoCloseable {
         String phase=phase();
         sameProfile();
         OverrideFileStore.Target target=target();OverrideFileStore store=CarrierOverrideFiles.store(state);store.requireIdentity(target);
+        if("PREPARING".equals(phase)) {
+            // This phase precedes every carrier mutation. Resume only the saved
+            // original, never resample live configuration to fill missing data.
+            if(file("components").exists())throw new IOException("preparation-mutation-evidence-refused");
+            File committed=file("config-before.bin"),staged=file("config-before.bin.new");
+            if(committed.exists()&&staged.exists())throw new IOException("preparation-snapshot-conflict-refused");
+            PersistableBundle original=before(committed.exists()?committed:staged);
+            store.verifyRestored(target);
+            if(!same(original,config())||!ModernCarrierBaseline.hasEmptyTransientOverride(slot))throw new IOException("unused-baseline-changed");
+            if(!committed.exists())Files.move(staged.toPath(),committed.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            phase("PREPARED");phase="PREPARED";
+        }
         if("PREPARED".equals(phase)){
             store.verifyRestored(target);
             if(!same(before(),config())||!ModernCarrierBaseline.hasEmptyTransientOverride(slot))throw new IOException("unused-baseline-changed");

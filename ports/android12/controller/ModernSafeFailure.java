@@ -25,7 +25,11 @@ final class ModernSafeFailure {
         "shared-role-reference-unavailable","shared-role-resource-refused","shared-role-reference-changed",
         "shared-role-active-provider-unconfirmed","shared-role-active-goal-unavailable","shared-role-recovery-required",
         "shared-role-archive-conflict","shared-role-untracked-policy-refused","shared-role-released-owner-refused",
-        "shared-role-owner-recovery-required"));
+        "shared-role-owner-recovery-required","snapshot-unavailable","snapshot-invalid",
+        "preparation-mutation-evidence-refused","preparation-snapshot-conflict-refused",
+        "unused-baseline-changed","fixture-preparation-process-refused","fixture-preparation-boundary-refused",
+        "fixture-preparation-process-still-live","fixture-preparation-recovery-unconfirmed",
+        "fixture-preparation-kill-window-expired","fixture-incomplete-snapshot-not-preserved"));
     static String reason(Throwable error){String value=error.getMessage();return REASONS.contains(value)?value:"unclassified";}
     static String origin(Throwable error) {
         for(StackTraceElement frame:error.getStackTrace())if(frame.getClassName().matches("Modern[A-Za-z0-9]+")&&frame.getMethodName().matches("[A-Za-z0-9_<>]+"))return frame.getClassName()+"."+frame.getMethodName()+":"+frame.getLineNumber();

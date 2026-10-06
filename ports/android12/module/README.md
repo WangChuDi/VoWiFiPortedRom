@@ -5,7 +5,7 @@ It mounts the three independently signed SDK31 APKs and their privileged permiss
 XML, verifies the installed APK bytes, then prepares their fixed runtime permissions,
 IMS SEND_SMS system restriction exemption and IWLAN IPsec AppOp. It also includes
 fixed owner selection commands and a resident selection/lease/recovery supervisor.
-Diagnostic tool0.9.0 includes experimental modern replacement buttons. Real Magisk mounting,
+Diagnostic tool0.9.1 includes experimental modern replacement buttons. Real Magisk mounting,
 modern VOXI authentication, voice/SMS and dual active SIM behavior are unverified.
 Do not install this SDK31–37 payload over the working SDK30 phone/module.
 

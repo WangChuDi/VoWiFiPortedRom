@@ -219,3 +219,16 @@ worker tokens are consumed inside root, not returned to the activity. Existing
 Android11 controller routing and component behavior remain separate. Full build,
 scope and per-version evidence are in
 [the integration record](MODERN-INTEGRATION-20261006.md).
+
+## Version0.9.1 recovery bundle
+
+VersionCode13 / `0.9.1-diagnostic` packages the newer modern PREPARING recovery
+helper without changing the API30 engine bytes or application action semantics.
+Its modern helper passed the two actual snapshot SIGKILL boundaries as part of a
+49-stage API33/API36 batch. The signed app passed the modern read-only/refusal
+checks, was updated on the current MIUI phone, and still observes the full ACTIVE
+API30 selection, WLAN IMS registration and advertised voice/SMS capability.
+No new call or SMS was sent in that regression. See the
+[version0.9.1 evidence](RECOVERY-BUNDLE-20261006.md). Positive modern application
+selection, removed-SIM recovery, true Magisk boot lifecycle and dual active SIMs
+remain pending; version0.9.0's integration report retains its historical hashes.

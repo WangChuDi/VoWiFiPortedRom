@@ -145,6 +145,13 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         history.write(RECORD,value);Files.delete(files.file(RECORD).toPath());
     }
     public String trial(int components)throws Exception {
+        return trial(components,null);
+    }
+    String trialForEmulator(int components,ModernProviderTransaction.SnapshotObserver observer)throws Exception {
+        if(!test||observer==null)throw new SecurityException("owned-snapshot-fixture-required");
+        return trial(components,observer);
+    }
+    private String trial(int components,ModernProviderTransaction.SnapshotObserver observer)throws Exception {
         requireLock();if(components<1||components>7)throw new IllegalArgumentException("fixed-components-required");ModernPhoneIdle.requireIdle(context);installed();companion(components);otherIwlanOwner();
         if(files.file(RECORD).exists())archive(record());
         if(carrierState.exists())throw new IOException("untracked-carrier-state-recovery-required");
@@ -152,7 +159,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         value.setProperty("token",UUID.randomUUID().toString().replace("-",""));value.setProperty("mask",Integer.toString(components));value.setProperty("persistent","false");value.setProperty("mode_owned","false");
         value.setProperty("boot",Integer.toString(ModernPhoneRefresh.boot(context)));value.setProperty("trial.until",Long.toString(SystemClock.elapsedRealtime()+TRIAL_MILLIS));baselineLease(value);roles().snapshot(value);phase(value,"PREPARING");
         try {
-            try(ModernProviderTransaction transaction=carrier()){transaction.snapshot();}phase(value,"PREPARED");
+            try(ModernProviderTransaction transaction=carrier()){if(observer==null)transaction.snapshot();else transaction.snapshotForEmulator(observer);}phase(value,"PREPARED");
             if((components&1)!=0){value.setProperty("mode_owned","true");files.write(RECORD,value);mode().acquire(slot);owner();}
             phase(value,"SELECTING");publishLease(value,false);
             roles().requested(value);files.write(RECORD,value);

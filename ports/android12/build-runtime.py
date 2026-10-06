@@ -59,6 +59,7 @@ sources += [B/'runtime/ModernSupervisorEmulatorTrial.java']
 sources += [B/'controller/ModernRecoveryPublication.java']
 sources += [B/'runtime/ModernResidentEmulatorTrial.java']
 sources += [B/'runtime/ModernSharedRolesEmulatorTrial.java']
+sources += [B/'runtime/ModernPreparingEmulatorTrial.java']
 subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',str(framework),'-d',str(classes),*map(str,sources)],check=True)
 jar=out/'classes.jar'
 with zipfile.ZipFile(jar,'w') as archive:

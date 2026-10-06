@@ -49,7 +49,7 @@ STAGES={
     'cleanup':('entire_outer_permission_observation_restored',),
 }
 
-def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
+def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing=False,preparing_only=False):
     record=dict(schema=1,sdk=sdk,status='started',stages={})
     remote='/data/local/tmp/codex-modern-runtime-check.zip';nonce=uuid.uuid4().hex
     root='/data/local/tmp/codex-modern-installation-tests/'+nonce
@@ -71,6 +71,47 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
             observation.get('stage')!=name or not all(observation.get(key) is True for key in STAGES[name])):
             raise ValueError('fixture-stage-unconfirmed')
     resident_children=[]
+    preparing_children=[]
+    def preparing_command(action):
+        guard();reply=command('shell','CLASSPATH='+remote+' timeout 75s app_process /system/bin ModernPreparingEmulatorTrial '+action+' '+nonce,check=False,timeout=85)
+        lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
+        if len(lines)!=1:raise ValueError('preparing-fixture-json-unavailable')
+        value=json.loads(lines[0])
+        if value.get('schema')!=1 or value.get('sdk')!=sdk or value.get('stage')!='preparing-'+action:raise ValueError('preparing-fixture-response-refused')
+        if reply.returncode or value.get('error'):
+            record['preparing_command_failure']={key:value[key] for key in ('stage','error','reason','origin') if key in value}
+            raise ValueError('preparing-fixture-command-unconfirmed')
+        return value
+    def preparing_cycle():
+        prepared=preparing_command('prepare')
+        if prepared.get('fresh_preparation_installation_ready') is not True:raise ValueError('preparing-installation-unconfirmed')
+        record['stages']['preparing-prepare']=prepared
+        for suffix,checkpoint in [('staged','bundle-staged'),('complete','snapshot-complete')]:
+            guard();child=subprocess.Popen([adb,'-s',serial,'shell','CLASSPATH='+remote+' app_process /system/bin ModernPreparingEmulatorTrial run-'+suffix+' '+nonce],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            preparing_children.append((child,checkpoint));deadline=time.monotonic()+30
+            while True:
+                if child.poll() is not None:
+                    text,_=child.communicate();values=[json.loads(line) for line in text.splitlines() if line.startswith('{') and line.endswith('}')]
+                    if values:record['preparing_start_failure']={key:values[-1][key] for key in ('error','reason','origin') if key in values[-1]}
+                    raise ValueError('preparing-exited-before-boundary')
+                ready=preparing_command('ready')
+                if ready and ready.get('actual_preparing_process_and_start_time_verified') is True and ready.get('before_carrier_mutation') is True and ready.get('checkpoint')==checkpoint:break
+                if time.monotonic()>=deadline:raise ValueError('preparing-boundary-timeout')
+                time.sleep(.5)
+            record['stages']['preparing-ready-'+suffix]=ready
+            killed=preparing_command('kill')
+            if killed.get('owned_preparing_process_sigkill_sent') is not True or killed.get('process_start_time_identity_verified') is not True:raise ValueError('preparing-kill-unconfirmed')
+            child.communicate(timeout=15)
+            if child.returncode==0:raise ValueError('preparing-kill-not-terminal')
+            killed['actual_target_process_terminal']=True;record['stages']['preparing-kill-'+suffix]=killed
+            if suffix=='complete':
+                tampered=preparing_command('tamper')
+                if tampered.get('missing_original_bundle_refused_without_resampling') is not True or tampered.get('exact_saved_original_preserved') is not True:raise ValueError('preparing-incomplete-refusal-unconfirmed')
+                record['stages']['preparing-missing-bundle']=tampered
+            recovered=preparing_command('recover')
+            if recovered.get('checkpoint')!=checkpoint or not all(recovered.get(key) is True for key in ('new_process_recovers_actual_preparing_interruption','full_original_carrier_lease_and_roles_verified','repeat_recovery_verified')):raise ValueError('preparing-recovery-unconfirmed')
+            record['stages']['preparing-recover-'+suffix]=recovered
+        record['actual_core_preparing_forced_kill_verified']=True
     def resident_command(action):
         deadline=time.monotonic()+25;retries=0
         while True:
@@ -187,11 +228,13 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
         phone=shell('pidof com.android.phone')
         if not re.fullmatch(r'[0-9]+',phone):raise ValueError('single-phone-process-required')
         started=True
-        prerequisites=('coordination','seed','supervisor-publish','prepare','restore') if resident_only else STAGES
+        prerequisites=('coordination','seed','supervisor-publish','prepare','restore') if resident_only or preparing_only else STAGES
         record['resident_prerequisites_only']=resident_only
+        record['preparing_prerequisites_only']=preparing_only
         for name in prerequisites:
             if name not in ('roles-cleanup','supervisor-cleanup','selection-cleanup','cleanup'):stage(name)
         if resident:resident_cycle()
+        if preparing:preparing_cycle()
     except Exception as error:
         failure=type(error).__name__
         if started:
@@ -203,6 +246,25 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
     finally:
         if started:
             resident_stopped=True
+            if preparing_children:
+                preparing_stopped=True
+                for child,expected_checkpoint in preparing_children:
+                    if child.poll() is None:
+                        try:
+                            deadline=time.monotonic()+30
+                            while child.poll() is None:
+                                observed=preparing_command('ready')
+                                if observed.get('ready') is True and observed.get('checkpoint')==expected_checkpoint:
+                                    killed=preparing_command('kill')
+                                    if killed.get('owned_preparing_process_sigkill_sent') is not True or killed.get('process_start_time_identity_verified') is not True:raise ValueError('preparing-cleanup-kill-unconfirmed')
+                                    child.communicate(timeout=15);break
+                                if time.monotonic()>=deadline:raise ValueError('preparing-cleanup-readiness-timeout')
+                                time.sleep(.5)
+                        except Exception as error:record['preparing_stop_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+                    if child.poll() is None:preparing_stopped=False
+                record['preparing_processes_terminal_before_policy_cleanup']=preparing_stopped
+                resident_stopped=preparing_stopped
+                if not preparing_stopped:failure=failure or 'PreparingCleanupNotTerminal'
             if resident_children:
                 # Disable only the nonce-scoped fixture. Waiting duplicate loops
                 # acquire/recover/exit too; do not abandon a remote app_process.
@@ -230,8 +292,14 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
             if resident_stopped:
                 # Never let the outer fixture overwrite unresolved carrier/role
                 # recovery. Each cleanup boundary must succeed before the next.
-                for name in ('roles-cleanup','supervisor-cleanup','selection-cleanup','cleanup'):
-                    try:stage(name)
+                boundaries=(('preparing-cleanup',) if preparing else ())+('roles-cleanup','supervisor-cleanup','selection-cleanup','cleanup')
+                for name in boundaries:
+                    try:
+                        if name=='preparing-cleanup':
+                            value=preparing_command('cleanup')
+                            if value.get('preparation_fixture_cleanup_completed') is not True:raise ValueError('preparing-cleanup-unconfirmed')
+                            record['stages'][name]=value
+                        else:stage(name)
                     except Exception as error:
                         record[name.replace('-','_')+'_error']=type(error).__name__;failure=failure or type(error).__name__
                         record['remaining_policy_cleanup_deferred_after']=name
@@ -252,7 +320,7 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
         except Exception as error:failure=type(error).__name__
     record.update(status='failed' if failure else 'passed',magisk_mount_verified=False,
                   carrier_call_sms_verified=False,dual_active_sim_verified=False,os_reboot_verified=False,
-                  actual_os_reboot_or_forced_kill_test=bool(record.get('actual_resident_forced_kill_verified')))
+                  actual_os_reboot_or_forced_kill_test=bool(record.get('actual_resident_forced_kill_verified') or record.get('actual_core_preparing_forced_kill_verified')))
     if failure:record['error']=failure
     return record
 
@@ -262,8 +330,13 @@ def main():
     parser.add_argument('--module',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
     parser.add_argument('--resident',action='store_true',help='also run real background renewal, duplicate refusal, SIGKILL/restart and disable recovery')
     parser.add_argument('--resident-only',action='store_true',help='run only new resident prerequisites and lifecycle; does not repeat the full selection suite')
+    parser.add_argument('--preparing',action='store_true',help='actually SIGKILL staged/committed PREPARING snapshots and recover in new processes')
+    parser.add_argument('--preparing-only',action='store_true',help='run only preparation prerequisites, new interruption cases and cleanup')
     args=parser.parse_args();guests=[]
     if args.resident_only and not args.resident:parser.error('resident-only-requires-resident')
+    if args.preparing_only and not args.preparing:parser.error('preparing-only-requires-preparing')
+    if args.preparing and args.resident:parser.error('separate-preparation-and-resident-lifecycle-batches-required')
+    if args.preparing_only and args.resident_only:parser.error('distinct-scoped-batches-required')
     for guest in args.guest:
         match=re.fullmatch(r'(3[1-7]):(emulator-[0-9]+)',guest)
         if not match:parser.error('explicit-emulator-profile-required')
@@ -293,7 +366,7 @@ def main():
     record=dict(schema=1,status='started',concurrent_device_workers=len(guests),versions=[])
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8')
     with ThreadPoolExecutor(max_workers=len(guests)) as pool:
-        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module,args.resident,args.resident_only),guests))
+        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module,args.resident,args.resident_only,args.preparing,args.preparing_only),guests))
     record['status']='passed' if all(v['status']=='passed' for v in record['versions']) else 'failed'
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps(record))
     return 0 if record['status']=='passed' else 1

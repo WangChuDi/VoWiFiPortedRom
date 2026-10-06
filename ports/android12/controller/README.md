@@ -68,8 +68,11 @@ temporary layer before restoring the original XML. FILE_RESTORING is committed
 before writing the original file; resumption at this phase never repeats loader
 clearing against an already restored file. RESTORED_FILE/RESTORED retries verify
 the original file without deleting it. An unused PREPARED transaction can finish
-only if the original baseline is still unchanged. PREPARING remains refused and
-retained for future supervisor-controlled archival; partial backups are not reused.
+only if the original baseline is still unchanged. PREPARING now resumes when its
+saved original bundle, profile and exact persisted-file identity are complete and
+still match the live original. A complete staged `config-before.bin.new` can be
+atomically committed after those checks. Missing, malformed, conflicting or
+identity-mismatched backups remain pending; recovery never samples a new baseline.
 
 If the original XML existed, restoring it also requires the loader to consume
 that original layer again. `reloadRestored()` checks every configured modem's
@@ -115,9 +118,10 @@ slot ringing/offhook, missing/duplicate states, unknown values and incomplete
 phone inventory. It requires an observed state for every active modem, including
 empty slots; unknown observations refuse a reload rather than defaulting to idle.
 
-Actual OS reboot and abrupt interruption of the core provider transaction remain
-untested. The later resident batch below verifies an actual supervisor SIGKILL,
-which is a different interruption boundary.
+Actual OS reboot remains untested. The later
+[preparation-interruption batch](../runtime/reports/20261006-preparing-interruption/README.md)
+verifies actual core SIGKILL at two complete-snapshot PREPARING boundaries. The
+resident batch below verifies a supervisor SIGKILL, a different boundary.
 Ordinary exceptions attempt recovery; a forced timeout/kill is a failed
 disposable test and cannot guarantee cleanup. Private phase evidence is retained.
 It does not prove real carrier authentication, IMS registration, call/SMS/native
@@ -217,7 +221,8 @@ Restoration accepts only the original or those role-produced values; other polic
 changes are refused. These AppOps participate in the stable full-role comparison.
 The earlier prototype owner schemas are not silently rebaselined or migrated.
 
-An incomplete core PREPARING snapshot is preserved rather than reused. Modern
+An incomplete core PREPARING snapshot is preserved rather than reused; a complete
+saved original can now resume before the PREPARED phase commit. Modern
 UI integration and shared role-policy ownership now exist; real multi-SIM operation
 and real Magisk lifecycle remain pending. Watchdog/disable/remove/boot recovery is implemented by
 `ModernSelectionSupervisor` and independently published recovery generations. See the
@@ -290,3 +295,25 @@ The [final shared-role batch](../runtime/reports/20261006-shared-roles/README.md
 passed 46 stages per API33/API36 guest, including the resident lifecycle. Its peer
 is a synthetic pending journal: no second active SIM or provider was fabricated.
 Actual ACTIVE-peer permission repair still needs two-subscription device evidence.
+
+## Actual core preparation interruption
+
+The production snapshot writes/syncs a private staged original bundle, atomically
+commits it, then writes PREPARED. Its separately guarded named-QEMU observer pauses
+at the staged and committed boundaries. The new fixture actually SIGKILLs each
+nonce/start-time-bound process, then opens the owner in a new process and resumes
+through ordinary `ModernSelectionTransaction.restore()`. Neither boundary has yet
+published a lease, acquired shared mode or applied carrier provider overrides.
+
+The [full second batch](../runtime/reports/20261006-preparing-interruption/README.md)
+passed 49 stages per API33/API36 guest concurrently, including the preceding
+40-stage regression. It confirms the full original carrier/lease/role restoration,
+repeat recovery, missing-bundle refusal and complete outer permission cleanup.
+The deliberately withheld bundle is the same saved private original and is put
+back only by the fixture; production does not reconstruct it from current config.
+The final fixture handles a departed-process NIO read and explicitly verifies
+cleanup checkpoints/kill fields; its targeted 18-stage follow-up passed both guests
+without repeating the unchanged production restoration regression.
+Earlier snapshot writes with missing profile/persistence metadata, incomplete data,
+APPLYING-phase kills, removed-SIM recovery, OS reboot, actual Magisk lifecycle and
+real two-active-SIM/modern carrier operation still require additional work.
