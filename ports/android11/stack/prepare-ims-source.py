@@ -39,6 +39,8 @@ t=t.replace('imsRegistration.onRegistering(REGISTRATION_TECH_IWLAN)', 'imsServic
 t=t.replace('Rlog.d(TAG, "$slotId onFeatureRemoved")','Rlog.d(TAG, "$slotId onFeatureRemoved")\n        if(this::sipHandler.isInitialized) sipHandler.shutdown()\n        PhhImsService.instance?.releaseFeature(slotId,this)')
 p.write_text(t,encoding='utf-8',newline='\n')
 edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHandler: SipHandler
+    val telemetry=dev.codex.vowifi.common.StackTelemetry.begin("ims",slotId,selectedSubId,java.util.function.LongSupplier { android.os.SystemClock.elapsedRealtime() })
+    init { imsSms.telemetry=telemetry }
     private val readinessHandler=android.os.Handler(android.os.Looper.getMainLooper())
     @Volatile private var removed=false
     private val registrationCallbacks=RegistrationCallbackGate()
@@ -86,6 +88,7 @@ edit(feature,'                    mState = State.ESTABLISHED','''               
 edit(feature,'                callListener?.callSessionTerminated(ImsReasonInfo(ImsReasonInfo.CODE_NETWORK_REJECT, 0, statusMessage))','                ended(ImsReasonInfo(ImsReasonInfo.CODE_NETWORK_REJECT,0,statusMessage))')
 edit(feature,'                callListener?.callSessionTerminated(\n                    ImsReasonInfo(','                ended(\n                    ImsReasonInfo(')
 edit(feature,'        sipHandler.onSmsReceived = imsSms::onSmsReceived','''        sipHandler.onSmsReceived = { token,format,pdu ->
+            telemetry.add(dev.codex.vowifi.common.StackTelemetry.Counter.SMS_RX,1)
             android.util.Log.i("Api30PhhIms","sms-received token=$token bytes=${pdu.size}")
             imsSms.onSmsReceived(token,format,pdu)
         }''')
@@ -106,16 +109,30 @@ edit(feature,'        if(this::sipHandler.isInitialized) return','''        if(r
 edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()','''        removed=true
         readinessHandler.removeCallbacksAndMessages(null)
         registrationCallbacks.close()
+        telemetry.end(false)
         if(this::sipHandler.isInitialized) sipHandler.shutdown()''')
 sms='me/phh/ims/PhhImsSms.kt'
+edit(sms,'    lateinit var sipHandler: SipHandler','    lateinit var sipHandler: SipHandler\n    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null')
+edit(sms,'        try {','''        val recorded=java.util.concurrent.atomic.AtomicBoolean(false)
+        fun recordOutcome(success:Boolean) {
+            if(recorded.compareAndSet(false,true))telemetry?.add(if(success)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_FAILED,1)
+        }
+        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX,1)
+        try {''')
+edit(sms,'            if (format != "3gpp") {','            if (format != "3gpp") {\n                recordOutcome(false)')
+edit(sms,'            if (::sipHandler.isInitialized == false) {','            if (::sipHandler.isInitialized == false) {\n                recordOutcome(false)')
+edit(sms,'        } catch(t: Throwable) {','        } catch(t: Throwable) {\n            recordOutcome(false)')
 edit(sms,'            // called when android tries to send a sms?','''            android.util.Log.i("Api30PhhIms","framework-send-sms token=$token format=$format")
             // called when android tries to send a sms?''')
 edit(sms,'                    // success cb','''                    android.util.Log.i("Api30PhhIms","framework-send-sms=SUCCESS token=$token")
+                    recordOutcome(true)
                     // success cb''')
 edit(sms,'                    // XXX better error code','''                    android.util.Log.i("Api30PhhIms","framework-send-sms=FAILED token=$token")
+                    recordOutcome(false)
                     // XXX better error code''')
 edit(sms,'        sipHandler.sendSmsAck(token, messageRef, error)','        sipHandler.sendSmsAck(token, messageRef, result)')
 edit(sms,'        // called when android acks a received sms','''        android.util.Log.i("Api30PhhIms","framework-sms-ack token=$token result=$result")
+        telemetry?.add(if(result==1)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_ACK_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_ACK_FAILED,1)
         // called when android acks a received sms''')
 edit(sms,'        // should not do anything before this is called','''        android.util.Log.i("Api30PhhIms","framework-sms=READY")
         // should not do anything before this is called''')
@@ -135,6 +152,12 @@ p.write_text(t,encoding='utf-8',newline='\n')
 
 sip='me/phh/sip/SipHandler.kt'
 edit(sip,'class SipHandler(val ctxt: Context, slotId: Int) {','class SipHandler(val ctxt: Context, slotId: Int, expectedSubId:Int) {')
+edit(sip,'    private var imsReady = false','    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null\n    private var imsReady = false')
+edit(feature,'sipHandler = SipHandler(imsService, slotId, selectedSubId)','sipHandler = SipHandler(imsService, slotId, selectedSubId)\n        sipHandler.telemetry=telemetry')
+edit(sip,'    fun registerCallback(response: SipResponse): Boolean {','    fun registerCallback(response: SipResponse): Boolean {\n        telemetry?.sipResponse(response.statusCode)')
+edit(sip,'        registerCounter += 1','        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.REGISTER_TX,1)\n        registerCounter += 1')
+edit(sip,'        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {','        if(plainRegReply is SipResponse)telemetry?.sipResponse(plainRegReply.statusCode)\n        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {')
+edit(sip,'        if (regReply !is SipResponse || regReply.statusCode != 200) {','        if(regReply is SipResponse)telemetry?.sipResponse(regReply.statusCode)\n        if (regReply !is SipResponse || regReply.statusCode != 200) {')
 edit(sip,'subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId)','dev.codex.vowifi.common.StackProfile.selectedSubscription(ctxt,slotId)')
 edit(sip,'''        telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''','''        require(activeSubscription.subscriptionId==expectedSubId) { "IMS subscription changed" }
         telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''')
@@ -451,6 +474,8 @@ t=t[:start]+part+t[end:]
 t=t.replace('            val fakeRtcpSocket = DatagramSocket(0, localAddr) //useless but annoying ImsMediaManager','')
 p.write_text(t,encoding='utf-8',newline='\n')
 connection='me/phh/sip/SipConnection.kt'
+edit(sip,'                        sentFrames++','                        sentFrames++\n                        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.VOICE_TX_FRAMES,1)')
+edit(sip,'                        playedFrames++','                        playedFrames++\n                        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.VOICE_PLAYED_FRAMES,1)')
 p=dest/connection;t=p.read_text(encoding='utf-8')
 start=t.index('class SipConnectionTcpServer(')
 end=t.index('class SipConnectionUdp(',start)

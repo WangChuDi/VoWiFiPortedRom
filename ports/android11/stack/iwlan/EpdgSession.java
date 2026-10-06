@@ -6,6 +6,7 @@ import android.net.*;
 import android.system.OsConstants;
 import android.telephony.*;
 import dev.codex.vowifi.common.StackProfile;
+import dev.codex.vowifi.common.StackTelemetry;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,7 @@ public final class EpdgSession {
     private final int expectedSub;
     private final Listener listener;
     private final EpdgAddressRequest addressRequest;
+    private final StackTelemetry.Owner telemetry;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final ScheduledExecutorService timer=Executors.newSingleThreadScheduledExecutor();
     private final AtomicBoolean stopping=new AtomicBoolean(),notified=new AtomicBoolean(),cleaned=new AtomicBoolean();
@@ -44,6 +46,7 @@ public final class EpdgSession {
     public EpdgSession(Context context,int slot,int expectedSub,EpdgAddressRequest addressRequest,Listener listener) {
         this.context=context; this.slot=slot; this.expectedSub=expectedSub; this.listener=listener;
         this.addressRequest=Objects.requireNonNull(addressRequest);
+        telemetry=expectedSub>=0?StackTelemetry.begin("iwlan",slot,expectedSub,android.os.SystemClock::elapsedRealtime):null;
     }
     private static Class<?> type(String name)throws Exception{return Class.forName(name);}
     private static Object call(Object o,String method,Class<?>[] types,Object...args)throws Exception {
@@ -70,6 +73,7 @@ public final class EpdgSession {
         worker.execute(()->{try{connect();}catch(Throwable e){fail(stage+"/"+errorType(e));}});
     }
     private void connect()throws Exception {
+        observe(StackTelemetry.Phase.WAITING_SIM);
         SubscriptionInfo info=StackProfile.selectedSubscription(context,slot);
         if(info==null)throw new IllegalStateException("no-sim");
         int subId=info.getSubscriptionId();
@@ -77,6 +81,7 @@ public final class EpdgSession {
         TelephonyManager tm=context.getSystemService(TelephonyManager.class).createForSubscriptionId(subId);
         if(!"23415".equals(tm.getSimOperator()))throw new IllegalStateException("unsupported-operator");
         ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
+        observe(StackTelemetry.Phase.WAITING_NETWORK);
         Network wifi=null;
         for(Network n:cm.getAllNetworks()){
             NetworkCapabilities nc=cm.getNetworkCapabilities(n);
@@ -84,16 +89,21 @@ public final class EpdgSession {
         }
         if(wifi==null)throw new IllegalStateException("no-wifi");
         InetAddress remote=null,local=null;
-        for(InetAddress a:wifi.getAllByName("epdg.epc.mnc015.mcc234.pub.3gppnetwork.org"))if(a instanceof Inet4Address){remote=a;break;}
+        observe(StackTelemetry.Phase.DNS);
+        InetAddress[] resolved=wifi.getAllByName("epdg.epc.mnc015.mcc234.pub.3gppnetwork.org");
+        if(telemetry!=null)telemetry.epdgResolved(resolved.length);
+        for(InetAddress a:resolved)if(a instanceof Inet4Address){remote=a;break;}
         LinkProperties lp=cm.getLinkProperties(wifi);
         if(lp!=null)for(LinkAddress a:lp.getLinkAddresses())if(a.getAddress() instanceof Inet4Address){local=a.getAddress();break;}
         if(remote==null||local==null)throw new IllegalStateException("no-ipv4");
         if(stopping.get())return;
         stage="SIM-identity";
+        observe(StackTelemetry.Phase.WAITING_SIM);
         String imsi=tm.getSubscriberId();
         if(imsi==null||!imsi.matches("[0-9]{14,16}"))throw new IllegalStateException("sim-identity-unavailable");
         String nai="0"+imsi+"@nai.epc.mnc015.mcc234.3gppnetwork.org";
         stage="IKE-parameters";
+        observe(StackTelemetry.Phase.IKE_PARAMETERS);
         Object eb=make("android.net.eap.EapSessionConfig$Builder");
         call(eb,"setEapAkaConfig",new Class<?>[]{int.class,int.class},subId,TelephonyManager.APPTYPE_USIM);
         call(eb,"setEapIdentity",new Class<?>[]{byte[].class},(Object)nai.getBytes(StandardCharsets.US_ASCII));
@@ -120,7 +130,7 @@ public final class EpdgSession {
         Object ikeCb=java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{type(IKE+"IkeSessionCallback")},(p,m,a)->{
             if(m.getDeclaringClass()==Object.class)return objectMethod(p,m.getName(),a);
             switch(m.getName()){
-                case "onOpened": pcscf=new ArrayList<>((List<InetAddress>)get(a[0],"getPcscfServers"));break;
+                case "onOpened": pcscf=new ArrayList<>((List<InetAddress>)get(a[0],"getPcscfServers"));if(telemetry!=null)telemetry.ikeOpened();break;
                 case "onClosedExceptionally":
                 case "onClosedWithException": fail(errorType((Throwable)a[0]));cleanup();break;
                 case "onClosed": fail("session-closed");cleanup();break;
@@ -137,9 +147,10 @@ public final class EpdgSession {
                             if(stopping.get()){transform.close();break;}
                             transforms.add(transform);
                             ipsec.applyTunnelModeTransform(tunnel,(Integer)a[1],transform);
+                            if(telemetry!=null)telemetry.transform((Integer)a[1],1);
                         }
                         break;
-                    case "onIpSecTransformDeleted": transforms.remove((IpSecTransform)a[0]);((IpSecTransform)a[0]).close();break;
+                    case "onIpSecTransformDeleted": transforms.remove((IpSecTransform)a[0]);((IpSecTransform)a[0]).close();if(telemetry!=null)telemetry.transform((Integer)a[1],-1);break;
                     case "onOpened":
                         if(stopping.get())break;
                         SubscriptionInfo current=StackProfile.selectedSubscription(context,slot);
@@ -159,6 +170,7 @@ public final class EpdgSession {
                         for(LinkAddress la:addresses)assigned.add(la.getAddress());
                         if(addressRequest!=EpdgAddressRequest.LEGACY)addressRequest.verifyAssigned(assigned);
                         for(LinkAddress la:addresses)tunnel.addAddress(la.getAddress(),la.getPrefixLength());
+                        if(telemetry!=null)telemetry.childOpened(tunnel.getInterfaceName(),addresses.size(),dns.size(),pcscf.size());
                         opened=true;listener.opened(tunnel.getInterfaceName(),addresses,dns,new ArrayList<>(pcscf));break;
                     case "onClosedExceptionally":
                     case "onClosedWithException": fail(errorType((Throwable)a[0]));break;
@@ -169,6 +181,7 @@ public final class EpdgSession {
         });
         if(stopping.get()){cleanup();return;}
         stage="IKE-session";
+        observe(StackTelemetry.Phase.IKE_NEGOTIATING);
         synchronized(resourceLock){
             if(stopping.get())return;
             SubscriptionInfo current=StackProfile.selectedSubscription(context,slot);
@@ -193,8 +206,10 @@ public final class EpdgSession {
         try{s+="/"+get(e,"getErrorType");}catch(Exception ignored){}
         return s;
     }
-    private void fail(String reason){if(notified.compareAndSet(false,true))listener.closed(reason);close();}
+    private void observe(StackTelemetry.Phase phase){if(telemetry!=null)telemetry.phase(phase);}
+    private void fail(String reason){if(telemetry!=null)telemetry.end(true);if(notified.compareAndSet(false,true))listener.closed(reason);close();}
     public void close(){
+        if(telemetry!=null)telemetry.end(false);
         final Object current;
         synchronized(resourceLock){stopping.set(true);current=session;}
         if(current==null){cleanup();return;}

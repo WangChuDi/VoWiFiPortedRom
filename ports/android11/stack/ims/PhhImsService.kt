@@ -127,6 +127,7 @@ class PhhImsService : ImsService() {
                 RegistrationPhase.DOWN -> registration.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
             }
             feature.reportRegistrationCapabilities(phase==RegistrationPhase.REGISTERED)
+            feature.telemetry.phase(dev.codex.vowifi.common.StackTelemetry.Phase.valueOf(phase.name))
             if(phase==RegistrationPhase.REGISTERED)armPeriodicRegisterAlarm(slotId)
             android.util.Log.i("Api30PhhIms","registration="+phase.name+
                 (if(phase==RegistrationPhase.REGISTERED)" tech=IWLAN" else "")+" slot=$slotId")

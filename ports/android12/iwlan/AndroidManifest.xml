@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application android:label="Modern IWLAN (experimental)" android:allowBackup="false" android:directBootAware="true" android:defaultToDeviceProtectedStorage="true">
         <uses-library android:name="android.net.ipsec.ike" android:required="true" />
+        <provider android:name="dev.codex.vowifi.common.StackTelemetryProvider" android:authorities="dev.codex.vowifi.iwlan.status" android:exported="true" android:directBootAware="true" android:permission="android.permission.READ_PRIVILEGED_PHONE_STATE" />
         <service android:name=".ModernIwlanDataService" android:exported="true" android:permission="android.permission.BIND_TELEPHONY_DATA_SERVICE">
             <intent-filter><action android:name="android.telephony.data.DataService" /></intent-filter>
         </service>

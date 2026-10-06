@@ -124,8 +124,16 @@ overload, APK DEX and min/target SDK31. The inventory now includes DataCallRespo
 its Builder, NetworkSliceInfo and TrafficDescriptor. Modern linkage/lifecycle
 reports cover only the modern compiled variant across the seven pinned API31+
 samples and stay separate from the earlier Android11 stack reports. The actual
-Android11 installed APK hashes remain those of the preserved 0.5.1 milestone.
+Android11 0.5.1 APKs remain preserved separately; the connected device now runs
+the 0.6.0/0.8.0 metadata-status milestone, with freshly verified installed hashes.
 No Android12–17 replacement engine is enabled by these static results.
+
+The shared root-only status provider raises the modern variant's current counts
+to 100 distinct Android references and six Android-derived classes, all resolving
+without lifecycle findings in the same seven pinned samples. Production registry
+and parser tests add 37 ownership/schema assertions; root/shell access and actual
+SMS/media counters were additionally verified on the API30 device. These tests
+do not establish modern Binder permissions or dual-active-SIM behavior.
 
 ## Sources
 

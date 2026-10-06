@@ -93,10 +93,10 @@ public final class MainActivity extends Activity {
     private void diagnose(){
         if(busy)return;
         final int slot=slots.get(sims.getSelectedItemPosition());
-        execute("正在检查所选 SIM…",()->readDiagnostic(slot,30),this::render);
+        execute("正在检查所选 SIM…",()->readDiagnostic(slot,45),this::render);
     }
     private JSONObject readDiagnostic(int slot,int seconds)throws Exception{
-        String command="CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout "+Math.min(24,seconds-2)+"s app_process /system/bin dev.codex.vowifi.tool.RootDiagnostics "+slot;
+        String command="CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout "+Math.min(40,seconds-2)+"s app_process /system/bin dev.codex.vowifi.tool.RootDiagnostics "+slot;
         String response=shell(command,seconds);
         String json=null;for(String line:response.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))json=line;
         if(json==null)throw new IOException("diagnostic-result-unavailable");
@@ -108,13 +108,23 @@ public final class MainActivity extends Activity {
         if(data.has("error")&&!data.has("sdk")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
         status("Android API "+data.optInt("sdk")+" · SIM"+(data.optInt("slot")+1)+" · 只读结果");
         StringBuilder unavailable=new StringBuilder();
-        for(String key:new String[]{"error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error"})
+        for(String key:new String[]{"error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
         card("ePDG DNS",data.optString("dns","未观测"));
         card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));
+        JSONObject qns=data.optJSONObject("qns_status");
+        if(qns!=null)card("检查时的 QNS 选择",qns.optBoolean("observed")?"所选 SIM · "+phaseName(qns.optString("phase")):"未观测到所选 SIM 的有效实例");
+        JSONObject iwlan=data.optJSONObject("iwlan_status");
+        if(iwlan!=null&&iwlan.optBoolean("observed")){
+            String detail="会话代次 "+iwlan.optLong("generation")+" · "+phaseName(iwlan.optString("phase"));
+            if(iwlan.optBoolean("failed"))detail+="\n失败前阶段："+phaseName(iwlan.optString("failed_stage"));
+            if(iwlan.optBoolean("child_open"))detail+="\n当前地址 "+iwlan.optInt("address_count")+" · P-CSCF "+iwlan.optInt("pcscf_count")+" · 接口归属匹配 "+data.optBoolean("iwlan_interface_matches");
+            card("检查时的 IWLAN 会话",detail+"\n服务采样状态；不保证运营商此刻仍能传输数据");
+        }
+        else if(iwlan!=null)card("检查时的 IWLAN 会话","未观测到所选 SIM 的有效实例");
         card("首选互联网 APN",data.optString("apn","不可见"));
         card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+(data.has("wfc_roaming_setting")?data.optBoolean("wfc_roaming_setting"):"未知")+" · 偏好模式 "+(data.has("wfc_mode")?data.optInt("wfc_mode"):"未知"):"不可见 · "+data.optString("settings_error","未知"));
         card("WLAN 语音 provisioning",data.has("wlan_voice_provisioned")?Boolean.toString(data.optBoolean("wlan_voice_provisioned"))+"（框架配置结果，不代表运营商已接受注册）":"不可见 · "+data.optString("provisioning_error","未知"));
@@ -126,6 +136,13 @@ public final class MainActivity extends Activity {
         String registration=t==2?"WLAN 已注册":t==1?"蜂窝网络已注册":t==-2?"注册中":t==-3?"未注册":"不可见 / 尚未回调";
         card("IMS 注册",data.has("ims_error")?"不可见 · "+data.optString("ims_error"):registration);
         card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
+        JSONObject service=data.optJSONObject("ims_status");
+        if(service!=null&&service.optBoolean("observed")){
+            card("检查时的 IMS 实例","会话代次 "+service.optLong("generation")+" · "+phaseName(service.optString("phase"))+"\n本代 REGISTER 发送 "+service.optInt("register_tx")+" · 最近响应 "+service.optInt("sip_status"));
+            card("本代系统短信投递观测","IMS 收到 "+service.optInt("sms_rx")+" · 系统确认成功 "+service.optInt("sms_ack_ok")+" · 系统拒绝 "+service.optInt("sms_ack_failed")+"\n发送请求 "+service.optInt("sms_tx")+" · 网络确认成功 "+service.optInt("sms_tx_ok")+" · 发送失败 "+service.optInt("sms_tx_failed")+"\n累计元数据，不代表下一条短信一定成功，也不证明已显示通知");
+            card("本代语音媒体观测","已发送 RTP 帧 "+service.optInt("voice_tx_frames")+" · 已交给音频播放的帧 "+service.optInt("voice_played_frames")+"\n累计观测；需要实际通话验证听感");
+        }
+        else if(service!=null)card("检查时的 IMS 实例","未观测到所选 SIM 的有效实例");
         card("最近一次系统短信分发",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
@@ -154,6 +171,18 @@ public final class MainActivity extends Activity {
         recoveries.setSelection(recoveryIndex);refreshRecovery();
         if(recoveryOwners.size()>1)card("其他卡的替换事务",recoveryOwners.size()+" 张卡分别管理；恢复所选事务后，其他卡的配置和租约保留。电话服务重载会短暂重建两张卡的连接。");
         if(data.has("error")){setActions(false);status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
+    }
+    private String phaseName(String phase){
+        switch(phase){
+            case "STARTING":return "初始化";case "WAITING_SIM":return "检查 SIM";
+            case "WAITING_NETWORK":return "等待 Wi-Fi";case "DNS":return "解析 ePDG";
+            case "IKE_PARAMETERS":return "准备 IKE 参数";case "IKE_NEGOTIATING":return "IKE 协商中";
+            case "IKE_AUTHENTICATED":return "IKE 鉴权通过";case "CHILD_OPENED":return "IPsec 隧道已建立";
+            case "IWLAN_SELECTED":return "已选择 IWLAN";case "NO_IWLAN":return "未选择 IWLAN";
+            case "REGISTERING":return "IMS 注册中";case "REGISTERED":return "IMS 已注册";
+            case "DOWN":return "IMS 未注册";case "FAILED":return "失败";case "CLOSED":return "已关闭";
+            default:return "未知";
+        }
     }
     private void card(String heading,String value){
         LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(14),dp(4),dp(14),dp(10));c.setBackgroundColor(Color.WHITE);
@@ -199,15 +228,15 @@ public final class MainActivity extends Activity {
             String output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:"")+" "+targetSlot+" "+targetSub,35);
             if(!action.equals("reload")&&!action.equals("trial"))return new JSONObject().put("action_result",output);
             runOnUiThread(()->{if(!isFinishing())status("已请求重新拉起，正在等待 IMS 注册…");});
-            long deadline=SystemClock.elapsedRealtime()+45000;
+            long deadline=SystemClock.elapsedRealtime()+60000;
             JSONObject observation=new JSONObject();
             while(SystemClock.elapsedRealtime()<deadline-5000){
                 Thread.sleep(2500);
                 int remaining=(int)((deadline-SystemClock.elapsedRealtime())/1000);
                 // A complete diagnostic has independent bounded DNS, Binder
                 // and callback waits. Do not launch one with a truncated budget.
-                if(remaining<30)break;
-                try{observation=readDiagnostic(slot,30);}
+                if(remaining<45)break;
+                try{observation=readDiagnostic(slot,45);}
                 catch(Exception checkError){
                     // The controller already accepted the action. A short final
                     // polling deadline must not misreport it as a failed switch.

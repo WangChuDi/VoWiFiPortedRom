@@ -133,6 +133,18 @@ public final class RootDiagnostics {
             Object status=provisionClass.getMethod("getProvisioningStatusForCapability",int.class,int.class).invoke(provision,1,1);
             out.put("wlan_voice_provisioned",status);
         }catch(Throwable e){out.put("provisioning_error",e.getClass().getSimpleName());}
+        ExecutorService statusWorkers=Executors.newFixedThreadPool(3,r->{Thread t=new Thread(r,"vowifi-status");t.setDaemon(true);return t;});
+        Map<String,Future<JSONObject>> statuses=new LinkedHashMap<>();
+        long statusDeadline=SystemClock.elapsedRealtime()+9500;
+        try{
+        if(provider!=null&&provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub){
+            String[] channels={"iwlan","qns","ims"};String[] packages={"dev.codex.vowifi.iwlan","dev.codex.vowifi.qns","me.phh.ims"};
+            String[] keys={"carrier_data_service_wlan_package_override_string","carrier_qualified_networks_service_package_override_string","config_ims_mmtel_package_override_string"};
+            for(int index=0;index<channels.length;index++)if(packages[index].equals(provider.optString(keys[index]))){
+                final String channel=channels[index],pkg=packages[index];final int selectedSub=sub;
+                statuses.put(channel,statusWorkers.submit(()->serviceStatus(channel,pkg,slot,selectedSub)));
+            }
+        }
         CountDownLatch gotReg=new CountDownLatch(1),gotCap=new CountDownLatch(1);
         ImsMmTelManager.RegistrationCallback reg=new ImsMmTelManager.RegistrationCallback(){
             public void onRegistered(int t){transport=t;gotReg.countDown();}
@@ -150,17 +162,33 @@ public final class RootDiagnostics {
             if(manager==null)throw new IllegalStateException("ims-manager-unavailable");
             manager.registerImsRegistrationCallback(Runnable::run,reg);attachedReg=true;
             manager.registerMmTelCapabilityCallback(Runnable::run,cap);attachedCap=true;
-            gotReg.await(3,TimeUnit.SECONDS);gotCap.await(3,TimeUnit.SECONDS);
+            long callbackDeadline=SystemClock.elapsedRealtime()+3000;
+            gotReg.await(3,TimeUnit.SECONDS);gotCap.await(Math.max(1,callbackDeadline-SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);
             out.put("ims_transport",transport).put("cap_observed",capObserved).put("voice",voice).put("sms",sms);
         }catch(Throwable e){out.put("ims_error",e.getClass().getSimpleName());}
         finally{
             if(attachedReg)try{manager.unregisterImsRegistrationCallback(reg);}catch(Exception ignored){}
             if(attachedCap)try{manager.unregisterMmTelCapabilityCallback(cap);}catch(Exception ignored){}
         }
+        for(Map.Entry<String,Future<JSONObject>> entry:statuses.entrySet()){
+            try{
+                JSONObject sampled=entry.getValue().get(Math.max(1,statusDeadline-SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);
+                if(SystemClock.elapsedRealtime()-sampled.getLong("sample_elapsed")>5000)throw new IOException("status-stale-at-collection");
+                out.put(entry.getKey()+"_status",sampled);
+            }
+            catch(Throwable failure){out.put(entry.getKey()+"_status_error",errorName(failure));entry.getValue().cancel(true);}
+        }
+        statusWorkers.shutdownNow();
+        JSONObject ownIwlan=out.optJSONObject("iwlan_status");
+        if(ownIwlan!=null&&ownIwlan.optBoolean("observed")){
+            out.put("ike","替代服务本次采样 · "+ownIwlan.optString("phase")+" · IKE "+ownIwlan.optBoolean("ike_open")+" · child "+ownIwlan.optBoolean("child_open")+
+                " · 入/出站 transform "+ownIwlan.optInt("inbound_transforms")+"/"+ownIwlan.optInt("outbound_transforms"));
+            if(ownIwlan.optBoolean("child_open"))out.put("iwlan_interface_matches",iface!=null&&iface.equals(ownIwlan.optString("interface"))&&new File("/sys/class/net",iface).exists());
+        }
         if(provider!=null){
             boolean selectedOwner=provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub;
             if(selectedOwner){String running=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();if(!out.has("iwlan_observation_error"))out.put("iwlan_process_present",running.matches("[0-9]+"));}
-            if(selectedOwner&&"dev.codex.vowifi.iwlan".equals(provider.optString("carrier_data_service_wlan_package_override_string"))){
+            if(!out.has("ike")&&selectedOwner&&"dev.codex.vowifi.iwlan".equals(provider.optString("carrier_data_service_wlan_package_override_string"))){
                 String iwlanPid=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();
                 if(iwlanPid.matches("[0-9]+")){
                     String events=observation(out,"iwlan_observation_error",4,"logcat","-b","main","-d","-v","brief","--pid="+iwlanPid,"-s","Api30IwlanData:D","*:S");
@@ -187,6 +215,26 @@ public final class RootDiagnostics {
         }
         out.put("sms_dispatcher",last==null?"本次电话进程尚无发送观测；注册和 SMS 能力不保证分发器已就绪":"最近发送时的历史判定："+last+"\n不代表当前实时可用性");
         if(!out.has("ike"))out.put("ike","不可见：仅凭接口不能确认所选 SIM 的 IKE/child 状态");
+        }finally{statusWorkers.shutdownNow();}
+    }
+    private static JSONObject serviceStatus(String channel,String pkg,int slot,int sub)throws Exception{
+        String pid=command(2,"pidof",pkg).trim();
+        if(!pid.matches("[0-9]+"))throw new IOException("status-process-unavailable");
+        String nonce=UUID.randomUUID().toString().replace("-","").substring(0,16);
+        // System-context Settings access raised SecurityException on tested MIUI.
+        // Use the root settings CLI's own attribution to read the same counter
+        // with a bound, rather than assuming app_process has app permissions.
+        String bootValue=command(2,"settings","get","global","boot_count").trim();
+        if(!bootValue.matches("[0-9]{1,9}"))throw new IOException("status-boot-unavailable");
+        int boot=Integer.parseInt(bootValue);
+        long began=SystemClock.elapsedRealtime();
+        String result=command(3,"content","call","--uri","content://"+pkg+".status","--method","status","--arg",channel+":"+slot+":"+sub+":"+nonce);
+        if(result.length()>16384)throw new IOException("status-too-large");
+        Matcher snapshot=Pattern.compile("snapshot=(\\{[^\\r\\n]*\\})\\}\\]").matcher(result);
+        if(!snapshot.find())throw new IOException("status-unavailable");
+        JSONObject clean=TelemetrySnapshot.validate(new JSONObject(snapshot.group(1)),channel,slot,sub,nonce,Integer.parseInt(pid),boot,began,SystemClock.elapsedRealtime());
+        if(!pid.equals(command(2,"pidof",pkg).trim()))throw new IOException("status-process-changed");
+        return clean;
     }
     private static String smsDispatcherObservation(String pid,int slot)throws Exception{
         // Android11 filter specifications tokenize spaces inside OEM tag names.
@@ -225,6 +273,7 @@ public final class RootDiagnostics {
         return -1;
     }
     private static String errorName(Throwable t){
+        if(t instanceof ExecutionException&&t.getCause()!=null)t=t.getCause();
         if(t instanceof java.lang.reflect.InvocationTargetException&&t.getCause()!=null)t=t.getCause();
         return t.getClass().getSimpleName();
     }
@@ -266,9 +315,11 @@ public final class RootDiagnostics {
         java.lang.Process p=new ProcessBuilder(args).redirectErrorStream(true).start();
         ByteArrayOutputStream buffer=new ByteArrayOutputStream();
         Thread reader=new Thread(()->{try(InputStream in=p.getInputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))>=0){if(buffer.size()+n<262144)buffer.write(b,0,n);}}catch(IOException ignored){}});
-        reader.start();
-        if(!p.waitFor(seconds,TimeUnit.SECONDS)){p.destroyForcibly();throw new TimeoutException();}
+        reader.setDaemon(true);reader.start();
+        if(!p.waitFor(seconds,TimeUnit.SECONDS)){p.destroyForcibly();reader.join(500);throw new TimeoutException();}
         reader.join(500);
+        if(reader.isAlive())throw new TimeoutException();
+        if(p.exitValue()!=0)throw new IOException("status-command-failed");
         return buffer.toString("UTF-8");
     }
 }

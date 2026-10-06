@@ -19,8 +19,11 @@ The root helper reports only selected-subscription metadata:
   Newer/extended frameworks also use the subscription-ID set where accessible;
   absent/redacted attribution is reported separately, never assigned by order.
 * IMS registration transport and MMTEL voice/SMS capabilities through callbacks.
-* Current replacement IWLAN process and its own historical child-opened metadata;
-  logs can expire and a previous event is not a real-time IKE status check.
+* Bounded parallel process-local snapshots from the selected replacement IWLAN,
+  QNS and IMS, with exact tuple/PID/boot/nonce/freshness validation. IWLAN reports
+  locally held IKE/child/transforms and counts; IMS reports registration and
+  per-generation REGISTER/SMS/ACK/media counters. Older services retain a clearly
+  historical log fallback. See [status protocol](../android11/stack/TELEMETRY.md).
 * Latest SMS-dispatch capability observation from the current phone process,
   separated from advertised IMS capability. The check does not send an SMS.
 
