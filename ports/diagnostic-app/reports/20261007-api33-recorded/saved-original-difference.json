@@ -1,0 +1,30 @@
+[
+  {
+    "exit": 0,
+    "result": {
+      "saved_seed_vs_original_outer_plus_saved_xml": {
+        "bundle_available": true,
+        "expected_key_count": 655,
+        "actual_key_count": 654,
+        "missing_key_count": 1,
+        "missing_null_value_count": 0,
+        "missing_public_key_constants": [
+          "serialization-package-version"
+        ],
+        "extra_key_count": 0,
+        "changed_value_count": 0,
+        "changed_type_count": 0
+      },
+      "saved_seed_contains_serialization_metadata": true,
+      "saved_seed_version_equals_saved_xml": true,
+      "original_outer_config_loaded": true,
+      "original_override_absent": true,
+      "original_record_bytes_unchanged": true,
+      "schema": 1,
+      "sdk": 33,
+      "read_only": true,
+      "physical_phone_modified": false,
+      "status": "observed"
+    }
+  }
+]

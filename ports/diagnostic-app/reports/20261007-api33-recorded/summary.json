@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "sdk": 33,
+  "stage_key_count": 41,
+  "same_original_carrier_record_recovered": true,
+  "same_two_original_installation_records_recovered": true,
+  "original_snapshots_not_resampled_or_rewritten": true,
+  "production_comparison_unchanged": true,
+  "all_outer_cleanup_confirmed": true,
+  "owned_guest_processes_terminal": true,
+  "guard_sha256": "b63d9fdfaac5509f90cf09878c858ea2faf2d8ea6bfc36f6c9264cd59f62ac2d",
+  "helper_sha256": "5c5748cdd75377a34a05001c22bb3d5e7a9375de060a265b0c3bbb51202b44c4",
+  "module_sha256": "eebf6d4140e7ccf4f64d7351af9789c6d08f35317a5f477237aec2d9b1ca3a8f",
+  "tool_sha256": "6c7b46d3349a2e117faf874e8f8753fee66b2fbcd96308214c0513343d92f61c",
+  "actual_modern_magisk_mount_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "android17_verified": false
+}

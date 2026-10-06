@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_call_sms_sent": false,
+  "apk_sha256": "88097e2715461607a511b89549fbc00dc03388d9378f9dd517bd66ddf7bef0cc",
+  "airplane_mode_on": true,
+  "calls_confirmed_idle": true,
+  "keyguard_showing": true,
+  "diagnostic_complete": true,
+  "selected_slot_sub_matches": true,
+  "sim_ready": true,
+  "wlan_registered": true,
+  "cap_observed": true,
+  "voice_capability": true,
+  "sms_capability": true,
+  "native_sms_ims_supported": true,
+  "ims_interface_present": true,
+  "iwlan_interface_matches": true,
+  "full_stack_active": true,
+  "platform_stable": true,
+  "voice_preflight_ready": true
+}

@@ -122,6 +122,22 @@ public final class RootDiagnostics {
         out.put("udp","未主动测试 UDP 500/4500；DNS 成功不代表端口可达");
         // Wi-Fi/controller checks remain useful even when subscriptions are hidden.
         if(info==null)return;
+        progress.checkpoint(out,"native_sms");
+        try{
+            Class<?> type=Class.forName("com.android.internal.telephony.ISms");
+            IBinder binder=ServiceManager.getService("isms");
+            if(binder==null||!binder.isBinderAlive())throw new IllegalStateException("sms-service-unavailable");
+            Object service=Class.forName(type.getName()+"$Stub").getMethod("asInterface",IBinder.class).invoke(null,binder);
+            Object supported=type.getMethod("isImsSmsSupportedForSubscriber",int.class).invoke(service,sub);
+            if(!(supported instanceof Boolean))throw new IllegalStateException("sms-status-type-unavailable");
+            // Never attach a previous subscription's result to a newly inserted SIM.
+            // The per-slot convenience method dereferences a default telephony
+            // context on tested MIUI app_process. Use the working list API again.
+            List<SubscriptionInfo> current=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
+            int matched=0;if(current!=null)for(SubscriptionInfo candidate:current)if(candidate.getSimSlotIndex()==slot){if(candidate.getSubscriptionId()!=sub)throw new IllegalStateException("sms-owner-changed");matched++;}
+            if(matched!=1)throw new IllegalStateException("sms-owner-changed");
+            out.put("native_sms_ims_supported",supported);
+        }catch(Throwable failure){out.put("native_sms_error",errorName(failure));}
         progress.checkpoint(out,"apn");
         // Display only APN/type, never APN username/password or subscriber identifiers.
         try(Cursor c=context.getContentResolver().query(Uri.parse("content://telephony/carriers/preferapn/subId/"+sub),new String[]{"apn","type"},null,null,null)){

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "engine_sha256": "c22f6987d30ba2eaeffa00c1f7cf530b5bf8c11241ded8bc9fe69bd8cc878ce5",
+  "tool_sha256": "88097e2715461607a511b89549fbc00dc03388d9378f9dd517bd66ddf7bef0cc",
+  "physical_replacement_changed": false,
+  "sms_sent": false,
+  "call_probe_count": 1,
+  "human_audible_speech_confirmed": false,
+  "consecutive_wlan_voice_ready_observations": true,
+  "keyguard_showing": true,
+  "call_entry": {
+    "exit": 0,
+    "activity_start_reported": true,
+    "explicit_error_reported": false,
+    "permission_denied_reported": false,
+    "activity_already_running_warning": false
+  },
+  "voice": {
+    "sip_status_codes": [
+      100,
+      183,
+      200,
+      488
+    ],
+    "connected": false,
+    "tx_frame_checkpoints": [],
+    "played_frame_checkpoints": [],
+    "active_framework_call_observed": false
+  },
+  "same_ims_generation": true,
+  "telemetry_delta": {
+    "voice_tx_frames": 0,
+    "voice_played_frames": 0
+  },
+  "error": "AssertionError",
+  "test_hangup_entry_completed": true,
+  "all_calls_idle_after": true,
+  "bye_200_confirmed": false
+}

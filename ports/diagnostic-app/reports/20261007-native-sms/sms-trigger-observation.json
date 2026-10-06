@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "current_ims_process_only": true,
+  "historical_events": true,
+  "events": [
+    {
+      "event": "registered_transport",
+      "fields": [
+        "2"
+      ]
+    },
+    {
+      "event": "capabilities",
+      "fields": [
+        "true",
+        "true"
+      ]
+    },
+    {
+      "event": "send_requested",
+      "fields": [
+        "85075"
+      ]
+    },
+    {
+      "event": "send_result",
+      "fields": [
+        "103",
+        "0"
+      ]
+    },
+    {
+      "event": "finished",
+      "fields": [
+        "result-received"
+      ]
+    }
+  ],
+  "new_call_sms_sent": false
+}

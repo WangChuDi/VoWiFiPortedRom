@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "sdk": 33,
+  "status": "passed",
+  "reused_original_records": true,
+  "new_baseline_sampled": false,
+  "original_outer_files_reused": true,
+  "order_independent_identical_policies": true,
+  "legacy_helper_sha256": "9bc8fd733a643cccaba14f5d479e34688d6a1dea05e5afe0783e52fcebfdcf3e",
+  "guard_sha256": "b63d9fdfaac5509f90cf09878c858ea2faf2d8ea6bfc36f6c9264cd59f62ac2d",
+  "before": {
+    "schema": 1,
+    "sdk": 33,
+    "read_only": true,
+    "status": "observed",
+    "pending_installation_count": 2,
+    "installation_records": 22,
+    "owner_records": 71,
+    "legacy_restored_owner_records": 5,
+    "all_fixture_carrier_phases_restored": true,
+    "pending_carrier_count": 0,
+    "carrier_records": 43,
+    "all_owner_records_finished": true,
+    "production_owner_state_absent": true,
+    "owner_records_aggregate_sha256": "ed17b5b4da923e8d99bc2ebcb08d7d067f48990e3eb72a37b6f0451e868f6037",
+    "outer_records_aggregate_sha256": "a6c361628bbf25fcaea9061a49d6cd15dafbb2a2e92460d93a5e830131b3a435"
+  },
+  "stages": [
+    {
+      "record_ordinal": 0,
+      "stage": "restore",
+      "result": {
+        "schema": 1,
+        "sdk": 33,
+        "stage": "restore",
+        "original_seeded_policy_restored": true,
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      }
+    },
+    {
+      "record_ordinal": 0,
+      "stage": "cleanup",
+      "result": {
+        "schema": 1,
+        "sdk": 33,
+        "stage": "cleanup",
+        "entire_outer_permission_observation_restored": true,
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      }
+    },
+    {
+      "record_ordinal": 1,
+      "stage": "restore",
+      "result": {
+        "schema": 1,
+        "sdk": 33,
+        "stage": "restore",
+        "original_seeded_policy_restored": true,
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      }
+    },
+    {
+      "record_ordinal": 1,
+      "stage": "cleanup",
+      "result": {
+        "schema": 1,
+        "sdk": 33,
+        "stage": "cleanup",
+        "entire_outer_permission_observation_restored": true,
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      }
+    }
+  ],
+  "physical_phone_modified": false,
+  "after": {
+    "schema": 1,
+    "sdk": 33,
+    "read_only": true,
+    "status": "observed",
+    "pending_installation_count": 0,
+    "installation_records": 22,
+    "owner_records": 71,
+    "legacy_restored_owner_records": 5,
+    "all_fixture_carrier_phases_restored": true,
+    "pending_carrier_count": 0,
+    "carrier_records": 43,
+    "all_owner_records_finished": true,
+    "production_owner_state_absent": true,
+    "owner_records_aggregate_sha256": "ed17b5b4da923e8d99bc2ebcb08d7d067f48990e3eb72a37b6f0451e868f6037",
+    "outer_records_aggregate_sha256": "a6c361628bbf25fcaea9061a49d6cd15dafbb2a2e92460d93a5e830131b3a435"
+  },
+  "all_installation_phases_restored": true,
+  "owner_record_bytes_unchanged": true,
+  "outer_record_bytes_unchanged": true,
+  "current_policy_before": {
+    "permissions": [
+      {
+        "component": 0,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 1,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "RECORD_AUDIO",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "SEND_SMS",
+        "granted": true,
+        "flags": 4352
+      }
+    ],
+    "sms_exemption": true,
+    "ipsec_mode": 0
+  },
+  "current_policy_after": {
+    "permissions": [
+      {
+        "component": 0,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 1,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "READ_PHONE_STATE",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "RECORD_AUDIO",
+        "granted": true,
+        "flags": 256
+      },
+      {
+        "component": 2,
+        "permission": "SEND_SMS",
+        "granted": true,
+        "flags": 4352
+      }
+    ],
+    "sms_exemption": true,
+    "ipsec_mode": 0
+  }
+}

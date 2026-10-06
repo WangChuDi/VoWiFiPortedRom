@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "sdk": 30,
+  "status": "failed",
+  "engine_sha256": "c22f6987d30ba2eaeffa00c1f7cf530b5bf8c11241ded8bc9fe69bd8cc878ce5",
+  "physical_replacement_changed": false,
+  "sms_probe_count": 1,
+  "call_probe_count": 1,
+  "dual_active_sim_verified": false,
+  "installed_components_match_pinned_engine": true,
+  "one_original_full_stack_owner_verified": true,
+  "sms": {
+    "exit": 0,
+    "duration_seconds": 42.9,
+    "new_native_inbox_rows": 1,
+    "new_messages_notification": true,
+    "telemetry_delta": {
+      "sms_tx": 1,
+      "sms_tx_ok": 1,
+      "sms_tx_failed": 0,
+      "sms_rx": 4,
+      "sms_ack_ok": 4,
+      "sms_ack_failed": 0
+    },
+    "original_short_code_policy_restored": true,
+    "one_info_sms_requested": true,
+    "passed": true
+  },
+  "voice": {
+    "exit": 1,
+    "duration_seconds": 45.4,
+    "telemetry_delta": {},
+    "all_calls_idle_after": true,
+    "bye_200_confirmed": false,
+    "active_call_reload_refused": false,
+    "active_call_rollback_refused": false,
+    "human_audible_speech_confirmed": false,
+    "one_191_call_requested": true,
+    "passed": false
+  },
+  "error": "ValueError"
+}

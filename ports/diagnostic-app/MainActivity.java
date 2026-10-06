@@ -110,7 +110,7 @@ public final class MainActivity extends Activity {
         if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
         reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
         StringBuilder unavailable=new StringBuilder();
-        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
+        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","native_sms_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         JSONObject health=data.optJSONObject("platform_health");
@@ -148,6 +148,9 @@ public final class MainActivity extends Activity {
         if(t==2&&!DiagnosticPolicy.wlanConfirmed(data))registration="本次回调曾报告 WLAN 注册；检查未完整或进程稳定性未确认，请刷新核实当前状态";
         card("IMS 注册",data.has("ims_error")?"不可见 · "+data.optString("ims_error"):registration);
         card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
+        String nativeSms=data.has("native_sms_ims_supported")?(data.optBoolean("native_sms_ims_supported")?"系统短信服务报告支持 IMS 短信。":"系统短信服务暂未报告支持 IMS 短信。"):("未能观测 · "+data.optString("native_sms_error","未知"));
+        if(Boolean.FALSE.equals(data.opt("native_sms_ims_supported"))&&data.optBoolean("cap_observed")&&data.optBoolean("sms"))nativeSms+="\n与 MMTEL 的 SMS 上报不一致；空闲时重新拉起后再检查。";
+        card("系统短信发送检查",nativeSms+"\n这是所选 SIM 的一次状态查询，实际收发和通知仍需分别验证。");
         JSONObject service=data.optJSONObject("ims_status");
         if(service!=null&&service.optBoolean("observed")){
             card("检查时的 IMS 实例","会话代次 "+service.optLong("generation")+" · "+phaseName(service.optString("phase"))+"\n本代 REGISTER 发送 "+service.optInt("register_tx")+" · 最近响应 "+service.optInt("sip_status"));
@@ -206,6 +209,7 @@ public final class MainActivity extends Activity {
             case "dns":return "ePDG DNS";case "apn":return "首选 APN";
             case "wfc_settings":return "Wi-Fi Calling 设置";case "carrier_policy":return "运营商配置";
             case "provisioning":return "IMS provisioning";case "ims_callbacks":return "IMS 注册和能力回调";
+            case "native_sms":return "系统短信服务支持状态";
             case "service_status":return "替换服务状态";case "iwlan_history":return "IWLAN 进程历史";
             case "sms_dispatcher":return "系统短信分发器";case "finished":return "检查结束";
             default:return "不可见";

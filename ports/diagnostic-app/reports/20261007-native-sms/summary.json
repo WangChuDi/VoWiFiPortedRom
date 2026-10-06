@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "tool_version": "0.9.6-diagnostic",
+  "tool_sha256": "88097e2715461607a511b89549fbc00dc03388d9378f9dd517bd66ddf7bef0cc",
+  "native_info_sms_send_receive_inbox_notification_verified": true,
+  "voice_ready_191_regression_passed": false,
+  "api33_api36_diagnostic_refusals_passed": true,
+  "own_app_uid_ui_verified": false,
+  "modern_carrier_traffic_verified": false,
+  "api37_pending_original_recovered": false,
+  "dual_active_sim_verified": false
+}

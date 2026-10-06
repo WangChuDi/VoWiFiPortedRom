@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_version": "0.9.6-diagnostic",
+  "apk_sha256": "88097e2715461607a511b89549fbc00dc03388d9378f9dd517bd66ddf7bef0cc",
+  "module_modified": false,
+  "apn_modified": false,
+  "new_call_sms_sent": false,
+  "own_app_uid_ui_verified": false,
+  "dual_active_sim_verified": false,
+  "signed_app_installed": true,
+  "keyguard_observation_available": true,
+  "keyguard_showing": true,
+  "slots": [
+    {
+      "slot": 0,
+      "diagnostic_complete": true,
+      "diagnostic_error": null,
+      "phone_process_state": "stable",
+      "system_process_state": "stable",
+      "sim_state": null,
+      "wlan_registered": false,
+      "voice_capability_advertised": false,
+      "sms_capability_advertised": false,
+      "native_sms_ims_supported": null,
+      "native_sms_error": null,
+      "component_mask": null,
+      "transaction": "INACTIVE",
+      "channels": {
+        "iwlan": {},
+        "qns": {},
+        "ims": {}
+      }
+    },
+    {
+      "slot": 1,
+      "diagnostic_complete": true,
+      "diagnostic_error": null,
+      "phone_process_state": "stable",
+      "system_process_state": "stable",
+      "sim_state": 5,
+      "wlan_registered": true,
+      "voice_capability_advertised": true,
+      "sms_capability_advertised": true,
+      "native_sms_ims_supported": true,
+      "native_sms_error": null,
+      "component_mask": "7",
+      "transaction": "ACTIVE",
+      "channels": {
+        "iwlan": {
+          "observed": true,
+          "authorized": true,
+          "phase": "CHILD_OPENED",
+          "ike_open": true,
+          "child_open": true,
+          "registered": false,
+          "sip_status": 0,
+          "sms_rx": 0,
+          "sms_ack_ok": 0,
+          "sms_ack_failed": 0,
+          "sms_tx": 0,
+          "sms_tx_ok": 0,
+          "sms_tx_failed": 0
+        },
+        "qns": {
+          "observed": true,
+          "authorized": true,
+          "phase": "IWLAN_SELECTED",
+          "ike_open": false,
+          "child_open": false,
+          "registered": false,
+          "sip_status": 0,
+          "sms_rx": 0,
+          "sms_ack_ok": 0,
+          "sms_ack_failed": 0,
+          "sms_tx": 0,
+          "sms_tx_ok": 0,
+          "sms_tx_failed": 0
+        },
+        "ims": {
+          "observed": true,
+          "authorized": true,
+          "phase": "REGISTERED",
+          "ike_open": false,
+          "child_open": false,
+          "registered": true,
+          "sip_status": 200,
+          "sms_rx": 0,
+          "sms_ack_ok": 0,
+          "sms_ack_failed": 0,
+          "sms_tx": 0,
+          "sms_tx_ok": 0,
+          "sms_tx_failed": 0
+        }
+      }
+    }
+  ]
+}

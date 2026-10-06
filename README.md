@@ -4,7 +4,7 @@
 
 新增 [ports/android11](ports/android11/README.md)：面向 raphael / MIUI Android 11 的移植源码、构建脚本、测试、[修改清单](ports/android11/CHANGES.zh-CN.md)及[来源和许可证](ports/android11/THIRD_PARTY.md)。早期 Magisk 短信桥成果保留；后续 [独立 IWLAN／QNS／IMS 引擎](ports/android11/stack/README.md)及[可选组件实机通话／原生短信记录](ports/android11/stack/OPTIONAL-PERSISTENCE-20261006.md)位于 stack 目录。
 
-[独立诊断应用](ports/diagnostic-app/README.md)支持按 SIM 检查链路并选择替换组件。当前 0.9.5 包含记录归属的恢复入口和权限元数据适配，[本轮修改及证据](ports/diagnostic-app/RECORDED-RECOVERY-20261007.md)记录 Android 11 实机只读核验、Android 12L／16 各 41 阶段模拟器回归，以及未完成的跨版本、真实运营商和双卡验证。
+[独立诊断应用](ports/diagnostic-app/README.md)支持按 SIM 检查链路并选择替换组件。当前 0.9.6 新增系统短信服务支持状态；[本轮实机与并行检查](ports/diagnostic-app/NATIVE-SMS-20261007.md)记录原生短信收发、入库和通知通过，以及191呼叫仍被拒绝的证据。[记录归属的恢复入口](ports/diagnostic-app/RECORDED-RECOVERY-20261007.md)和 [API33 原始记录恢复](ports/diagnostic-app/RECORDED-RECOVERY-API33-20261007.md)单独记录；跨版本实际运营商业务及双活SIM验证仍未完成。
 
 ## 上游 Android 17 方案
 

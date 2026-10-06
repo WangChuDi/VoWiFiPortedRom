@@ -54,7 +54,9 @@ def check(guest):
         health=value.get('platform_health',{})
         if value.get('diagnostic_complete')is not True or value.get('diagnostic_stage')!='finished' or value.get('diagnostic_error') or any(health.get(name,{}).get('state')!='stable'for name in ('phone','system_server')):raise ValueError('complete-stable-platform-observation-unconfirmed')
         result['complete_stable_platform_observation']=True
-        result['diagnostic_fields_observed']={key:key in value for key in ('runtime_abi','sim_state','dns','selected_policy','ims_transport','cap_observed')}
+        result['diagnostic_fields_observed']={key:key in value for key in ('runtime_abi','sim_state','dns','selected_policy','ims_transport','cap_observed','native_sms_ims_supported','native_sms_error')}
+        if 'native_sms_ims_supported'not in value and 'native_sms_error'not in value:raise ValueError('native-sms-observation-missing')
+        if 'native_sms_ims_supported'in value and not isinstance(value['native_sms_ims_supported'],bool):raise ValueError('native-sms-observation-type')
         rc,value=entry('RootDiagnostics','0',True)
         if rc or value.get('error')!='SecurityException' or 'sdk' in value:raise ValueError('nonroot-diagnostic-not-refused')
         result['nonroot_diagnostic_refused']=True

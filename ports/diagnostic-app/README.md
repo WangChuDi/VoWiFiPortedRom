@@ -282,3 +282,18 @@ APK/UID ownership and other permission flags remain checked. Original raw flags
 are retained, and test reports distinguish raw metadata from authorization state.
 See [the controller semantics](../android12/controller/README.md#permissioncontroller-sensitivity-metadata)
 and [current artifacts, scoped checks and retained failures](RECORDED-RECOVERY-20261007.md).
+
+## Version0.9.6 native SMS support observation
+
+VersionCode18 adds a separate selected-subscription query to the system SMS
+Binder, independently of MMTEL capabilities. The active slot/sub is rechecked
+after the query, and missing interfaces or failed queries remain unavailable.
+The watchdog covers this stage. A reported capability does not prove actual
+traffic, inbox delivery or notification.
+
+The signed update passed concurrent physical empty/active-slot root checks and
+API33/API36 read-only/refusal smoke. The existing API30 full stack passed one
+native INFO SMS round trip, merged inbox delivery and notification. The latest
+191 test reached SIP responses but no connected/media proof; CSeq attribution
+and the488 rejection remain unresolved. See [changes, identities and explicit
+limits](NATIVE-SMS-20261007.md) and [original API33 recovery](RECORDED-RECOVERY-API33-20261007.md).

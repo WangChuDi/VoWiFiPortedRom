@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "events": [
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_dispatcher_available",
+      "current_phone_process": false,
+      "up": true,
+      "registered": true,
+      "sms_capable": false
+    },
+    {
+      "event": "ims_sms_on_ready",
+      "current_ims_process": true
+    },
+    {
+      "event": "ims_sms_on_ready",
+      "current_ims_process": true
+    }
+  ],
+  "historical_events": true,
+  "current_phone_identity_stable": true,
+  "current_ims_identity_stable": true,
+  "new_call_sms_sent": false
+}
