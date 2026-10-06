@@ -287,7 +287,7 @@ public final class RootDiagnostics {
         for(String line:status.split("[\r\n]+")){
             int equals=line.indexOf('=');
             if(equals>0){String key=line.substring(0,equals);
-                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.equals("identity_selection")||key.equals("owner_slot")||key.equals("owner_sub")||key.equals("owner_schema")||key.equals("multi_transaction_selection")||key.equals("migration_required")||key.matches("active_owner_(?:count|[0-7]_(?:slot|sub))")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
+                if(key.equals("mode")||key.equals("transaction")||key.equals("persistent")||key.equals("components")||key.equals("component_selection")||key.equals("persistent_component_selection")||key.equals("identity_selection")||key.equals("owner_slot")||key.equals("owner_sub")||key.equals("owner_schema")||key.equals("multi_transaction_selection")||key.equals("migration_required")||key.matches("active_owner_(?:count|[0-7]_(?:slot|sub))")||key.startsWith("carrier_")||key.equals("config_ims_mmtel_package_override_string"))provider.put(key,line.substring(equals+1));
                 if(key.equals("carrier-operation-failed"))provider.put("carrier_read_error",line.substring(equals+1));
             }
         }

@@ -68,8 +68,9 @@ slot is refused until the original owner is explicitly recovered.
 Operation mode, phone-process restart, test-package SMS policy and the old SMS
 companion are device-wide resources. The coordinator records one original mode.
 Ending one owner preserves AP-assisted while another selected IWLAN remains;
-without another IWLAN, it restores the original mode. The companion and test
-policy resume only when the last transaction is restored. Every phone restart
+without another IWLAN, it restores the original mode. In controller0.9.0, the
+companion and IMS test policy resume when the last replacement-IMS owner is
+restored, including when QNS/IWLAN-only transactions remain. Every phone restart
 checks both slots for an active call. Reload rebuilds shared framework bindings
 and may briefly reconnect another card, but does not replace its configuration.
 
@@ -91,6 +92,32 @@ mode, partial masks, stale workers, same-slot conflicts, last-owner companion
 restart, rollback-all and interrupted migration are covered. These are controller
 tests, not two real SIMs registered to a carrier. The actual connected device has
 only one active card; do not infer simultaneous registration from those fixtures.
+
+## Optional persistent combinations (0.9.0)
+
+All nonempty masks1–7 can be retained after a trial. `enable` requires ACTIVE
+phase, a valid explicit component record, a clean saved provider baseline, the
+original selected override backup/identity, and matching live and persisted
+provider selections. The read-only `CarrierTrial retention-verify MASK SLOT SUB`
+performs the identity/profile/live/disk checks in one bounded invocation before
+the enabled marker is written. It does not prove working voice/SMS traffic.
+Changing combinations still requires restoring the current transaction first;
+no current replacement is recaptured as an original.
+
+Supervision checks only selected replacement processes. IWLAN mode ownership
+continues to use bit1; companion conflict ownership now uses bit4. Boot evaluates
+all active IMS owners before restarting the companion, rather than inferring
+conflicts from the first persistent owner. Invalid component records are refused
+for retention/renewal/boot rather than silently assumed to mean all components.
+The UI displays the stored mask and accepts partial retention only when the
+controller advertises `persistent_component_selection=1`. Older controllers
+remain limited to their full-combination support.
+
+Configuration support is distinct from interoperability: replacement IMS needs
+an attributed telephony IMS network with an IPsec interface and P-CSCF. Original
+QNS or modem IMS may not consume the replacement DataService. A mixed selection
+requires actual registration, voice and SMS checks on that ROM; persisting it
+does not change its network/vendor dependencies.
 
 ## Remaining requirements
 

@@ -45,7 +45,7 @@ public final class MainActivity extends Activity {
         body.addView(button("只读检查链路",v->diagnose()));
         results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
         body.addView(text("可选替换",21));
-        body.addView(text("已验证组合：IWLAN + QNS + IMS。其他组合仅作 5 分钟兼容试验，不能常驻。替换引擎目前限 Android 11 / raphael / VOXI；每张卡分别保存事务与配置，共享的电话服务仅在空闲时重载。双卡同时注册仍需实机验证。",14));
+        body.addView(text("分别选择要替换的组件，先进行最多 5 分钟的试用，再决定是否保留常驻。未选择的组件沿用原配置；修改组合前先恢复当前事务。不同组合需检查实际通话和短信。替换引擎目前限 Android 11 / raphael / VOXI；每张卡分别保存配置，共享电话服务仅在空闲时重载。双卡同时注册仍需实机验证。",14));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
         for(int i=0;i<components.length;i++){
             components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setChecked(true);body.addView(components[i]);
@@ -153,9 +153,12 @@ public final class MainActivity extends Activity {
         boolean selectedOwner=providers!=null&&ownerSlot==data.optInt("slot",-1)&&providers.optInt("owner_sub",-1)==data.optInt("sub_id",-2);
         boolean selectable=identities&&providers.optInt("component_selection")==1;
         for(CheckBox checkbox:components){checkbox.setEnabled(data.optBoolean("engine_supported")&&selectable&&!active);}
+        int activeMask=providers==null?-1:providers.optInt("components",-1);
+        if(active&&activeMask>=1&&activeMask<=7)for(int index=0;index<components.length;index++)components[index].setChecked((activeMask&(1<<index))!=0);
         if(!selectable)for(CheckBox checkbox:components)checkbox.setChecked(true);
         refreshTrialSelection();
-        enable.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&providers.optInt("components",7)==7&&!"ENABLED".equals(providers.optString("persistent")));
+        boolean canRetain=activeMask>=1&&activeMask<=7&&(activeMask==7||providers.optInt("persistent_component_selection")==1);
+        enable.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&canRetain&&!"ENABLED".equals(providers.optString("persistent")));
         reload.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
         recoveryOwners.clear();ArrayList<String> recoveryLabels=new ArrayList<>();int recoveryIndex=0;
         org.json.JSONArray owners=providers==null?null:providers.optJSONArray("active_owners");

@@ -69,14 +69,18 @@ other_transactions() {
     [ "$DIRECTORY" = "$STATE" ] && continue
     [ -f "$DIRECTORY/transaction" ] || continue
     if [ "${1:-all}" = iwlan ]; then
-      MASK=$(cat "$DIRECTORY/components")
-      case "$MASK" in 1|3|5|7) ;; *) continue;; esac
+      MASK=$(cat "$DIRECTORY/components") || return 1
+      case "$MASK" in 1|3|5|7) ;; 2|4|6) continue;; *) echo component-record-invalid >&2; return 1;; esac
+    elif [ "${1:-all}" = ims ]; then
+      MASK=$(cat "$DIRECTORY/components") || return 1
+      case "$MASK" in 4|5|6|7) ;; 1|2|3) continue;; *) echo component-record-invalid >&2; return 1;; esac
     fi
     printf '%s\n' "$DIRECTORY"
   done
 }
 shared_mode() {
-  if [ -n "$(other_transactions iwlan)" ]; then
+  OTHER_IWLAN=$(other_transactions iwlan) || return 1
+  if [ -n "$OTHER_IWLAN" ]; then
     resetprop -n ro.telephony.iwlan_operation_mode AP-assisted
   else
     [ -f "$ROOT/shared-mode-before" ] || { echo shared-mode-baseline-unavailable; return 1; }
@@ -104,6 +108,8 @@ archive_transaction() {
   done
 }
 gate() {
+  GATE_COMPONENTS=$(cat "$STATE/components") || return 1
+  case "$GATE_COMPONENTS" in 1|2|3|4|5|6|7) ;; *) echo component-record-invalid; return 1;; esac
   BOOT=$(settings get global boot_count 2>&1)
   case "$BOOT" in ''|*[!0-9]*) return 1;; esac
   NOW=$(awk '{printf "%.0f", $1*1000}' /proc/uptime)
@@ -128,6 +134,9 @@ rollback() {
   REGISTRY=$(dumpsys telephony.registry 2>&1 | grep -E '^[[:space:]]+mCallState=[0-9]')
   [ -n "$REGISTRY" ] || { echo call-state-unavailable; return 1; }
   if printf '%s\n' "$REGISTRY" | grep -Eq 'mCallState=[12]'; then echo active-call-refused; return 1; fi
+  OTHER_ANY=$(other_transactions) || return 1
+  OTHER_IMS=$(other_transactions ims) || return 1
+  OTHER_IWLAN=$(other_transactions iwlan) || return 1
   # Old directory-wide baselines are adopted once, while the original card and
   # its selected replacement file still prove which filename belongs to it.
   if [ ! -f "$STATE/persistence.properties" ]; then
@@ -144,18 +153,18 @@ rollback() {
   if ! carrier persistence-restore; then echo rollback=SELECTED_FILE_RESTORE_RETRY_REQUIRED; return 1; fi
   shared_mode
   POLICY_OK=1
-  if [ -z "$(other_transactions)" ] && [ -f "$ROOT/sms-policy-before" ]; then
+  if [ -z "$OTHER_IMS" ] && [ -f "$ROOT/sms-policy-before" ]; then
     CLASSPATH="$MODDIR/carrier-trial.zip" app_process /system/bin SmsTestPolicy restore || POLICY_OK=0
   fi
   restart_phone
   sleep 8
   if ! carrier verify-restored; then echo rollback=PROVIDER_RESTORE_RETRY_REQUIRED; return 1; fi
-  if [ -z "$(other_transactions)" ]; then
+  if [ -z "$OTHER_IMS" ]; then
     [ ! -f "$COMPANION" ] || sh "$COMPANION" start
   fi
   [ "$POLICY_OK" = 1 ] || { echo rollback=PROVIDERS_RESTORED_POLICY_RETRY_REQUIRED; return 1; }
   archive_transaction restored
-  if [ -z "$(other_transactions)" ] && [ -f "$ROOT/shared-mode-before" ]; then
+  if [ -z "$OTHER_ANY" ] && [ -f "$ROOT/shared-mode-before" ]; then
     mv "$ROOT/shared-mode-before" "$ARCHIVE/shared-mode-before"
   fi
   echo rollback=RESTORED
@@ -166,6 +175,7 @@ case "${1:-status}" in
     [ ! -f "$STATE/transaction" ] || echo transaction=ACTIVE
     [ ! -f "$STATE/enabled" ] || echo persistent=ENABLED
     echo component_selection=1
+    echo persistent_component_selection=1
     echo identity_selection=1
     echo subscription_file_selection=1
     if [ -f "$STATE/transaction" ]; then
@@ -231,7 +241,7 @@ case "${1:-status}" in
     if ! carrier verify "$COMPONENTS"; then echo provider-verify-failed; rollback; exit 1; fi
     if ! carrier persistence-verify "$COMPONENTS"; then echo persist-format-unverified; rollback; exit 1; fi
     if ! gate; then echo trial-gate-failed; rollback; exit 1; fi
-    [ ! -f "$COMPANION" ] || sh "$COMPANION" stop
+    if [ "$((COMPONENTS & 4))" != 0 ]; then [ ! -f "$COMPANION" ] || sh "$COMPANION" stop; fi
     # Operation mode is global. Change it only for a replacement data service.
     if [ "$((COMPONENTS & 1))" != 0 ]; then resetprop -n ro.telephony.iwlan_operation_mode AP-assisted; fi
     restart_phone
@@ -267,8 +277,10 @@ case "${1:-status}" in
     ;;
   enable)
     [ -f "$STATE/transaction" ]
-    carrier check
-    [ "$(cat "$STATE/components" 2>/dev/null || echo 7)" = 7 ] || { echo partial-components-trial-only; exit 1; }
+    [ "$(cat "$STATE/phase" 2>/dev/null || true)" = ACTIVE ] || { echo transaction-not-ready; exit 1; }
+    COMPONENTS=$(cat "$STATE/components")
+    case "$COMPONENTS" in 1|2|3|4|5|6|7) ;; *) echo component-record-invalid; exit 1;; esac
+    carrier retention-verify "$COMPONENTS"
     [ ! -f "$STATE/enabled" ] || { echo replacement=ALREADY_PERSISTENT; exit 0; }
     touch "$STATE/enabled"
     rm -f "$STATE/trial-running"
@@ -295,7 +307,13 @@ case "${1:-status}" in
       # LinkProperties. Rebuild bindings only when idle, with a five-minute
       # backoff, and only while the tested SIM is still installed.
       MISSING=0
-      for PKG in dev.codex.vowifi.iwlan dev.codex.vowifi.qns me.phh.ims; do
+      COMPONENTS=$(cat "$STATE/components")
+      case "$COMPONENTS" in 1|2|3|4|5|6|7) ;; *) echo supervisor=COMPONENT_RECORD_INVALID; exit 1;; esac
+      SELECTED_PACKAGES=
+      [ "$((COMPONENTS & 1))" = 0 ] || SELECTED_PACKAGES="$SELECTED_PACKAGES dev.codex.vowifi.iwlan"
+      [ "$((COMPONENTS & 2))" = 0 ] || SELECTED_PACKAGES="$SELECTED_PACKAGES dev.codex.vowifi.qns"
+      [ "$((COMPONENTS & 4))" = 0 ] || SELECTED_PACKAGES="$SELECTED_PACKAGES me.phh.ims"
+      for PKG in $SELECTED_PACKAGES; do
         pidof "$PKG" >/dev/null 2>&1 || MISSING=1
       done
       NOW_SECONDS=$(cut -d. -f1 /proc/uptime)

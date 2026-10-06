@@ -50,7 +50,7 @@ public final class CarrierTrial {
     private static void run(String[] args)throws Exception {
         if(android.os.Process.myUid()!=0)throw new SecurityException("root-required");
         if(args.length<1)throw new IllegalArgumentException("command-required");
-        boolean masked="apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0]);
+        boolean masked="apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0])||"retention-verify".equals(args[0]);
         int prefix=masked?2:1;
         if(args.length==prefix+2){
             selectedSlot=Integer.parseInt(args[prefix]);selectedSub=Integer.parseInt(args[prefix+1]);
@@ -65,9 +65,9 @@ public final class CarrierTrial {
             if(!state.getAbsoluteFile().equals(state.getCanonicalFile())||java.nio.file.Files.isSymbolicLink(state.toPath()))throw new SecurityException("state-path-refused");
             BASELINE=new File(state,"providers-before.bin");
         }
-        if(args.length>=1&&("clear".equals(args[0])||"snapshot".equals(args[0])||"apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0])||"verify-restored".equals(args[0])||"persistence-adopt".equals(args[0])||"persistence-restore".equals(args[0])))requireOwner();
+        if(args.length>=1&&("clear".equals(args[0])||"snapshot".equals(args[0])||"apply".equals(args[0])||"verify".equals(args[0])||"persistence-verify".equals(args[0])||"retention-verify".equals(args[0])||"verify-restored".equals(args[0])||"persistence-adopt".equals(args[0])||"persistence-restore".equals(args[0])))requireOwner();
         if(args.length==1&&"check".equals(args[0]))checkProfile();
-        if(args.length>=1&&("apply".equals(args[0])||"snapshot".equals(args[0])||"baseline-check".equals(args[0])))checkProfile();
+        if(args.length>=1&&("apply".equals(args[0])||"snapshot".equals(args[0])||"baseline-check".equals(args[0])||"retention-verify".equals(args[0])))checkProfile();
         IBinder service=ServiceManager.getService("carrier_config");
         if(service==null)throw new IllegalStateException("carrier-service-unavailable");
         Class<?> api=Class.forName("com.android.internal.telephony.ICarrierConfigLoader");
@@ -100,6 +100,20 @@ public final class CarrierTrial {
             PersistableBundle disk=CarrierOverrideFiles.readBundle(target.file),before=mask==7?null:baseline();
             for(int i=0;i<KEYS.length;i++)if(!java.util.Objects.equals((mask&BITS[i])!=0?VALUES[i]:before.getString(KEYS[i]),disk.getString(KEYS[i])))throw new IllegalStateException("selected-persistence-unconfirmed");
             System.out.println("persistence-verification=ACK");
+        }else if(args.length==2&&"retention-verify".equals(args[0])){
+            int mask=Integer.parseInt(args[1]);if(mask<1||mask>7)throw new IllegalArgumentException("invalid-components");
+            PersistableBundle before=baseline();
+            if(before==null)throw new IllegalStateException("provider-baseline-unavailable");
+            for(String key:KEYS)for(String value:VALUES)if(value.equals(before.getString(key)))throw new IllegalStateException("replacement-baseline-refused");
+            OverrideFileStore.Target target=CarrierOverrideFiles.target(context(),selectedInfo(),api,loader,BASELINE.getParentFile());
+            CarrierOverrideFiles.store(BASELINE.getParentFile()).requireIdentity(target);
+            PersistableBundle actual=config(api,loader),disk=CarrierOverrideFiles.readBundle(target.file);
+            if(actual==null||disk==null)throw new IllegalStateException("retention-selection-unavailable");
+            for(int i=0;i<KEYS.length;i++){
+                String expected=(mask&BITS[i])!=0?VALUES[i]:before.getString(KEYS[i]);
+                if(!java.util.Objects.equals(expected,actual.getString(KEYS[i]))||!java.util.Objects.equals(expected,disk.getString(KEYS[i])))throw new IllegalStateException("retention-selection-mismatch");
+            }
+            System.out.println("retention-selection=VERIFIED");
         }else if(args.length==1&&"baseline-check".equals(args[0])){
             // App-root may retain an isolated mount namespace. Fail before
             // creating a transaction if the phone's backup directory is hidden.

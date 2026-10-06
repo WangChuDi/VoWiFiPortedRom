@@ -69,13 +69,25 @@ echo services-prepared >> "$LOG"
 [ "${1:-}" != prepare ] || exit 0
 sh "$MODDIR/control.sh" migrate >> "$LOG" 2>&1 || exit 1
 sh "$MODDIR/control.sh" recover-trials >> "$LOG" 2>&1 || echo boot-trial-recovery=DEFERRED >> "$LOG"
+# The companion conflicts only with replacement IMS, including an owner whose
+# restoration is deferred. A QNS-only owner must not pause it on every boot.
+IMS_MANAGED=0
+for DIRECTORY in "$STATE"/transactions/slot-*-sub-*; do
+  [ -f "$DIRECTORY/transaction" ] || continue
+  case "$(cat "$DIRECTORY/components")" in
+    4|5|6|7) IMS_MANAGED=1;; 1|2|3) ;; *) echo boot-component-record=INVALID >> "$LOG"; exit 1;;
+  esac
+done
+COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
+if [ -f "$COMPANION" ]; then
+  if [ "$IMS_MANAGED" = 1 ]; then sh "$COMPANION" stop >> "$LOG" 2>&1;
+  else sh "$COMPANION" start >> "$LOG" 2>&1; fi
+fi
 # The phone process is shared. Reload once for a valid persistent owner, then
 # start independent token-scoped supervisors for all retained subscriptions.
 for DIRECTORY in "$STATE"/transactions/slot-*-sub-*; do
   [ -f "$DIRECTORY/transaction" ] && [ -f "$DIRECTORY/enabled" ] || continue
   OWNER=$(cat "$DIRECTORY/owner")
-  COMPANION=/data/adb/modules/codex_vowifi_sms/control.sh
-  [ ! -f "$COMPANION" ] || sh "$COMPANION" stop >> "$LOG" 2>&1
   if sh "$MODDIR/control.sh" reload "${OWNER%%:*}" "${OWNER#*:}" >> "$LOG" 2>&1; then break; fi
 done
 sh "$MODDIR/control.sh" resume-all >> "$LOG" 2>&1

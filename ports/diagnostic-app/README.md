@@ -52,8 +52,12 @@ actions require a freshly observed SIM_READY in the tested profile.
 
 The APK embeds the already-built `vowifi-stack-api30-services.zip`. Install it
 with the app's explicit button, reboot, inspect, then start a timed trial. The
-three components can be selected independently for a timed experiment. Only the
-complete tested combination can be retained across boots. Current profile:
+three components can be selected independently for a timed experiment. With
+controller0.9.0, any nonempty selection can be retained after original/selected
+provider and persistence verification. The full combination and IWLAN+IMS with
+original QNS configuration have live voice/SMS evidence on this profile;
+other mixed combinations still require real interoperability tests. Restore
+the current transaction before changing its selection. Current profile:
 
 `API30 / raphael / VOXI 23415 / slot index1 / subId1`.
 
@@ -83,13 +87,17 @@ Root revalidates the device, live SIM, subscription and operator immediately
 before apply/enable/reload; UI results alone do not authorize a changed SIM.
 Trials last at most five minutes and may roll back earlier on failure. Enable
 retains an existing trial. Reload refuses active calls. Rollback restores the
-original provider overrides/mode and resumes the preserved SMS companion.
+original provider overrides/mode and resumes the preserved SMS companion when
+no replacement-IMS owner remains.
 Controller recovery remains visible when selecting an empty/unsupported SIM.
 
 Partial combinations preserve unselected effective provider values, and change
 global operation mode only when IWLAN is selected. They are compatibility
-experiments rather than proven working stacks. The actual IMS-only UI trial did
-not register WLAN; the full combination restored registration and capabilities.
+experiments whose interoperability must be tested individually. The actual
+IMS-only UI trial did not register WLAN. IWLAN+IMS retaining original QNS
+configuration later passed reboot recovery, native SMS/inbox/notification and
+191 calling, following an explicit idle reload when switching selections.
+See [optional persistence evidence](../android11/stack/OPTIONAL-PERSISTENCE-20261006.md).
 Android12–17 replacement engines remain disabled. They require device and
 provider/routing compatibility validation; installing
 the diagnostic APK does not establish it. No modem/vendor/APN replacement is

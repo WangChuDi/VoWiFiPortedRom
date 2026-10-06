@@ -12,10 +12,12 @@ fixture='/data/local/tmp/codex-multi-fixture-'+uuid.uuid4().hex
 root=fixture+'/data-adb/codex_vowifi_stack';module=fixture+'/module'
 out=base/'out'/fixture.rsplit('/',1)[1];out.mkdir(parents=True)
 def adb(*command):
-    result=subprocess.run([args.adb,'-s',args.serial,*command],capture_output=True,timeout=45)
-    if result.returncode:raise RuntimeError('fixture-command-failed')
+    result=subprocess.run([args.adb,'-s',args.serial,*command],capture_output=True,timeout=180)
+    if result.returncode:
+        (out/'failure.txt').write_bytes(result.stdout+result.stderr)
+        raise RuntimeError('fixture-command-failed rc='+str(result.returncode)+' fixture='+fixture)
     return result.stdout.decode('utf-8','replace')
-for name in ('control.sh','subscription-control.sh'):
+for name in ('control.sh','subscription-control.sh','service.sh','post-fs-data.sh'):
     source=(base.parent/'android11/stack/module'/name).read_text(encoding='utf-8').replace('/data/adb',fixture+'/data-adb')
     if name=='subscription-control.sh':
         marker='case "${1:-status}" in\n  status)';assert source.count(marker)==1
@@ -23,8 +25,11 @@ for name in ('control.sh','subscription-control.sh'):
   if [ "$1" = check ] && [ -f "$FIXTURE/refuse-owner-check" ]; then return 1; fi
   case "$1" in
     snapshot) printf original > "$STATE/providers-before.bin"; printf fixture > "$STATE/persistence.properties";;
-    apply) printf replacement > "$STATE/live-provider";;
+    apply) printf "%s" "$2" > "$STATE/live-provider"; printf "%s" "$2" > "$STATE/disk-provider";;
     clear) printf original > "$STATE/live-provider";;
+    retention-verify)
+      [ ! -f "$FIXTURE/refuse-retention" ] && [ "$(cat "$STATE/live-provider")" = "$2" ] &&
+      [ "$(cat "$STATE/disk-provider")" = "$2" ] && [ "$(cat "$STATE/providers-before.bin")" = original ] || return 1;;
     verify-restored) [ "$(cat "$STATE/live-provider")" = original ] || return 1;;
     read) echo config_ims_mmtel_package_override_string=fixture;;
   esac
@@ -32,10 +37,13 @@ for name in ('control.sh','subscription-control.sh'):
 }
 '''
         source=source.replace(marker,guard+marker)
+    if name=='service.sh':
+        marker='COUNT=0\nuntil prepare_apps';assert source.count(marker)==1
+        source=source.replace(marker,'prepare_apps() { return 0; }\n'+marker)
     (out/name).write_text(source,encoding='utf-8',newline='\n')
 stubs={
  'getprop':'''case "$1" in
-ro.product.device) echo raphael;; ro.build.version.sdk) echo 30;;
+ro.product.device) echo raphael;; ro.build.version.sdk) echo 30;; sys.boot_completed) echo 1;;
 ro.telephony.iwlan_operation_mode) cat "$FIXTURE/mode";; esac''',
  'resetprop':'printf "%s" "$3" > "$FIXTURE/mode"',
  'settings':'''case "$1" in
@@ -43,13 +51,19 @@ get) echo 77;;
 put) printf "%s" "$4" > "$FIXTURE/leases/$3";;
 delete) rm -f "$FIXTURE/leases/$3";; esac''',
  'dumpsys':'printf "  mCallState=0\\n  mCallState=0\\n"',
- 'pidof':'exit 1','sleep':'exit 0','nohup':'exit 0',
+ 'pidof':'''if [ -f "$FIXTURE/monitor-once" ]; then
+  printf "%s\\n" "$1" >> "$FIXTURE/observed-packages"
+  if [ "$1" = "$(cat "$FIXTURE/present-package")" ]; then echo 424242; exit 0; fi
+fi
+exit 1''',
+ 'sleep':'''if [ -f "$FIXTURE/monitor-once" ]; then rm -f "$CODEX_WFC_STATE/enabled"; fi
+exit 0''','nohup':'exit 0',
  'app_process':'echo provider-fixture=ACK',
 }
 for name,body in stubs.items():(out/('stub-'+name)).write_text('#!/system/bin/sh\n'+body+'\n',encoding='utf-8',newline='\n')
 for name in ('carrier-trial.zip','recovery-boot.sh'):(out/name).write_text('fixture',encoding='utf-8')
 (out/'companion.sh').write_text('#!/system/bin/sh\nprintf "%s\\n" "$1" >> "$FIXTURE/companion-events"\n',encoding='utf-8',newline='\n')
-adb('shell','mkdir','-p',module,fixture+'/bin',fixture+'/leases',fixture+'/data-adb/modules/codex_vowifi_sms')
+adb('shell','mkdir','-p',module,fixture+'/bin',fixture+'/leases',fixture+'/data-adb/modules/codex_vowifi_sms',fixture+'/data-adb/modules/codex_vowifi_stack_api30')
 for path in out.iterdir():
     destination=(fixture+'/bin/'+path.name[5:])if path.name.startswith('stub-')else(
         fixture+'/data-adb/modules/codex_vowifi_sms/control.sh'if path.name=='companion.sh'else module+'/'+path.name)
@@ -98,7 +112,7 @@ sh "$C" expire "$TOKEN_A" 0 100
 test "$(cat "$A/transaction")" = "$NEW_A"
 if sh "$C" trial 7 0 102; then exit 82; fi
 sh "$C" trial 4 1 101
-if sh "$C" enable 1 101; then exit 83; fi
+sh "$C" enable 1 101
 sh "$C" rollback 0 100
 test -f "$B/transaction"
 test "$(cat "$FIXTURE/mode")" = legacy
@@ -136,8 +150,70 @@ test "$(cat "$FIXTURE/leases/codex_wfc_stack_trial_until")" = "$LEGACY_LEASE"
 sh "$C" rollback 1 1
 test "$(cat "$FIXTURE/leases/codex_wfc_stack_trial_until")" = 0
 test "$(cat "$FIXTURE/mode")" = legacy
+for MASK in 1 2 3 4 5 6 7; do
+  BEFORE_STOP=$(grep -c '^stop$' "$FIXTURE/companion-events" || true)
+  sh "$C" trial "$MASK" 0 100
+  TOKEN=$(cat "$A/transaction")
+  touch "$FIXTURE/refuse-retention"
+  if sh "$C" enable 0 100; then exit 85; fi
+  test ! -f "$A/enabled"
+  rm "$FIXTURE/refuse-retention"
+  printf 99 > "$A/disk-provider"
+  if sh "$C" enable 0 100; then exit 86; fi
+  test ! -f "$A/enabled"
+  printf "%s" "$MASK" > "$A/disk-provider"
+  printf PREPARING > "$A/phase"
+  if sh "$C" enable 0 100; then exit 87; fi
+  printf ACTIVE > "$A/phase"
+  sh "$C" enable 0 100
+  test -f "$A/enabled"
+  test "$(cat "$A/components")" = "$MASK"
+  test "$(cat "$A/transaction")" = "$TOKEN"
+  case "$MASK" in 1|3|5|7) EXPECTED_MODE=AP-assisted;; *) EXPECTED_MODE=legacy;; esac
+  test "$(cat "$FIXTURE/mode")" = "$EXPECTED_MODE"
+  AFTER_STOP=$(grep -c '^stop$' "$FIXTURE/companion-events" || true)
+  if [ "$((MASK & 4))" = 0 ]; then test "$AFTER_STOP" = "$BEFORE_STOP";
+  else test "$AFTER_STOP" = "$((BEFORE_STOP + 1))"; fi
+  printf legacy > "$FIXTURE/mode"
+  sh {module}/post-fs-data.sh
+  test "$(cat "$FIXTURE/mode")" = "$EXPECTED_MODE"
+  sh {module}/service.sh
+  test "$(cat "$A/components")" = "$MASK"
+  test "$(cat "$A/transaction")" = "$TOKEN"
+  if [ "$((MASK & 4))" = 0 ]; then test "$(tail -n 1 "$FIXTURE/companion-events")" = start;
+  else test "$(tail -n 1 "$FIXTURE/companion-events")" = stop; fi
+  sh "$C" rollback 0 100
+  test ! -f "$A/transaction"
+  test "$(cat "$FIXTURE/mode")" = legacy
+done
+# End the last IMS owner while a QNS owner remains: companion must resume and
+# the other transaction's lease, token and original must remain intact.
+sh "$C" trial 2 0 100
+sh "$C" enable 0 100
+QNS_TOKEN=$(cat "$A/transaction")
+QNS_LEASE=$(cat "$FIXTURE/leases/codex_wfc_stack_slot_0_until")
+QNS_BASE=$(sha256sum "$A/providers-before.bin")
+sh "$C" trial 4 1 101
+sh "$C" enable 1 101
+sh "$C" rollback 1 101
+test "$(cat "$A/transaction")" = "$QNS_TOKEN"
+test "$(cat "$FIXTURE/leases/codex_wfc_stack_slot_0_until")" = "$QNS_LEASE"
+test "$(sha256sum "$A/providers-before.bin")" = "$QNS_BASE"
+test "$(tail -n 1 "$FIXTURE/companion-events")" = start
+sh "$C" rollback 0 100
+# Run exactly one real supervisor iteration with only selected QNS present.
+sh "$C" trial 2 0 100
+sh "$C" enable 0 100
+printf dev.codex.vowifi.qns > "$FIXTURE/present-package"
+touch "$FIXTURE/monitor-once"
+TOKEN=$(cat "$A/transaction")
+sh "$C" supervise "$TOKEN" 0 100 > "$FIXTURE/monitor-result"
+test "$(cat "$FIXTURE/observed-packages")" = dev.codex.vowifi.qns
+if grep -q 'RECOVERED_MISSING_PROCESS' "$FIXTURE/monitor-result"; then exit 88; fi
+rm "$FIXTURE/monitor-once"
+sh "$C" rollback 0 100
 echo multi-controller-tests=PASS
 '''
 result=adb('shell','su -c '+shlex.quote(command))
 assert 'multi-controller-tests=PASS' in result
-print('multi-controller-tests=PASS other-owner-state-and-lease=PRESERVED shared-mode=COORDINATED stale-token=REFUSED same-slot-conflict=REFUSED companion=LAST_OWNER_ONLY')
+print('multi-controller-tests=PASS masks1-7=PERSISTENCE_AND_BOOT retention-drift=REFUSED preparing=REFUSED other-owner-state-and-lease=PRESERVED shared-mode=COORDINATED stale-token=REFUSED same-slot-conflict=REFUSED companion=LAST_IMS_OWNER monitor=SELECTED_ONLY (isolated fake backends; not live dual-SIM evidence)')
