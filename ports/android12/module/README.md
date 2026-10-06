@@ -159,3 +159,18 @@ non-VOXI fixture switch. The fixture entry is separate and can only use its fixe
 UUID temporary paths. Cleanup is attempted after errors; failed cleanup fails
 the report. Safe final evidence is in
 [`runtime/reports/20261006-installation-module/final.json`](../runtime/reports/20261006-installation-module/final.json).
+
+Module0.2.0 includes recorded-owner absence recovery. An explicitly absent owner
+has only its original component lease restored; its original carrier/role/mode
+records remain pending until the same live identity returns. The supervisor
+continues other owners and retains shared installation policy. See the
+[controller recovery boundary](../controller/README.md#recovery-while-the-recorded-sim-is-absent).
+Unknown or replaced owners are refused. Tool0.9.4 distinguishes pending recovery
+from a completed restore. This does not establish real dual-active-SIM support.
+
+Module0.2.1 / tool0.9.5 adds authorization-policy comparison that preserves the
+two PermissionController sensitivity metadata flags. The final helper/module
+passed 41 stages on each API32/API36 guest concurrently; the injected absent-owner
+fixture reports raw flag/grant deltas separately from unchanged authorization.
+See [current identities and scoped evidence](../../diagnostic-app/RECORDED-RECOVERY-20261007.md).
+Actual modern Magisk mounting, carrier traffic and two active SIMs remain unverified.

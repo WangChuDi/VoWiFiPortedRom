@@ -65,6 +65,9 @@ def check(guest):
         rc,value=entry('ModernAppActions','trial 0 1 7')
         if rc!=1 or value.get('error')!='IOException' or value.get('action_completed'):raise ValueError('missing-module-action-not-refused')
         result['missing_module_action_refused']=True
+        rc,value=entry('ModernAppActions','rollback 0 1 7')
+        if rc!=1 or value.get('error')!='IOException' or value.get('action_completed') or value.get('recovery_pending_owner'):raise ValueError('unrecorded-recovery-not-refused')
+        result['missing_owner_recovery_refused']=True
         result['production_state_presence_unchanged']=state_absent()
         if not result['production_state_presence_unchanged']:raise ValueError('read-only-check-created-production-state')
         result.update(status='passed',actual_modern_module_installation_verified=False,modern_carrier_selection_verified=False,carrier_call_sms_verified=False,dual_active_sim_verified=False)

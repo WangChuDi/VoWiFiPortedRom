@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "status": "published",
+  "tool_version": "0.9.5",
+  "physical_api30_readonly_passed": true,
+  "per_version_lifecycle": {
+    "32": {
+      "status": "passed",
+      "stage_count": 41,
+      "actual_sim_removal_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    },
+    "36": {
+      "status": "passed",
+      "stage_count": 41,
+      "actual_sim_removal_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    }
+  },
+  "current_signed_artifacts": {
+    "schema": 1,
+    "status": "passed",
+    "tool_version": "0.9.5",
+    "tool_sha256": "6c7b46d3349a2e117faf874e8f8753fee66b2fbcd96308214c0513343d92f61c",
+    "helper_sha256": "5c5748cdd75377a34a05001c22bb3d5e7a9375de060a265b0c3bbb51202b44c4",
+    "module_sha256": "eebf6d4140e7ccf4f64d7351af9789c6d08f35317a5f477237aec2d9b1ca3a8f",
+    "signature_verified": true,
+    "api30_engine_unchanged": true,
+    "embedded_engines_exact": true,
+    "modern_carrier_call_sms_verified": false,
+    "dual_active_sim_verified": false
+  },
+  "older_failed_attempts_retained": true,
+  "goal_complete": false
+}

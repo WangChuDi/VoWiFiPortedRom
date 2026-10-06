@@ -216,7 +216,7 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         if(new File(coordination,"resources/roles-1.properties").exists()||new File(coordination,"resources/roles-4.properties").exists())new ModernSharedSelectedRoles(context,coordination,carrierLock,test).recoverUnused();
     }
     private void verifyRestored(Properties before,ApplicationInfo[] apps)throws Exception {
-        for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(granted(i,permission)!=Boolean.parseBoolean(before.getProperty("grant."+i+"."+permission))||flags(i,permission)!=Integer.parseInt(before.getProperty("flags."+i+"."+permission)))throw new IOException("installation-permission-restore-unconfirmed");
+        for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(granted(i,permission)!=Boolean.parseBoolean(before.getProperty("grant."+i+"."+permission))||!ModernPermissionFlags.samePolicy(flags(i,permission),Integer.parseInt(before.getProperty("flags."+i+"."+permission))))throw new IOException("installation-permission-restore-unconfirmed");
         if(exemption()!=Boolean.parseBoolean(before.getProperty("sms.exemption"))||mode(apps)!=Integer.parseInt(before.getProperty("ipsec.mode")))throw new IOException("installation-policy-restore-unconfirmed");
     }
     private void requireLock()throws IOException {if(closed||!lock.isValid())throw new IOException("closed-installation-transaction");carrierLock.requireHeld(carrierRoot);}

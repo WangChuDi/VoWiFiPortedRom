@@ -47,7 +47,7 @@ public final class ModernRolePermissionBroker {
             Looper.prepareMainLooper();Context context=ActivityThread.systemMain().getSystemContext();PackageManager pm=context.getPackageManager();ApplicationInfo app=pm.getApplicationInfo(PACKAGES[index],0);
             if(app.uid!=uid||(app.flags&ApplicationInfo.FLAG_SYSTEM)==0||(app.privateFlags&ApplicationInfo.PRIVATE_FLAG_PRIVILEGED)==0||!args[2].equals(ModernInstallationTransaction.digest(new File(app.sourceDir))))throw new SecurityException("role-broker-package-owner-changed");
             int allowed=mask(index),actual=pm.getPermissionFlags(PERMISSIONS[index],PACKAGES[index],UserHandle.SYSTEM);
-            if(((actual^before)&~allowed)!=0)throw new IOException("foreign-role-permission-flags-refused");
+            if(ModernPermissionFlags.foreignChange(actual,before,allowed))throw new IOException("foreign-role-permission-flags-refused");
             boolean granted=pm.checkPermission(PERMISSIONS[index],PACKAGES[index])==PackageManager.PERMISSION_GRANTED;
             int temporaryFixed=0;
             if(granted!=wanted&&(actual&PackageManager.FLAG_PERMISSION_SYSTEM_FIXED)!=0) {
@@ -55,7 +55,7 @@ public final class ModernRolePermissionBroker {
             }
             try{if(granted!=wanted){if(wanted)pm.grantRuntimePermission(PACKAGES[index],PERMISSIONS[index],UserHandle.SYSTEM);else pm.revokeRuntimePermission(PACKAGES[index],PERMISSIONS[index],UserHandle.SYSTEM);}}
             finally{int completeMask=allowed|temporaryFixed;int completeValue=(before&allowed)|((allowed&PackageManager.FLAG_PERMISSION_SYSTEM_FIXED)==0?temporaryFixed:0);pm.updatePermissionFlags(PERMISSIONS[index],PACKAGES[index],completeMask,completeValue,UserHandle.SYSTEM);}
-            if(pm.getPermissionFlags(PERMISSIONS[index],PACKAGES[index],UserHandle.SYSTEM)!=before||(pm.checkPermission(PERMISSIONS[index],PACKAGES[index])==PackageManager.PERMISSION_GRANTED)!=wanted)throw new IOException("role-broker-original-policy-unconfirmed");
+            if(!ModernPermissionFlags.samePolicy(pm.getPermissionFlags(PERMISSIONS[index],PACKAGES[index],UserHandle.SYSTEM),before)||(pm.checkPermission(PERMISSIONS[index],PACKAGES[index])==PackageManager.PERMISSION_GRANTED)!=wanted)throw new IOException("role-broker-original-policy-unconfirmed");
             output.put("status","restored");success=true;
         }catch(Throwable error){try{output.put("status","failed").put("error",error.getClass().getSimpleName());}catch(Exception ignored){}}
         System.out.println(output.toString());System.exit(success?0:1);

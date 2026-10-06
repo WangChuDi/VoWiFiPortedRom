@@ -56,7 +56,7 @@ final class ModernSelectedPermissions {
             int original=before(pm,record,i),actual;
             do {
                 actual=pm.getPermissionFlags(PERMISSIONS[i],PACKAGES[i],UserHandle.SYSTEM);
-                if(((actual^original)&~allowed(i))!=0)throw new IOException("external-selected-permission-flags-change");
+                if(ModernPermissionFlags.foreignChange(actual,original,allowed(i)))throw new IOException("external-selected-permission-flags-change");
                 if(i!=0||(actual&(FIXED|DEFAULT))==(FIXED|DEFAULT)||(original&(PackageManager.FLAG_PERMISSION_USER_SET|PackageManager.FLAG_PERMISSION_USER_FIXED|PackageManager.FLAG_PERMISSION_POLICY_FIXED))!=0)break;
                 Thread.sleep(200);
             }while(SystemClock.elapsedRealtime()<deadline);
@@ -73,7 +73,7 @@ final class ModernSelectedPermissions {
         validateRecord(record);
         for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
             int original=Integer.parseInt(record.getProperty("role."+i+".flags")),actual=Integer.parseInt(record.getProperty("role."+i+".observed"));
-            if(((original^actual)&~allowed(i))!=0||!Arrays.asList("true","false").contains(record.getProperty("role."+i+".observed.grant")))throw new IOException("shared-role-observation-refused");
+            if(ModernPermissionFlags.foreignChange(actual,original,allowed(i))||!Arrays.asList("true","false").contains(record.getProperty("role."+i+".observed.grant")))throw new IOException("shared-role-observation-refused");
         }
         if(selected(record,0))for(int i=0;i<DATA_OPS.length;i++) {
             int original=Integer.parseInt(record.getProperty("role.data.op."+i)),actual=Integer.parseInt(record.getProperty("role.data.observed.op."+i));
@@ -92,7 +92,7 @@ final class ModernSelectedPermissions {
     static boolean matches(Context context,Properties record)throws Exception {
         validate(context,record);PackageManager pm=context.getPackageManager();
         for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
-            if(pm.getPermissionFlags(PERMISSIONS[i],PACKAGES[i],UserHandle.SYSTEM)!=Integer.parseInt(record.getProperty("role."+i+".flags"))||
+            if(!ModernPermissionFlags.samePolicy(pm.getPermissionFlags(PERMISSIONS[i],PACKAGES[i],UserHandle.SYSTEM),Integer.parseInt(record.getProperty("role."+i+".flags")))||
                 (pm.checkPermission(PERMISSIONS[i],PACKAGES[i])==PackageManager.PERMISSION_GRANTED)!=Boolean.parseBoolean(record.getProperty("role."+i+".grant")))return false;
         }
         if(selected(record,0)) {
@@ -108,18 +108,19 @@ final class ModernSelectedPermissions {
         for(int i=0;i<PACKAGES.length;i++)if(selected(record,i))originals[i]=before(pm,record,i);
         // Carrier reload and the framework's role-permission callbacks are
         // asynchronous. One matching read can precede a delayed native revoke.
-        // Require an unchanged full policy interval; never ignore foreign flags.
+        // Require an unchanged authorization-policy interval. Sensitivity metadata
+        // belongs to PermissionController and is preserved, not restored by us.
         long deadline=SystemClock.elapsedRealtime()+20000,stableSince=-1;
         do {
             boolean equal=true;
             for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
                 int original=originals[i],mask=allowed(i),actual=pm.getPermissionFlags(PERMISSIONS[i],PACKAGES[i],UserHandle.SYSTEM);
-                if(((actual^original)&~mask)!=0)throw new IOException("external-selected-permission-flags-change");
+                if(ModernPermissionFlags.foreignChange(actual,original,mask))throw new IOException("external-selected-permission-flags-change");
                 if(i==0&&(original&DEFAULT)==0&&(actual&DEFAULT)!=0) {equal=false;continue;}
                 boolean wanted=Boolean.parseBoolean(record.getProperty("role."+i+".grant"));
                 boolean granted=pm.checkPermission(PERMISSIONS[i],PACKAGES[i])==PackageManager.PERMISSION_GRANTED;
                 if(!granted&&wanted&&record.getProperty("role."+i+".observed")==null&&!"true".equals(record.getProperty("role."+i+".apply_requested"))&&((actual^original)&mask)==0)throw new IOException("untracked-selected-permission-revoke");
-                if(actual!=original||granted!=wanted) {
+                if(!ModernPermissionFlags.samePolicy(actual,original)||granted!=wanted) {
                     equal=false;ModernRolePermissionBroker.restore(i,Integer.parseInt(record.getProperty("role."+i+".uid")),record.getProperty("role."+i+".apk"),original,wanted);
                 }
             }

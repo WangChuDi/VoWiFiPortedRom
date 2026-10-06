@@ -180,7 +180,7 @@ public final class MainActivity extends Activity {
             int recoverySlot=owner.optInt("slot",-1),recoverySub=owner.optInt("sub",-1);
             if(recoverySlot<0||recoverySlot>7||recoverySub<0)continue;
             if(recoverySlot==data.optInt("slot",-1))recoveryIndex=recoveryOwners.size();
-            recoveryOwners.add(new int[]{recoverySlot,recoverySub});recoveryLabels.add("SIM"+(recoverySlot+1));
+            recoveryOwners.add(new int[]{recoverySlot,recoverySub});recoveryLabels.add("SIM"+(recoverySlot+1)+(owner.optBoolean("recovery_pending_owner")?"（等待原卡回归）":""));
         }
         if(recoveryLabels.isEmpty())recoveryLabels.add("无待恢复事务");
         recoveries.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,recoveryLabels));
@@ -269,7 +269,9 @@ public final class MainActivity extends Activity {
             if(modern){
                 String raw=shell("CLASSPATH="+quote(getApplicationInfo().sourceDir)+" app_process /system/bin dev.codex.vowifi.tool.ModernAppActions "+action+" "+targetSlot+" "+targetSub+" "+Math.max(1,mask),310);
                 JSONObject accepted=null;for(String line:raw.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))accepted=new JSONObject(line);
-                if(accepted==null||!accepted.optBoolean("action_completed")||!action.equals(accepted.optString("action")))throw new IOException("modern-action-result-unconfirmed");
+                if(accepted==null||!action.equals(accepted.optString("action")))throw new IOException("modern-action-result-unconfirmed");
+                if("rollback".equals(action)&&Boolean.TRUE.equals(accepted.opt("recovery_pending_owner"))&&Boolean.FALSE.equals(accepted.opt("action_completed")))return new JSONObject().put("recovery_pending_owner",true).put("action_result","已撤销这张卡的组件租约，原配置和共享资源恢复仍在等待原卡回归。请将原卡插回原卡槽，再检查恢复状态。");
+                if(!Boolean.TRUE.equals(accepted.opt("action_completed")))throw new IOException("modern-action-result-unconfirmed");
                 output="操作已完成；请查看最新注册与能力。";
             }else output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:"")+" "+targetSlot+" "+targetSub,35);
             if(!action.equals("reload")&&!action.equals("trial"))return new JSONObject().put("action_result",output);
@@ -296,7 +298,7 @@ public final class MainActivity extends Activity {
         },data->{
             last=null;setActions(false);
             if(data.has("sdk")){render(data);status(DiagnosticPolicy.wlanConfirmed(data)?"已恢复 WLAN 注册；请查看下方最新能力。":"操作已请求，尚未确认 WLAN 注册；请刷新检查结果。"+(data.has("action_observation_error")?"\n等待检查未完成："+data.optString("action_observation_error"):""));}
-            else{status(data.optString("action_result"));diagnose();}
+            else{status(data.optString("action_result"));if(!data.optBoolean("recovery_pending_owner"))diagnose();}
         });
     }
     private void installModule(){

@@ -48,7 +48,8 @@ public final class ModernInstallationEmulatorTrial {
         Properties current=observe();
         for(String key:Arrays.asList("build","uid.0","uid.1","uid.2","apk.0","apk.1","apk.2"))if(!Objects.equals(original.getProperty(key),current.getProperty(key)))throw new SecurityException("fixture-owner-changed");
     }
-    private static void cleanup(Properties original)throws Exception {
+    private static boolean cleanup(Properties original)throws Exception {
+        Properties entry=observe();
         owner(original);ModernPhoneIdle.requireIdle(context);exemption(Boolean.parseBoolean(original.getProperty("sms.exemption")));
         for(int i=0;i<ModernInstallationTransaction.PACKAGES.length;i++)for(String permission:RUNTIME[i]){
             String name=ModernInstallationTransaction.PACKAGES[i],full="android.permission."+permission;
@@ -56,7 +57,13 @@ public final class ModernInstallationEmulatorTrial {
             if(wanted!=actual){if(wanted)pm.grantRuntimePermission(name,full,UserHandle.SYSTEM);else pm.revokeRuntimePermission(name,full,UserHandle.SYSTEM);}
         }
         ops.setMode(IPSEC,pm.getApplicationInfo(ModernInstallationTransaction.PACKAGES[0],0).uid,ModernInstallationTransaction.PACKAGES[0],Integer.parseInt(original.getProperty("ipsec.mode")));
-        if(!original.equals(observe()))throw new IOException("fixture-outer-restoration-unconfirmed");
+        Properties actual=observe();if(!ModernPermissionFlags.sameRecordedPolicy(original,actual))throw new IOException("fixture-outer-restoration-unconfirmed");
+        boolean sensitivityUnchanged=true;
+        for(int i=0;i<RUNTIME.length;i++)for(String permission:RUNTIME[i]){
+            String key="flags."+i+"."+permission;
+            if(((Integer.parseInt(entry.getProperty(key))^Integer.parseInt(actual.getProperty(key)))&ModernPermissionFlags.INFORMATIONAL)!=0)sensitivityUnchanged=false;
+        }
+        return sensitivityUnchanged;
     }
     public static void main(String[] args){
         JSONObject result=new JSONObject();boolean success=false;
@@ -87,9 +94,9 @@ public final class ModernInstallationEmulatorTrial {
                         if(!"RESTORED".equals(oldSelection.getProperty("phase"))||!"7".equals(oldSelection.getProperty("mask"))||!"false".equals(oldSelection.getProperty("mode_owned")))throw new IOException("known-restored-data-role-fixture-required");
                         int originalRoleFlags=Integer.parseInt(original.getProperty("flags.0.READ_PHONE_STATE")),actualFlags=pm.getPermissionFlags("android.permission.READ_PHONE_STATE",ModernInstallationTransaction.PACKAGES[0],UserHandle.SYSTEM);
                         int roleMask=PackageManager.FLAG_PERMISSION_SYSTEM_FIXED|PackageManager.FLAG_PERMISSION_GRANTED_BY_DEFAULT;
-                        if(((originalRoleFlags^actualFlags)&~roleMask)!=0)throw new IOException("unknown-fixture-data-role-policy");
+                        if(ModernPermissionFlags.foreignChange(actualFlags,originalRoleFlags,roleMask))throw new IOException("unknown-fixture-data-role-policy");
                         ModernRolePermissionBroker.restore(0,Integer.parseInt(original.getProperty("uid.0")),original.getProperty("apk.0"),originalRoleFlags,Boolean.parseBoolean(original.getProperty("grant.0.READ_PHONE_STATE")));
-                        if(!original.equals(observe()))throw new IOException("fixture-role-repair-unconfirmed");
+                        if(!ModernPermissionFlags.sameRecordedPolicy(original,observe()))throw new IOException("fixture-role-repair-unconfirmed");
                         result.put("known_data_role_original_policy_recovered",true);break;
                     case "audit":
                         Properties actual=observe();org.json.JSONArray changes=new org.json.JSONArray();
@@ -116,12 +123,12 @@ public final class ModernInstallationEmulatorTrial {
                     case "restore":transaction.restore();if(transaction.ready()||!"RESTORED".equals(transaction.phase()))throw new IOException("fixture-restore-unconfirmed");result.put("original_seeded_policy_restored",true);break;
                     case "arm-restore-resume":File baseline=new File(state,"baseline.properties");Properties record=read(baseline);if(!"RESTORED".equals(record.getProperty("phase")))throw new IOException("fixture-restored-phase-required");record.setProperty("phase","RESTORING");write(baseline,record);result.put("simulated_restore_handoff_armed",true);break;
                     case "recover":transaction.restore();transaction.restore();if(!"RESTORED".equals(transaction.phase())||transaction.ready())throw new IOException("fixture-resume-unconfirmed");result.put("restore_resumed_and_repeated",true);break;
-                    case "cleanup":cleanup(original);result.put("entire_outer_permission_observation_restored",true);break;
+                    case "cleanup":result.put("sensitivity_metadata_exactly_unchanged_during_cleanup",cleanup(original)).put("entire_outer_permission_observation_restored",true);break;
                     }
                 }
                 success=true;
             }
-            result.put("actual_os_reboot_or_forced_kill_test",false).put("magisk_mount_verified",false).put("carrier_call_sms_verified",false).put("dual_active_sim_verified",false);
+            result.put("permission_policy_excluded_informational_mask",ModernPermissionFlags.INFORMATIONAL).put("actual_os_reboot_or_forced_kill_test",false).put("magisk_mount_verified",false).put("carrier_call_sms_verified",false).put("dual_active_sim_verified",false);
         }catch(Throwable failure){try{result.put("error",failure.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(failure)).put("origin",ModernSafeFailure.origin(failure));}catch(Exception ignored){}}
         System.out.println(result.toString());System.exit(success&&!result.has("error")?0:1);
     }

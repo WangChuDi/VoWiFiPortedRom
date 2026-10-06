@@ -45,6 +45,7 @@ final class ModernControllerObservation {
     static Properties owner(File file,int slot,int sub)throws Exception {
         Properties value=read(file);
         if(!"3".equals(value.getProperty("schema"))||!(Build.VERSION.SDK_INT+":"+Build.FINGERPRINT).equals(value.getProperty("build"))||!Integer.toString(slot).equals(value.getProperty("slot"))||!Integer.toString(sub).equals(value.getProperty("sub"))||!value.getProperty("mask","").matches("[1-7]")||!value.getProperty("token","").matches("[0-9a-f]{32}")||!Arrays.asList("true","false").contains(value.getProperty("persistent"))||!Arrays.asList("true","false").contains(value.getProperty("mode_owned"))||!Arrays.asList("PREPARING","PREPARED","SELECTING","ACTIVE","RESTORING","RESTORED","ARCHIVING").contains(value.getProperty("phase")))throw new IOException("modern-owner-record-refused");
+        if(!Arrays.asList("true","false").contains(value.getProperty("recovery.pending_owner","false"))||Boolean.parseBoolean(value.getProperty("recovery.pending_owner"))&&!"RESTORING".equals(value.getProperty("phase")))throw new IOException("modern-recovery-record-refused");
         return value;
     }
     static JSONObject inspect(Context context,int slot,int sub)throws Exception {
@@ -69,8 +70,8 @@ final class ModernControllerObservation {
                 File file=new File(entry,"selection.properties");canonical(file);
                 if(!file.exists()){File[] contents=entry.listFiles();File core=new File(STATE,"transactions/"+entry.getName());canonical(core);if(contents!=null&&contents.length==0&&!core.exists())continue;throw new IOException("modern-owner-inventory-refused");}
                 String[] tuple=entry.getName().split("-");int ownerSlot=Integer.parseInt(tuple[1]),ownerSub=Integer.parseInt(tuple[3]);Properties value=owner(file,ownerSlot,ownerSub);String phase=value.getProperty("phase");
-                if(!Arrays.asList("RESTORED","ARCHIVING").contains(phase)){if(!slots.add(ownerSlot))throw new IOException("modern-owner-inventory-refused");active.put(new JSONObject().put("slot",ownerSlot).put("sub",ownerSub));}
-                if(ownerSlot==slot&&ownerSub==sub)result.put("transaction",phase).put("components",Integer.parseInt(value.getProperty("mask"))).put("persistent",Boolean.parseBoolean(value.getProperty("persistent"))?"ENABLED":"TRIAL");
+                if(!Arrays.asList("RESTORED","ARCHIVING").contains(phase)){if(!slots.add(ownerSlot))throw new IOException("modern-owner-inventory-refused");active.put(new JSONObject().put("slot",ownerSlot).put("sub",ownerSub).put("recovery_pending_owner",Boolean.parseBoolean(value.getProperty("recovery.pending_owner"))));}
+                if(ownerSlot==slot&&ownerSub==sub)result.put("transaction",phase).put("components",Integer.parseInt(value.getProperty("mask"))).put("persistent",Boolean.parseBoolean(value.getProperty("persistent"))?"ENABLED":"TRIAL").put("recovery_pending_owner",Boolean.parseBoolean(value.getProperty("recovery.pending_owner")));
             }
         }
         result.put("active_owners",active);

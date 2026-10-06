@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "versions": [
+    32,
+    36
+  ],
+  "private_limit_per_guest": 6442450944,
+  "disk_floor": 3221225472,
+  "physical_phone_modified": false,
+  "boot": [
+    {
+      "sdk": 32,
+      "boot_completed": true,
+      "owned_identity_verified": true
+    },
+    {
+      "sdk": 36,
+      "boot_completed": true,
+      "owned_identity_verified": true
+    }
+  ],
+  "test_exit": 0,
+  "owned_guest_processes_terminal": true,
+  "peak_private_bytes": {
+    "32": 4098809856,
+    "36": 4258000896
+  },
+  "min_c_free_bytes": 13676724224
+}

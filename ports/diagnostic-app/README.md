@@ -265,3 +265,20 @@ full replacement, WLAN registration and voice/SMS capabilities on the active car
 The signed app update was installed. The app's own-UID UI regression was blocked
 by the phone's lock screen and is not counted as passed. No new call or SMS was
 sent in this regression. See [source, artifact identities and scoped evidence](PLATFORM-HEALTH-20261007.md).
+
+## Version0.9.5 recorded recovery and sensitivity metadata
+
+VersionCode17 embeds modern module0.2.1 while retaining the API30 engine bytes.
+Recorded modern recovery can withdraw an absent owner's component lease and
+explicitly remain pending until the original SIM/file identity returns. The app
+shows this waiting state without reporting completed rollback. Activation,
+retention and renewal continue to require the live ready23415 owner. The
+controller keeps the original carrier, role and mode journals throughout.
+
+Authorization-policy recovery now preserves PermissionController's two
+user-sensitivity metadata bits instead of treating their asynchronous update as
+foreign authorization. Grants, user/admin decisions, restricted-SMS exemptions,
+APK/UID ownership and other permission flags remain checked. Original raw flags
+are retained, and test reports distinguish raw metadata from authorization state.
+See [the controller semantics](../android12/controller/README.md#permissioncontroller-sensitivity-metadata)
+and [current artifacts, scoped checks and retained failures](RECORDED-RECOVERY-20261007.md).

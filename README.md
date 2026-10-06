@@ -1,10 +1,14 @@
 # 移植 ROM 上的 VoWiFi
 
-## 本 fork 的 Android 11 移植
+## 本 fork 的移植与诊断工具
 
-新增 [ports/android11](ports/android11/README.md)：面向 raphael / MIUI Android 11 的 Magisk 常驻短信接收试验模块，包含源码、构建脚本、测试、[修改清单](ports/android11/CHANGES.zh-CN.md)及[来源和许可证](ports/android11/THIRD_PARTY.md)。
+新增 [ports/android11](ports/android11/README.md)：面向 raphael / MIUI Android 11 的移植源码、构建脚本、测试、[修改清单](ports/android11/CHANGES.zh-CN.md)及[来源和许可证](ports/android11/THIRD_PARTY.md)。早期 Magisk 短信桥成果保留；后续 [独立 IWLAN／QNS／IMS 引擎](ports/android11/stack/README.md)及[可选组件实机通话／原生短信记录](ports/android11/stack/OPTIONAL-PERSISTENCE-20261006.md)位于 stack 目录。
 
-此方案依赖原厂已可用的 VoWiFi 隧道，保留原厂语音 IMS；尚未实现独立 IWLAN/QNS/MMTEL 全栈替换，短信发送仍未修复。下文是上游 Android 17 方案的说明，构建及安装入口与 Android 11 目录相互独立。
+[独立诊断应用](ports/diagnostic-app/README.md)支持按 SIM 检查链路并选择替换组件。当前 0.9.5 包含记录归属的恢复入口和权限元数据适配，[本轮修改及证据](ports/diagnostic-app/RECORDED-RECOVERY-20261007.md)记录 Android 11 实机只读核验、Android 12L／16 各 41 阶段模拟器回归，以及未完成的跨版本、真实运营商和双卡验证。
+
+## 上游 Android 17 方案
+
+下文保留上游方案说明，其构建及安装入口与 ports 目录相互独立。
 
 为 Redmi K50 至尊版的 HyperOS 移植 ROM 提供 VoWiFi 注册与短信通道，打包为一个 KernelSU 模块。
 

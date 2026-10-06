@@ -5,6 +5,8 @@ import java.util.*;
 final class ModernSafeFailure {
     private static final Set<String> REASONS=new HashSet<>(Arrays.asList(
         "prepared-installation-required","selected-permission-owner-changed",
+        "external-selected-permission-flags-change","foreign-role-permission-flags-refused","detached-shared-or-carrier-policy-changed",
+        "installation-permission-restore-unconfirmed","role-broker-original-policy-unconfirmed",
         "external-slot-lease-change-refused","selection-record-refused",
         "owner-recovery-must-finish-first","carrier-recovery-must-finish-first",
         "selected-data-appop-restore-unconfirmed","external-selected-data-appop-change",

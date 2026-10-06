@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "production_class_contracts": {
+    "carrier baseline": 12,
+    "phone idle": 13,
+    "owner-presence": 22,
+    "permission metadata": 31
+  },
+  "iwlan_observation_contracts": 21,
+  "device_proof": false
+}

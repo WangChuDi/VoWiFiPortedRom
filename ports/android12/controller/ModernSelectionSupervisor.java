@@ -54,7 +54,7 @@ public final class ModernSelectionSupervisor {
         }
     }
     JSONObject tick(boolean forceRecovery)throws Exception {
-        JSONObject output=new JSONObject();int renewed=0,restored=0,pending=0,active=0;JSONArray failures=new JSONArray();boolean permissionRestored=false;
+        JSONObject output=new JSONObject();int renewed=0,restored=0,pending=0,active=0,waitingOwner=0;JSONArray failures=new JSONArray();boolean permissionRestored=false;
         try(ModernControllerLock held=new ModernControllerLock(carriers,test)) {
             // Publication holds this same lock. An older resident must stop before
             // reading or changing any owner after the independent helper changes.
@@ -71,19 +71,19 @@ public final class ModernSelectionSupervisor {
                 String phase=owner.getProperty("phase");
                 if("RESTORED".equals(phase)&&!recovery)continue;
                 int slot=Integer.parseInt(owner.getProperty("slot")),sub=Integer.parseInt(owner.getProperty("sub"));
-                try(ModernSelectionTransaction transaction=new ModernSelectionTransaction(context,slot,sub,module,installation,coordination,new File(carriers,"slot-"+slot+"-sub-"+sub+suffix),test,held)) {
+                try(ModernSelectionTransaction transaction=ModernSelectionTransaction.recovery(context,slot,sub,module,installation,coordination,new File(carriers,"slot-"+slot+"-sub-"+sub+suffix),test,held)) {
                     String token=owner.getProperty("token");
                     if("RESTORED".equals(phase)){transaction.confirmRestoredOwner();}
                     else if("ARCHIVING".equals(phase)){transaction.finishArchive(token);restored++;}
-                    else if("ACTIVE".equals(phase)&&!recovery) {if(transaction.renew(token)){renewed++;active++;}else restored++;}
-                    else {transaction.restore(token);restored++;}
+                    else if("ACTIVE".equals(phase)&&!recovery&&transaction.liveOwner()) {if(transaction.renew(token)){renewed++;active++;}else restored++;}
+                    else {transaction.restore(token);if("true".equals(transaction.status().getProperty("recovery_pending_owner"))){pending++;waitingOwner++;}else restored++;}
                 }catch(Exception failure){pending++;failures.put(failure.getClass().getSimpleName());}
             }
             if(recovery&&pending==0&&new File(installation,"baseline.properties").isFile()) {
                 try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,module,installation,test,held)) {transaction.restore();permissionRestored="RESTORED".equals(transaction.phase());}
                 catch(Exception failure){pending++;failures.put(failure.getClass().getSimpleName());}
             }
-            output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("recovery_requested",recovery).put("owner_count",owners.size()).put("renewed",renewed).put("restored",restored).put("active",active).put("pending",pending).put("failures",failures).put("installation_policy_restored",permissionRestored).put("stop_supervisor",recovery&&pending==0&&(permissionRestored||!new File(installation,"baseline.properties").exists()));
+            output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("recovery_requested",recovery).put("owner_count",owners.size()).put("renewed",renewed).put("restored",restored).put("active",active).put("pending",pending).put("waiting_owner",waitingOwner).put("failures",failures).put("installation_policy_restored",permissionRestored).put("stop_supervisor",recovery&&pending==0&&(permissionRestored||!new File(installation,"baseline.properties").exists()));
         }
         return output;
     }

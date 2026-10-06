@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_sha256": "6c7b46d3349a2e117faf874e8f8753fee66b2fbcd96308214c0513343d92f61c",
+  "module_modified": false,
+  "apn_modified": false,
+  "new_call_sms_sent": false,
+  "own_app_uid_ui_verified": false,
+  "dual_active_sim_verified": false,
+  "signed_app_update_installed": true,
+  "installed_bytes_match": true,
+  "keyguard_observation_available": true,
+  "keyguard_showing": true,
+  "slots": [
+    {
+      "slot": 0,
+      "diagnostic_complete": true,
+      "diagnostic_error": null,
+      "diagnostic_stage": "finished",
+      "phone_process_state": "stable",
+      "system_process_state": "stable",
+      "sim_state": null,
+      "wlan_registered": false,
+      "voice_capability_advertised": false,
+      "sms_capability_advertised": false,
+      "controller_observed": true,
+      "component_mask": null,
+      "transaction": "INACTIVE"
+    },
+    {
+      "slot": 1,
+      "diagnostic_complete": true,
+      "diagnostic_error": null,
+      "diagnostic_stage": "finished",
+      "phone_process_state": "stable",
+      "system_process_state": "stable",
+      "sim_state": 5,
+      "wlan_registered": true,
+      "voice_capability_advertised": true,
+      "sms_capability_advertised": true,
+      "controller_observed": true,
+      "component_mask": "7",
+      "transaction": "ACTIVE"
+    }
+  ]
+}

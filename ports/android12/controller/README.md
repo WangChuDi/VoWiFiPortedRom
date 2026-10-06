@@ -205,8 +205,8 @@ It does not accept arbitrary settings names or shell command strings.
 Telephony provider selection also changes native role permission grants and
 flags. `ModernSelectedPermissions` records only the selected fixed IWLAN/IMS
 role permissions and journals the apply intent before changing providers.
-Restoration refuses flag changes outside the role-owned default/system-fixed
-bits and requires the entire original grant/flag state to remain stable for an
+Restoration refuses authorization flag changes outside the role-owned default/system-fixed
+bits and requires the original grants and authorization flags to remain stable for an
 observed interval. This interval is bounded observation, not an acknowledgement
 that no future OEM callback can occur. On the tested Android13 image, root UID0
 could not clear the role's SYSTEM_FIXED bit; the fixed system-UID broker restores
@@ -317,3 +317,62 @@ without repeating the unchanged production restoration regression.
 Earlier snapshot writes with missing profile/persistence metadata, incomplete data,
 APPLYING-phase kills, removed-SIM recovery, OS reboot, actual Magisk lifecycle and
 real two-active-SIM/modern carrier operation still require additional work.
+
+## Recovery while the recorded SIM is absent
+
+The owner controller has a separate recorded-recovery constructor. New trials,
+verification, retention, renewal and final restoration confirmation still require
+the exact ready23415 live slot/sub tuple. Recovery accepts absence only when a
+nonnull, unambiguous active inventory contains neither that slot nor that sub,
+and the slot's SIM state is explicitly ABSENT. Unknown/null inventory, a card
+still starting or locked, a different card in the slot, or the same subscription
+moved to another slot refuses mutation. The original private schema3 record is
+required and validated under the same lock used by archival; no new owner or
+carrier baseline is sampled.
+
+Absent recovery restores only this owner's recorded original component lease.
+It keeps phase RESTORING with `recovery.pending_owner=true`. It does not call the
+carrier loader, copy/delete carrier files, release shared role policy or reset
+shared IWLAN mode. The supervisor counts it as pending/waiting_owner, keeps the
+installation baseline and continues processing other owners. The app returns
+`action_completed=false` and explicitly displays that the original SIM must
+return. The recorded token and raw identifiers never appear in app results.
+
+This boundary follows the exact cached Android13/16 loader sources cited above:
+`clearConfigForPhone` clears carrier/default app bundles, not either override
+array. `overrideConfig` captures a phone ID before posting a Handler operation;
+file identity is then looked up inside that operation. Neither an absent SIM nor
+restored file bytes proves an unchanged, quiescent loader. The controller therefore
+does not force a Binder clear through a departed sub or declare file-only recovery.
+
+When the original slot/sub and file identity are live again, the supervisor or
+app recovery resumes the saved carrier transaction, reloads the original layer,
+compares the entire original bundle and releases the owner's role/mode references.
+Only then does it remove the pending flag and enter RESTORED. A changed subscription
+ID, a moved card, a changed build or malformed original remains pending; identity
+migration is not implemented by this path.
+
+`ModernDetachedOwnerEmulatorTrial` exercises the production restore method with
+an isolated, explicitly injected absence observation in a fixed nonce/QEMU profile.
+It checks missing-observation refusal, refused activation/retention/renewal/verify,
+lease restoration, unchanged carrier/journal/native-role/peer-lease observations,
+then a fresh handle's full original recovery with the real fake-SIM identity.
+This is not actual SIM removal, a second active SIM, Magisk mounting or carrier
+authentication proof. Runtime pass/failure evidence is separate from source tests.
+
+## PermissionController sensitivity metadata
+
+Raw permission flags remain in the original journal. Authorization-policy
+comparison excludes only the two PackageManager `USER_SENSITIVE_WHEN_GRANTED`
+and `USER_SENSITIVE_WHEN_DENIED` flags (API mask 768). The controller and the
+system-UID broker never write either bit. AOSP identifies them as informational
+metadata maintained by PermissionController, which can update them asynchronously
+after package installation or upgrade. See the [framework flag definitions](https://android.googlesource.com/platform/frameworks/base/+/3fb46661abbb2802602ec6be1620cc01c7b2034c/services/permission/java/com/android/server/permission/access/permission/PermissionFlags.kt)
+and [sensitivity update callback](https://android.googlesource.com/platform/frameworks/base/+/0698e320940c3c4ca971e38a16ea341f9fbb6ba5/core/java/android/permission/PermissionControllerService.java).
+
+Actual grants, user/policy/system-fixed decisions, default grants, restricted-SMS
+exemptions and every other flag remain checked. A role can restore only its
+existing default/system-fixed mask after the original UID/APK checks. This is
+authorization-policy restoration with current sensitivity metadata preserved,
+not byte-exact restoration of every raw permission flag. Fixture reports explicitly
+include the excluded informational mask; raw audit differences remain visible.

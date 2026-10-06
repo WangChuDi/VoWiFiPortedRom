@@ -16,6 +16,9 @@ STAGES={
     'selection-partial-lease':('partial_lease_publication_resumed',),
     'selection-foreign-lease':('foreign_lease_renew_and_restore_refused',),
     'selection-role-handoff':('pre_observation_role_handoff_armed',),
+    'detached-recovery':('absent_owner_enable_retain_renew_verify_refused','unknown_owner_refused_before_mutation',
+        'own_lease_restored_and_pending_explicit','carrier_files_and_shared_resources_unchanged_while_absent',
+        'peer_slot_lease_unchanged','returned_original_owner_full_config_and_roles_restored','repeat_recovery_verified','native_authorization_policy_unchanged_while_absent'),
     'selection-restore':('original_config_lease_and_mode_restored','repeat_restore_verified'),
     'selection-repeat':('new_qns_only_cycle_preserves_previous_snapshot','previous_cycle_token_refused',
         'full_selection_refuses_denied_ipsec','qns_only_selection_preserves_denied_ipsec'),
@@ -63,7 +66,7 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing
             raise ValueError('named-root-emulator-required')
     def stage(name):
         guard()
-        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSharedRolesEmulatorTrial' if name.startswith('roles-') else 'ModernSupervisorEmulatorTrial' if name.startswith('supervisor-') else 'ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
+        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernDetachedOwnerEmulatorTrial' if name=='detached-recovery' else 'ModernSharedRolesEmulatorTrial' if name.startswith('roles-') else 'ModernSupervisorEmulatorTrial' if name.startswith('supervisor-') else 'ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
         reply=command('shell','CLASSPATH='+remote+' timeout 75s app_process /system/bin '+entry,check=False,timeout=85)
         lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
         if len(lines)!=1:raise ValueError('fixture-json-unavailable')

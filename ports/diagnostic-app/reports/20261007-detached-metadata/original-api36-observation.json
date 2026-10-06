@@ -1,0 +1,10 @@
+{
+  "pending_installation_count": 1,
+  "read_only": true,
+  "sdk": 36,
+  "empty_synthetic_peer_directory_observed": true,
+  "original_installation_phase": "PREPARED",
+  "original_owner_phase": "RESTORING",
+  "original_apk_uid_identity_verified": true,
+  "status": "observed"
+}

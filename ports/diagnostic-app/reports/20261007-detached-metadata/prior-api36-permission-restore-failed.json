@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "concurrent_device_workers": 1,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 36,
+      "status": "failed",
+      "stages": {
+        "coordination": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "coordination",
+          "closed_carrier_handle_refused": true,
+          "borrowed_carrier_close_keeps_global_lock": true,
+          "closed_installation_handle_refused": true,
+          "borrowed_installation_close_keeps_global_lock": true,
+          "cross_thread_lock_use_refused": true,
+          "shared_mode_no_reset_cycle_preserves_presence_and_value": true,
+          "other_owner_flag_contract_only": true,
+          "carrier_selection_verified": false,
+          "phone_cache_refresh_verified": false,
+          "dual_active_sim_verified": false,
+          "carrier_call_sms_verified": false
+        },
+        "seed": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resume": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "resume",
+          "new_process_retention_verified": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "selection-trial": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-trial",
+          "full_mask_live_disk_and_lease_verified": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "selection-reopen": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-reopen",
+          "reopened_retention_and_renewal_verified": true,
+          "stale_token_refused_without_change": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "selection-partial-lease": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-partial-lease",
+          "partial_lease_publication_resumed": true,
+          "simulated_lease_handoff": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "selection-foreign-lease": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-foreign-lease",
+          "foreign_lease_renew_and_restore_refused": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "selection-role-handoff": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-role-handoff",
+          "pre_observation_role_handoff_armed": true,
+          "simulated_role_handoff": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "detached-recovery": {
+          "error": "IOException",
+          "reason": "unclassified"
+        },
+        "roles-cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "roles-cleanup",
+          "error": "IOException",
+          "reason": "unclassified",
+          "origin": "ModernSelectedPermissions.restore:117"
+        }
+      },
+      "helper_sha256": "925c555cae42e52fbe87b1ca48b679f6aa537e1870093365675583ca631e303e",
+      "module_sha256": "20f787a7d314de075029edb0a4651d282f203e1d1c8acc0c459baa17d3dd4953",
+      "nonroot_installation_refused": true,
+      "missing_module_installation_refused": true,
+      "refused_installation_state_presence_unchanged": true,
+      "nonroot_selection_refused": true,
+      "invalid_selection_mask_refused": true,
+      "non_voxi_selection_refused": true,
+      "supervisor_probe_does_not_create_state": true,
+      "module_shell_syntax_checked": true,
+      "resident_prerequisites_only": false,
+      "preparing_prerequisites_only": false,
+      "pre_cleanup_policy_audit": {
+        "schema": 1,
+        "sdk": 36,
+        "stage": "audit",
+        "fixed_policy_changes": [
+          {
+            "field": "flags.0.READ_PHONE_STATE",
+            "before": "0",
+            "after": "48"
+          },
+          {
+            "field": "flags.1.READ_PHONE_STATE",
+            "before": "0",
+            "after": "256"
+          },
+          {
+            "field": "flags.2.READ_PHONE_STATE",
+            "before": "0",
+            "after": "256"
+          },
+          {
+            "field": "flags.2.RECORD_AUDIO",
+            "before": "0",
+            "after": "256"
+          },
+          {
+            "field": "flags.2.SEND_SMS",
+            "before": "12288",
+            "after": "12544"
+          }
+        ],
+        "missing_runtime_permissions": [],
+        "sms_exemption_ready": true,
+        "ipsec_allowed": true,
+        "permission_profile_ready": true,
+        "installation_phase": "PREPARED",
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      },
+      "roles_cleanup_error": "ValueError",
+      "remaining_policy_cleanup_deferred_after": "roles-cleanup",
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "os_reboot_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "error": "ValueError"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "sdk": 36,
+  "reused_original_nonce": true,
+  "new_baseline_sampled": false,
+  "stages": [
+    {
+      "schema": 1,
+      "sdk": 36,
+      "stage": "roles-cleanup",
+      "roles_fixture_cleanup_completed": true,
+      "synthetic_pending_peer_journal_only": true,
+      "second_sim_provider_selected": false,
+      "dual_active_sim_verified": false,
+      "carrier_call_sms_verified": false,
+      "magisk_mount_verified": false
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "stage": "restore",
+      "original_seeded_policy_restored": true,
+      "permission_policy_excluded_informational_mask": 768,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "stage": "cleanup",
+      "sensitivity_metadata_exactly_unchanged_during_cleanup": true,
+      "entire_outer_permission_observation_restored": true,
+      "permission_policy_excluded_informational_mask": 768,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    }
+  ],
+  "status": "passed",
+  "all_installation_phases_restored": true,
+  "physical_phone_modified": false
+}

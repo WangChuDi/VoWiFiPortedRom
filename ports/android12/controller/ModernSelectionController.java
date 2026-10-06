@@ -32,14 +32,16 @@ public final class ModernSelectionController {
             if(android.os.Process.myUid()!=0||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37||args.length<3||!ACTIONS.contains(args[0]))throw new SecurityException("modern-selection-command-refused");
             String action=args[0];boolean mask="trial".equals(action),token=Arrays.asList("retain","renew","verify","restore").contains(action);
             if(args.length!=((mask||token)?4:3)||!args[1].matches("[0-7]")||!args[2].matches("0|[1-9][0-9]{0,9}")||(mask&&!args[3].matches("[1-7]"))||(token&&!args[3].matches("[0-9a-f]{32}")))throw new IllegalArgumentException("fixed-selection-arguments-required");
-            int slot=Integer.parseInt(args[1]),sub=Integer.parseInt(args[2]);Context context=context();owner(context,slot,sub);
-            output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("action",action).put("owner_profile_confirmed",true);
+            int slot=Integer.parseInt(args[1]),sub=Integer.parseInt(args[2]);Context context=context();boolean recovery=Arrays.asList("restore","recover","status").contains(action);
+            if(!recovery)owner(context,slot,sub);
+            output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("action",action).put("owner_profile_confirmed",!recovery);
             String name="slot-"+slot+"-sub-"+sub;File ownerRecord=new File(COORDINATION,"owners/"+name+"/selection.properties");ModernStateFiles.canonical(ownerRecord);
             if("owner-check".equals(action))success=true;
-            else if("status".equals(action)&&!ownerRecord.exists()){output.put("selection_present",false);success=true;}
+            else if("status".equals(action)&&!ownerRecord.exists()){owner(context,slot,sub);output.put("owner_profile_confirmed",true).put("selection_present",false);success=true;}
             else {
                 if(!"trial".equals(action)&&!ownerRecord.isFile())throw new IOException("selection-record-unavailable");
-                try(ModernSelectionTransaction transaction=new ModernSelectionTransaction(context,slot,sub,MODULE,INSTALLATION,COORDINATION,new File(CARRIERS,name),false)) {
+                try(ModernSelectionTransaction transaction=recovery?ModernSelectionTransaction.recovery(context,slot,sub,MODULE,INSTALLATION,COORDINATION,new File(CARRIERS,name),false,null):new ModernSelectionTransaction(context,slot,sub,MODULE,INSTALLATION,COORDINATION,new File(CARRIERS,name),false)) {
+                    output.put("owner_profile_confirmed",transaction.liveOwner()).put("recorded_owner_confirmed",true);
                     switch(action) {
                     case "trial":output.put("owner_token",transaction.trial(Integer.parseInt(args[3])));break;
                     case "retain":transaction.retain(args[3]);break;
@@ -50,7 +52,7 @@ public final class ModernSelectionController {
                     }
                     if(ownerRecord.isFile()) {
                         Properties state=transaction.status();output.put("selection_present",true);
-                        for(String key:state.stringPropertyNames())output.put(key,state.getProperty(key));
+                        for(String key:state.stringPropertyNames())output.put(key,"recovery_pending_owner".equals(key)?Boolean.parseBoolean(state.getProperty(key)):state.getProperty(key));
                         if("RESTORED".equals(state.getProperty("phase")))output.put("carrier_config_restored",transaction.originalCarrierRestored());
                     }else output.put("selection_present",false);
                     success=true;
