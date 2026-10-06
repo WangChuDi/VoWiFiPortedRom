@@ -120,11 +120,11 @@ performed. See [engine build, validation and recovery](../android11/stack/README
 | Version | API | Read-only diagnostic | Bundled replacement |
 | --- | --- | --- | --- |
 | Android11 | 30 | Backend verified on the connected MIUI device, including empty SIM1 and active SIM2 | Live-tested on the fixed profile above |
-| Android12 | 31 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android12 | 31 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android12L | 32 | Runtime validation pending | Experimental modern controls; runtime validation pending |
 | Android13 | 33 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
-| Android14 | 34 | Runtime validation pending | Experimental modern controls; runtime validation pending |
-| Android15 | 35 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android14 | 34 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
+| Android15 | 35 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android16 | 36 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
 | Android17 | 37 | Runtime/device validation pending; framework sample is not ROM evidence | Experimental candidate only; no Android17 device/carrier proof |
 
@@ -232,3 +232,13 @@ No new call or SMS was sent in that regression. See the
 [version0.9.1 evidence](RECOVERY-BUNDLE-20261006.md). Positive modern application
 selection, removed-SIM recovery, true Magisk boot lifecycle and dual active SIMs
 remain pending; version0.9.0's integration report retains its historical hashes.
+
+## Version0.9.2 bound-service bundle
+
+VersionCode14 packages the corrected modern IWLAN bound DataService and selected-role
+readiness checks. The same final helper/module passed 49 stages on each owned
+API31/API34/API35 guest. The actual compiled app root backend passed concurrent
+read-only diagnosis and mutation refusals on those three versions. The current
+MIUI phone was updated to the signed app and still reports full API30 selection,
+WLAN registration and voice/SMS capabilities; that regression sent no new traffic.
+See [version0.9.2 identities, build and limits](BOUND-IWLAN-BUNDLE-20261006.md).

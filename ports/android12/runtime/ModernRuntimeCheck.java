@@ -17,6 +17,13 @@ public final class ModernRuntimeCheck {
         while(t instanceof java.lang.reflect.InvocationTargetException&&t.getCause()!=null)t=t.getCause();
         return t.getClass().getSimpleName();
     }
+    private static String snapshotFailure(Throwable failure){
+        String message=failure.getMessage();
+        for(String allowed:new String[]{"runtime-timeout","runtime-command-unavailable",
+                "runtime-provider-process-died","runtime-snapshot-unavailable","runtime-snapshot-invalid"})
+            if(allowed.equals(message))return allowed;
+        return "runtime-unclassified-failure";
+    }
     public static void main(String[] args){
         JSONObject result=new JSONObject();
         try {
@@ -34,7 +41,7 @@ public final class ModernRuntimeCheck {
             PackageManager pm=context.getPackageManager();
             JSONObject packages=new JSONObject();
             String[][] profiles={
-                {"dev.codex.vowifi.iwlan","READ_PHONE_STATE","READ_PRIVILEGED_PHONE_STATE","CONNECTIVITY_USE_RESTRICTED_NETWORKS","FOREGROUND_SERVICE","BIND_IMS_SERVICE"},
+                {"dev.codex.vowifi.iwlan","READ_PHONE_STATE","READ_PRIVILEGED_PHONE_STATE","CONNECTIVITY_USE_RESTRICTED_NETWORKS","BIND_IMS_SERVICE"},
                 {"dev.codex.vowifi.qns","READ_PHONE_STATE","READ_PRIVILEGED_PHONE_STATE"},
                 {"me.phh.ims","READ_PHONE_STATE","READ_PRIVILEGED_PHONE_STATE","CONNECTIVITY_USE_RESTRICTED_NETWORKS","MODIFY_PHONE_STATE","RECORD_AUDIO","SEND_SMS"}};
             for(String[] profile:profiles){
@@ -54,7 +61,8 @@ public final class ModernRuntimeCheck {
             try {result.put("iwlan_service_abi",snapshot("abi","service_app_declared_library_lookup"));}
             catch(Throwable failure){result.put("iwlan_service_abi_error",error(failure));}
             try {result.put("privileged_explicit_bindings",snapshot("bindings","privileged_app_explicit_binding").getJSONObject("bindings"));}
-            catch(Throwable failure){result.put("privileged_bindings_error",error(failure));}
+            catch(Throwable failure){result.put("privileged_bindings_error",error(failure));
+                result.put("privileged_bindings_failure",snapshotFailure(failure));}
             try {result.put("privileged_nonroot_guard",snapshot("guard","privileged_nonroot_guard_check"));}
             catch(Throwable failure){result.put("privileged_nonroot_guard_error",error(failure));}
             try {
@@ -95,7 +103,8 @@ public final class ModernRuntimeCheck {
         reader.join(1000);
         if(reader.isAlive()||overflow[0]||process.exitValue()!=0)throw new IOException("runtime-command-unavailable");
         Matcher match=Pattern.compile("snapshot=(\\{[^\\r\\n]*\\})\\}\\]").matcher(output.toString("UTF-8"));
-        if(!match.find())throw new IOException("runtime-snapshot-unavailable");
+        if(!match.find())throw new IOException(output.toString("UTF-8").contains("DeadObjectException")
+            ?"runtime-provider-process-died":"runtime-snapshot-unavailable");
         JSONObject snapshot=new JSONObject(match.group(1));
         long now=SystemClock.elapsedRealtime(),sample=snapshot.getLong("sample_elapsed");
         if(snapshot.getInt("schema")!=1||snapshot.getInt("sdk")!=Build.VERSION.SDK_INT||

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "host_contracts": {
+    "test-modern-iwlan.py": true,
+    "check-iwlan-variants.py": true
+  },
+  "changed_python_syntax_checked": true,
+  "binder_or_carrier_execution_in_host_contracts": false
+}

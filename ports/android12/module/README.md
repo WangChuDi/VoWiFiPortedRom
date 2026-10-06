@@ -5,7 +5,7 @@ It mounts the three independently signed SDK31 APKs and their privileged permiss
 XML, verifies the installed APK bytes, then prepares their fixed runtime permissions,
 IMS SEND_SMS system restriction exemption and IWLAN IPsec AppOp. It also includes
 fixed owner selection commands and a resident selection/lease/recovery supervisor.
-Diagnostic tool0.9.1 includes experimental modern replacement buttons. Real Magisk mounting,
+Diagnostic tool0.9.2 includes experimental modern replacement buttons. Real Magisk mounting,
 modern VOXI authentication, voice/SMS and dual active SIM behavior are unverified.
 Do not install this SDK31–37 payload over the working SDK30 phone/module.
 
@@ -38,7 +38,7 @@ over another APK and never clears user/policy-fixed permission flags.
 carrier transaction. It stores private recovery properties under
 `/data/adb/codex_vowifi_stack_modern/installation`, retaining build fingerprint,
 SDK, package UIDs/hashes, the original fixed runtime grant bits and flags, SMS
-system exemption, and the effective IPsec AppOp mode. Phases are PREPARING,
+system exemption, and the recorded IPsec AppOp mode. Phases are PREPARING,
 PREPARED, RESTORING, RESTORED. The original record is committed before mutation;
 PREPARING can resume, and RESTORING can resume without replacing the baseline.
 PREPARED is retained only while the preparation readback remains valid. A RESTORED
@@ -74,7 +74,7 @@ another card's selected providers are not deprived of permissions. Changed
 package UIDs/APK hashes/builds refuse recovery. An externally revoked original
 grant, removed original SMS exemption, or a different external IPsec mode also
 refuses recovery. Only grants added by preparation are revoked; original grant
-bits/flags, exemption and effective AppOp are checked after recovery. This does
+bits/flags, exemption and recorded AppOp are checked after recovery. This does
 not claim an inventory restoration of unrelated AppOps or other application policy.
 
 Before preparation, `control.sh` publishes recovery under the global carrier lock.
@@ -107,6 +107,13 @@ only daemon-launch redirection and mock the daemon/probe/clock boundaries; they
 do not prove production boot timing on a modern Magisk device.
 
 ## Actual scoped tests
+
+The [tool0.9.2 bound-service batch](../runtime/reports/20261006-bound-iwlan/README.md)
+passed 49 stages on each of API31/API34/API35 with matching final helper/module
+bytes. It also checks that QNS-only selection preserves a denied, unselected
+IWLAN IPsec AppOp while full selection is refused. Installation preparation
+and complete APK/UID/privileged-identity guards remain strict. These fixtures
+do not execute Magisk mounting or a real carrier registration.
 
 The owner/supervisor integration subsequently passed 33 stages per version on
 the same owned API33/API36 guests, including enabled-module APK loss, pending

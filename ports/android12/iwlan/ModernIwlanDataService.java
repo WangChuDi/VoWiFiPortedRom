@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 package dev.codex.vowifi.iwlan;
 
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.net.LinkAddress;
 import android.net.LinkProperties;
 import android.os.Handler;
@@ -23,14 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ModernIwlanDataService extends DataService {
     private static final String TAG="ModernIwlanData";
     private static final AtomicInteger NEXT_CID=new AtomicInteger(1000);
-    @Override public void onCreate(){
-        super.onCreate();
-        String channel="vowifi_connection";
-        getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel(channel,"Wi-Fi 通话连接",NotificationManager.IMPORTANCE_LOW));
-        startForeground(30,new Notification.Builder(this,channel)
-            .setSmallIcon(android.R.drawable.stat_sys_phone_call).setContentTitle("Wi-Fi 通话连接")
-            .setContentText("正在保持运营商 Wi-Fi 连接").setOngoing(true).setOnlyAlertOnce(true).build());
-    }
+    // The telephony framework owns this bound DataService's lifetime. Promoting
+    // every binding to a foreground service can crash background callers on
+    // modern Android; a diagnostic binding must not require that exemption.
     @Override public DataServiceProvider onCreateDataServiceProvider(int slot){return new Provider(slot);}
 
     private static final class Request {

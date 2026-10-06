@@ -1,5 +1,11 @@
 # Modern service runtime integration checks
 
+The latest [bound-service batch](reports/20261006-bound-iwlan/README.md) uses
+tool0.9.2 and covers owned API31/API34/API35 guests: explicit bindings, service
+library lookup, QNS framework selection/restoration, compiled app diagnostics
+and 49 installation/selection/recovery stages per version. Earlier sections below
+retain the artifact identities and limits of their original batches.
+
 The API31 IWLAN experiment now includes a separate root-only runtime provider.
 It executes the shared23-signature probe **inside the IWLAN service APK's class
 loader**, which declares the required `android.net.ipsec.ike` shared library.
@@ -131,18 +137,19 @@ exit code means the filesystem is writable.
 
 | Android | SDK | Current evidence |
 |---|---:|---|
-| 12 | 31 | Earlier isolated emulator integration and QNS restoration passed |
-| 12L | 32 | Static271 references /22 superclass contracts passed; runtime not run |
+| 12 | 31 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
+| 12L | 32 | Earlier static271 references /22 superclass contracts passed; runtime not run |
 | 13 | 33 | Independent parallel agent integration and QNS framework/restoration passed |
-| 14 | 34 | Static271 references /22 superclass contracts passed; runtime not run |
-| 15 | 35 | Static271 references /22 superclass contracts passed; runtime not run |
+| 14 | 34 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
+| 15 | 35 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 16 | 36 | Independent parallel agent integration and QNS framework/restoration passed |
-| 17 sample | 37 | Static service/root-helper checks passed; matching official image not listed |
+| 17 sample | 37 | Static service/root-helper checks passed; runtime not run; framework sample is not ROM support proof |
 
 Safe results, artifact hashes and limitations are archived in
 [the version matrix](reports/20261006/matrix.json) and its per-version JSON
-files. API31's earlier check used an earlier helper revision; it is not claimed
-as a fresh run of the final SDK31–37 helper. The Android17 Robolectric sample
+files. Those earlier API31 checks used earlier helper revisions. The separately
+archived tool0.9.2 batch now records fresh API31/API34/API35 final-helper runs.
+The Android17 Robolectric sample
 does not establish Android17 ROM or release support. This batch made no changes
 to the connected API30 phone. Carrier authentication, calls/SMS, native delivery,
 dual active SIMs and a modern production install/controller profile remain

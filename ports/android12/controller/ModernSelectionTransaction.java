@@ -97,10 +97,10 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         checkLease(value,true);put("until","0");put("sub",before(value,"sub"));put("boot",before(value,"boot"));put("until",before(value,"until"));
         for(String field:LEASE_FIELDS)if(!Objects.equals(get(field),before(value,field)))throw new IOException("original-slot-lease-restore-unconfirmed");
     }
-    private void installed()throws Exception {
+    private void installed(int components)throws Exception {
         if(new File(module,"disable").exists()||new File(module,"remove").exists())throw new IOException("enabled-selection-module-required");
         try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,module,installation,test,held)) {
-            if(!"PREPARED".equals(transaction.phase())||!transaction.ready())throw new IOException("prepared-installation-required");
+            if(!"PREPARED".equals(transaction.phase())||!transaction.ready(components))throw new IOException("prepared-installation-required");
         }
     }
     private boolean otherIwlanOwner()throws Exception {
@@ -152,7 +152,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         return trial(components,observer);
     }
     private String trial(int components,ModernProviderTransaction.SnapshotObserver observer)throws Exception {
-        requireLock();if(components<1||components>7)throw new IllegalArgumentException("fixed-components-required");ModernPhoneIdle.requireIdle(context);installed();companion(components);otherIwlanOwner();
+        requireLock();if(components<1||components>7)throw new IllegalArgumentException("fixed-components-required");ModernPhoneIdle.requireIdle(context);installed(components);companion(components);otherIwlanOwner();
         if(files.file(RECORD).exists())archive(record());
         if(carrierState.exists())throw new IOException("untracked-carrier-state-recovery-required");
         Properties value=new Properties();value.setProperty("schema","3");value.setProperty("build",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);value.setProperty("slot",Integer.toString(slot));value.setProperty("sub",Integer.toString(sub));
@@ -171,7 +171,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         }
     }
     public boolean verify(String token)throws Exception {
-        Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");roles().verifyOwner(value);installed();checkLease(value,false);
+        Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");roles().verifyOwner(value);installed(mask(value));checkLease(value,false);
         if(number(get("boot"),-1)!=ModernPhoneRefresh.boot(context)||number(get("until"),0)<=SystemClock.elapsedRealtime())return false;
         try(ModernProviderTransaction transaction=carrier()){return transaction.verifySelection(mask(value));}
     }
@@ -183,7 +183,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
     public boolean renew(String token)throws Exception {
         Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");
         if(!Boolean.parseBoolean(value.getProperty("persistent"))&&(ModernPhoneRefresh.boot(context)!=Integer.parseInt(value.getProperty("boot"))||SystemClock.elapsedRealtime()>=Long.parseLong(value.getProperty("trial.until")))){restore(token);return false;}
-        if("PUBLISHING".equals(value.getProperty("lease.phase")))completeLease(value);checkLease(value,false);roles().maintain(value);installed();try(ModernProviderTransaction transaction=carrier()){if(!transaction.verifySelection(mask(value)))throw new IOException("selected-providers-changed");}
+        if("PUBLISHING".equals(value.getProperty("lease.phase")))completeLease(value);checkLease(value,false);roles().maintain(value);installed(mask(value));try(ModernProviderTransaction transaction=carrier()){if(!transaction.verifySelection(mask(value)))throw new IOException("selected-providers-changed");}
         if(Boolean.parseBoolean(value.getProperty("mode_owned")))mode().acquire(slot);publishLease(value,true);return true;
     }
     public void restore(String token)throws Exception {

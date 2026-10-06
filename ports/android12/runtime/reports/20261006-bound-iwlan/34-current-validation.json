@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "sdk": 34,
+  "error": "explicit-binding-incomplete",
+  "carrier_call_sms_verified": false,
+  "dual_sim_verified": false
+}

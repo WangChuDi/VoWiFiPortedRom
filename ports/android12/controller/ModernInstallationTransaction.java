@@ -116,10 +116,19 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         return value;
     }
     public boolean ready()throws Exception {
+        return ready(7);
+    }
+    boolean ready(int components)throws Exception {
         requireLock();
+        if(components<1||components>7)throw new IllegalArgumentException("fixed-components-required");
         ApplicationInfo[] apps=installed(payload(),true);
-        for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(!granted(i,permission))return false;
-        return exemption()&&mode(apps)==AppOpsManager.MODE_ALLOWED;
+        // Keep the complete payload/privileged identity checks above, but require
+        // runtime policy only for roles this selection actually uses. Telephony
+        // can revoke an unused data service's IPsec AppOp after its restoration.
+        for(int i=0;i<PACKAGES.length;i++)if((components&(1<<i))!=0)
+            for(String permission:RUNTIME[i])if(!granted(i,permission))return false;
+        return ((components&4)==0||exemption())&&
+            ((components&1)==0||mode(apps)==AppOpsManager.MODE_ALLOWED);
     }
     void validatePayload()throws Exception {requireLock();installed(payload(),true);}
     public void archiveRestored()throws Exception {

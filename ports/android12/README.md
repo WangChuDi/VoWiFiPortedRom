@@ -2,10 +2,18 @@
 
 This directory builds separate unsigned API31 IWLAN, QNS and IMS applications.
 The unsigned research bundle is separate from the signed experimental
-[installation and supervision module](module/README.md). Diagnostic tool0.9.0
+[installation and supervision module](module/README.md). Diagnostic tool0.9.2
 includes experimental modern component selectors and fixed root workers.
-The connected MIUI Android11 phone uses tool0.9.0/controller0.9.0 APKs;
+The connected MIUI Android11 phone uses tool0.9.2/controller0.9.0 APKs;
 no experimental modern APK has been installed on it.
+
+The [bound-service correction and three-version batch](runtime/reports/20261006-bound-iwlan/README.md)
+passed on Android12/API31, Android14/API34 and Android15/API35. IWLAN now follows
+the framework's bound DataService lifetime, avoiding the background foreground-service
+crash observed on API34/API35. Selection readiness checks runtime policy for the
+selected roles while retaining complete payload/privileged-identity validation.
+Full installation preparation still requires all three roles. These are emulator
+integration results; modern carrier traffic, Magisk hooks and dual active SIMs remain pending.
 
 ## Boundary and implementation
 
@@ -117,8 +125,8 @@ permissions/exports, status-provider guard, required IKE library and DEX roles; 
 not prove permission grants, binding or carrier behavior.
 
 The original three-service stack had251 Android/internal-framework references
-and21 Android-derived classes. After adding the service-runtime validation
-provider, the current stack has271 references and22 Android-derived classes.
+and21 Android-derived classes. The subsequent service-runtime validation
+provider batch had271 references and22 Android-derived classes.
 Independent checks passed the pinned12L–17 samples without missing references,
 findings or unresolved Android ancestors. The earlier251-reference reports under
 `../compatibility/out/modern-services-*` describe the earlier build. Reflective
@@ -147,8 +155,9 @@ The [modern carrier transaction layer](controller/README.md) now adds selected-S
 snapshot, native-stream persistence readback and resumable restoration. Its
 QNS-only persistence/reopened-transaction trial passed concurrently on API33 and
 API36. The experimental module includes installation, supervision and shared
-role-policy journals. Tool0.9.0 integrates selection, retention and recovery;
-its new modern root diagnostics/refusal tests passed on API33/API36. These tests
+role-policy journals. Tool0.9.0 introduced selection, retention and recovery;
+tool0.9.2's compiled modern root diagnostics/refusal paths passed on API31/API34/API35.
+The earlier tool0.9.0 batch covered API33/API36. These tests
 do not prove modern carrier call/SMS or real two-active-SIM operation.
 See [shared-role batch evidence](runtime/reports/20261006-shared-roles/README.md)
 and [application integration](../diagnostic-app/MODERN-INTEGRATION-20261006.md).

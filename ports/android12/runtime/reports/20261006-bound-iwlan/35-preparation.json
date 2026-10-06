@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "sdk": 35,
+  "status": "passed",
+  "phase": "installed-byte-identity-verified",
+  "installation_method": "owned-avd-writable-system",
+  "magisk_mount_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "physical_phone_modified": false,
+  "module_sha256": "baec4ae86454677f19dd55b43c3bf4efed49d2dbb759fad9c351339a66cafcbe",
+  "helper_sha256": "2fde9f1daea6d69706a5b49e375ac039eedf6cac7949c63c6cfe206b676bf05b",
+  "installed_apk_sha256": {
+    "iwlan": "5ee8d67d5b9a53d98646c7d64cfdae0261a072dbca05d3c570c3c2d602340528",
+    "qns": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+    "ims": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009"
+  },
+  "helper_staged_and_verified": true,
+  "requested_permission_preparation_completed": true,
+  "permission_profile_independently_verified": false,
+  "staging_cleanup_target_verified": true
+}

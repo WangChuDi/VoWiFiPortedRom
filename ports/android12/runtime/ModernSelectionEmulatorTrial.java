@@ -74,12 +74,25 @@ public final class ModernSelectionEmulatorTrial {
                     if(!"RESTORED".equals(transaction.status().getProperty("phase")))throw new IOException("fixture-original-selection-unconfirmed");
                     output.put("original_config_lease_and_mode_restored",true).put("repeat_restore_verified",true);break;
                 case "selection-repeat":
-                    String previous=token(),next=transaction.trial(2);saveToken(next);
-                    boolean oldRefused=false;try{transaction.renew(previous);}catch(SecurityException expected){oldRefused=true;}
-                    if(previous.equals(next)||!oldRefused||!transaction.verify(next)||!"2".equals(transaction.status().getProperty("mask")))throw new IOException("fixture-new-cycle-unconfirmed");
-                    File history=new File(coordination,"history/slot-0-sub-"+sub+"-"+previous+"/carrier/phase");ModernStateFiles.canonical(history);
-                    if(!history.isFile()||!"RESTORED".equals(new String(Files.readAllBytes(history.toPath()),"UTF-8")))throw new IOException("fixture-original-history-unavailable");
-                    output.put("new_qns_only_cycle_preserves_previous_snapshot",true).put("previous_cycle_token_refused",true);break;
+                    android.app.AppOpsManager ops=context.getSystemService(android.app.AppOpsManager.class);
+                    android.content.pm.ApplicationInfo iwlan=context.getPackageManager().getApplicationInfo("dev.codex.vowifi.iwlan",0);
+                    String ipsec="android:manage_ipsec_tunnels",previous=token(),recordBefore=digest(record());
+                    int originalOp=ops.unsafeCheckOpNoThrow(ipsec,iwlan.uid,iwlan.packageName);
+                    try {
+                        ops.setMode(ipsec,iwlan.uid,iwlan.packageName,android.app.AppOpsManager.MODE_ERRORED);
+                        boolean fullRefused=false;
+                        try{transaction.trial(7);}catch(IOException expected){fullRefused="prepared-installation-required".equals(expected.getMessage());}
+                        if(!fullRefused||!recordBefore.equals(digest(record()))||ops.unsafeCheckOpNoThrow(ipsec,iwlan.uid,iwlan.packageName)!=android.app.AppOpsManager.MODE_ERRORED)throw new IOException("fixture-full-mask-ipsec-refusal-unconfirmed");
+                        String next=transaction.trial(2);saveToken(next);
+                        boolean oldRefused=false;try{transaction.renew(previous);}catch(SecurityException expected){oldRefused=true;}
+                        if(previous.equals(next)||!oldRefused||!transaction.verify(next)||!"2".equals(transaction.status().getProperty("mask")))throw new IOException("fixture-new-cycle-unconfirmed");
+                        if(ops.unsafeCheckOpNoThrow(ipsec,iwlan.uid,iwlan.packageName)!=android.app.AppOpsManager.MODE_ERRORED)throw new IOException("fixture-unselected-ipsec-policy-changed");
+                        File history=new File(coordination,"history/slot-0-sub-"+sub+"-"+previous+"/carrier/phase");ModernStateFiles.canonical(history);
+                        if(!history.isFile()||!"RESTORED".equals(new String(Files.readAllBytes(history.toPath()),"UTF-8")))throw new IOException("fixture-original-history-unavailable");
+                        output.put("new_qns_only_cycle_preserves_previous_snapshot",true).put("previous_cycle_token_refused",true)
+                            .put("full_selection_refuses_denied_ipsec",true).put("qns_only_selection_preserves_denied_ipsec",true);
+                    } finally {ops.setMode(ipsec,iwlan.uid,iwlan.packageName,originalOp);}
+                    break;
                 case "selection-expire":
                     ModernStateFiles state=new ModernStateFiles(record().getParentFile());Properties value=state.read("selection.properties");
                     value.setProperty("trial.until",Long.toString(Math.max(1,SystemClock.elapsedRealtime()-1)));state.write("selection.properties",value);

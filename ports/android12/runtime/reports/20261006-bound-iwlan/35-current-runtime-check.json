@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "sdk": 35,
+  "root_abi": {
+    "schema": 1,
+    "sdk": 35,
+    "modern_candidate": true,
+    "scope": "root_app_process_core_lookup",
+    "checks": {
+      "eap_builder": "visible:0",
+      "eap_aka": "visible:0",
+      "eap_identity": "visible:0",
+      "ike_builder": "visible:0",
+      "ike_hostname": "visible:0",
+      "ike_network": "visible:0",
+      "ike_local_id": "visible:0",
+      "ike_remote_id": "visible:0",
+      "ike_eap": "visible:0",
+      "ike_proposal": "visible:0",
+      "ike_options": "visible:0",
+      "ike_retransmit": "visible:0",
+      "ike_session": "visible:0",
+      "ike_close": "visible:0",
+      "ike_kill": "visible:0",
+      "ike_pcscf": "visible:0",
+      "child_addresses": "visible:0",
+      "child_dns": "visible:0",
+      "ipsec_create": "visible:0",
+      "ipsec_apply": "visible:0",
+      "carrier_stub": "visible:0",
+      "carrier_read": "visible:0",
+      "carrier_override": "visible:0"
+    },
+    "visible": 23,
+    "missing": 0,
+    "inaccessible": 0,
+    "linkage_errors": 0,
+    "total": 23,
+    "installation_verified": false,
+    "binding_verified": false,
+    "permissions_verified": false,
+    "carrier_verified": false
+  },
+  "packages": {
+    "dev.codex.vowifi.iwlan": {
+      "installed": true,
+      "system_app": true,
+      "privileged_app": true,
+      "permissions": {
+        "READ_PHONE_STATE": true,
+        "READ_PRIVILEGED_PHONE_STATE": true,
+        "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+        "FOREGROUND_SERVICE": true,
+        "BIND_IMS_SERVICE": true
+      }
+    },
+    "dev.codex.vowifi.qns": {
+      "installed": true,
+      "system_app": true,
+      "privileged_app": true,
+      "permissions": {
+        "READ_PHONE_STATE": true,
+        "READ_PRIVILEGED_PHONE_STATE": true
+      }
+    },
+    "me.phh.ims": {
+      "installed": true,
+      "system_app": true,
+      "privileged_app": true,
+      "permissions": {
+        "READ_PHONE_STATE": true,
+        "READ_PRIVILEGED_PHONE_STATE": true,
+        "CONNECTIVITY_USE_RESTRICTED_NETWORKS": true,
+        "MODIFY_PHONE_STATE": true,
+        "RECORD_AUDIO": true,
+        "SEND_SMS": true
+      }
+    }
+  },
+  "iwlan_service_abi": {
+    "schema": 1,
+    "sdk": 35,
+    "modern_candidate": true,
+    "scope": "service_app_declared_library_lookup",
+    "checks": {
+      "eap_builder": "visible:0",
+      "eap_aka": "visible:0",
+      "eap_identity": "visible:0",
+      "ike_builder": "visible:0",
+      "ike_hostname": "visible:0",
+      "ike_network": "visible:0",
+      "ike_local_id": "visible:0",
+      "ike_remote_id": "visible:0",
+      "ike_eap": "visible:0",
+      "ike_proposal": "visible:0",
+      "ike_options": "visible:0",
+      "ike_retransmit": "visible:0",
+      "ike_session": "visible:0",
+      "ike_close": "visible:0",
+      "ike_kill": "visible:0",
+      "ike_pcscf": "visible:0",
+      "child_addresses": "visible:0",
+      "child_dns": "visible:0",
+      "ipsec_create": "visible:0",
+      "ipsec_apply": "visible:0",
+      "carrier_stub": "missing",
+      "carrier_read": "missing",
+      "carrier_override": "missing"
+    },
+    "visible": 20,
+    "missing": 3,
+    "inaccessible": 0,
+    "linkage_errors": 0,
+    "total": 23,
+    "installation_verified": false,
+    "binding_verified": false,
+    "permissions_verified": false,
+    "carrier_verified": false,
+    "package": "dev.codex.vowifi.iwlan"
+  },
+  "privileged_bindings_error": "IOException",
+  "privileged_nonroot_guard": {
+    "schema": 1,
+    "sdk": 35,
+    "scope": "privileged_nonroot_guard_check",
+    "denied": true,
+    "tested_uid": 10210,
+    "caller_permission_granted": true,
+    "package": "dev.codex.vowifi.iwlan"
+  },
+  "active_subscriptions": 1,
+  "carrier_binder_read": true,
+  "telephony_provider_selection_verified": false,
+  "carrier_registration_verified": false,
+  "call_sms_verified": false,
+  "dual_sim_verified": false
+}
