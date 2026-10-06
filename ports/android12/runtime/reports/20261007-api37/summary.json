@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "partial",
+  "runtime_bindings_and_full_qns_config_restoration_passed": true,
+  "compiled_tool_root_readonly_and_refusals_passed": true,
+  "full_lifecycle_passed": false,
+  "full_49_stage_count_verified": false,
+  "failed_lifecycle_stage": "selection-reopen",
+  "pending_fixture_cleanup_confirmed": false,
+  "guest_reboot_verified": false,
+  "magisk_mount_verified": false,
+  "positive_app_uid_controls_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "physical_phone_modified": false,
+  "emulator_ram_mib": 3072,
+  "emulator_data_partition_gib": 6,
+  "default_reboot_preparation_failed": true,
+  "existing_payload_preparation_passed": true
+}

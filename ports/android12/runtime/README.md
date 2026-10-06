@@ -3,8 +3,22 @@
 The latest [bound-service batch](reports/20261006-bound-iwlan/README.md) uses
 tool0.9.2 and covers owned API31/API34/API35 guests: explicit bindings, service
 library lookup, QNS framework selection/restoration, compiled app diagnostics
-and 49 installation/selection/recovery stages per version. Earlier sections below
-retain the artifact identities and limits of their original batches.
+and 49 installation/selection/recovery stages per version. A later
+[Android12L/API32 continuation](reports/20261006-api32/README.md) passed the same
+scoped checks with identical final artifacts in a separate one-worker run.
+The [API37 continuation](reports/20261007-api37/README.md) passed runtime/app
+checks but failed the full lifecycle; it retains failed reboot and deferred
+cleanup evidence and does not claim 49-stage or production installation success.
+Earlier sections below retain the artifact identities and limits of their original batches.
+
+The owned-emulator preparation script checks guest data headroom, a changed boot
+generation after requested reboot and exact installed APK/XML bytes before policy
+preparation. `--verify-existing` is an explicit alternative for payloads already
+staged on an owned guest: it verifies all fixed privileged paths and bytes, then
+requests fixed test permissions without remounting, rewriting system payloads or
+rebooting. The report identifies this mode separately; it is not Magisk installation
+proof. `python test-emulator-preparation.py` checks identity refusals occur before
+permission mutations. It requires the existing built module/helper but no device.
 
 The API31 IWLAN experiment now includes a separate root-only runtime provider.
 It executes the shared23-signature probe **inside the IWLAN service APK's class
@@ -138,17 +152,21 @@ exit code means the filesystem is writable.
 | Android | SDK | Current evidence |
 |---|---:|---|
 | 12 | 31 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
-| 12L | 32 | Earlier static271 references /22 superclass contracts passed; runtime not run |
+| 12L | 32 | Same final tool0.9.2 artifacts: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed in separate continuation |
 | 13 | 33 | Independent parallel agent integration and QNS framework/restoration passed |
 | 14 | 34 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 15 | 35 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 16 | 36 | Independent parallel agent integration and QNS framework/restoration passed |
-| 17 sample | 37 | Static service/root-helper checks passed; runtime not run; framework sample is not ROM support proof |
+| 17 | 37 | Official android-37.0 guest: runtime bindings/QNS restoration and tool root checks passed; lifecycle failed at selection-reopen, cleanup unconfirmed; no ROM/carrier proof |
 
 Safe results, artifact hashes and limitations are archived in
 [the version matrix](reports/20261006/matrix.json) and its per-version JSON
 files. Those earlier API31 checks used earlier helper revisions. The separately
-archived tool0.9.2 batch now records fresh API31/API34/API35 final-helper runs.
+archived tool0.9.2 batch records fresh API31/API34/API35 final-helper runs,
+followed by the separate API32 continuation. Its
+[corrected official SDK metadata](reports/20261006-api32/official-sdk-metadata.json)
+supersedes the earlier matrix's missing API37 image statement: the old filter
+omitted decimal `android-37.0` package names. Metadata is not runtime evidence.
 The Android17 Robolectric sample
 does not establish Android17 ROM or release support. This batch made no changes
 to the connected API30 phone. Carrier authentication, calls/SMS, native delivery,

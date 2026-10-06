@@ -121,12 +121,12 @@ performed. See [engine build, validation and recovery](../android11/stack/README
 | --- | --- | --- | --- |
 | Android11 | 30 | Backend verified on the connected MIUI device, including empty SIM1 and active SIM2 | Live-tested on the fixed profile above |
 | Android12 | 31 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
-| Android12L | 32 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android12L | 32 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android13 | 33 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
 | Android14 | 34 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android15 | 35 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android16 | 36 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
-| Android17 | 37 | Runtime/device validation pending; framework sample is not ROM evidence | Experimental candidate only; no Android17 device/carrier proof |
+| Android17 | 37 | Tool0.9.2 compiled root read-only/refusal checks passed on owned official emulator; positive app-UID UI actions pending | Runtime bindings/QNS restoration passed; full helper lifecycle failed at selection-reopen and cleanup unconfirmed; no carrier proof |
 
 Minimum SDK30 means the APK can be considered for Android11 and later; it is
 not a claim of tested compatibility. OEM hidden-API/service/permission changes
@@ -242,3 +242,8 @@ read-only diagnosis and mutation refusals on those three versions. The current
 MIUI phone was updated to the signed app and still reports full API30 selection,
 WLAN registration and voice/SMS capabilities; that regression sent no new traffic.
 See [version0.9.2 identities, build and limits](BOUND-IWLAN-BUNDLE-20261006.md).
+The identical signed tool/helper/module subsequently passed the scoped checks on
+[API32](../android12/runtime/reports/20261006-api32/README.md) in a separate run.
+The [API37 run](../android12/runtime/reports/20261007-api37/README.md) subsequently
+passed runtime and compiled tool checks with identical artifacts; its full
+selection/recovery lifecycle remains failed and pending.

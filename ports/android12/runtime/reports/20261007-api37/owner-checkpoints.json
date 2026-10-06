@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "status": "observed",
+  "entry_exit": 137,
+  "checkpoints": [
+    "context-initialization",
+    "subscription-observation",
+    "subscription-query-completed"
+  ],
+  "process_timeout_observed": true,
+  "physical_phone_modified": false,
+  "raw_output_exported": false
+}

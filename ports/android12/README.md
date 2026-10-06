@@ -14,6 +14,14 @@ crash observed on API34/API35. Selection readiness checks runtime policy for the
 selected roles while retaining complete payload/privileged-identity validation.
 Full installation preparation still requires all three roles. These are emulator
 integration results; modern carrier traffic, Magisk hooks and dual active SIMs remain pending.
+The same final artifacts subsequently passed the scoped runtime/app checks and
+49 lifecycle stages on [Android12L/API32](runtime/reports/20261006-api32/README.md).
+That continuation was a separate one-worker run, not a fourth worker in the earlier batch.
+
+The later [Android17/API37 run](runtime/reports/20261007-api37/README.md) passed
+runtime bindings/QNS restoration and compiled tool read-only/refusal checks with
+the same artifacts. Its full lifecycle failed at selection reopening and cleanup
+is unconfirmed; Android17 selection/recovery and carrier support remain incomplete.
 
 ## Boundary and implementation
 
@@ -156,7 +164,7 @@ snapshot, native-stream persistence readback and resumable restoration. Its
 QNS-only persistence/reopened-transaction trial passed concurrently on API33 and
 API36. The experimental module includes installation, supervision and shared
 role-policy journals. Tool0.9.0 introduced selection, retention and recovery;
-tool0.9.2's compiled modern root diagnostics/refusal paths passed on API31/API34/API35.
+tool0.9.2's compiled modern root diagnostics/refusal paths passed on API31/API32/API34/API35/API37.
 The earlier tool0.9.0 batch covered API33/API36. These tests
 do not prove modern carrier call/SMS or real two-active-SIM operation.
 See [shared-role batch evidence](runtime/reports/20261006-shared-roles/README.md)

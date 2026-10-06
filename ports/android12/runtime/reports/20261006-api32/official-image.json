@@ -1,0 +1,19 @@
+{
+  "package": "system-images;android-32;google_apis;x86_64",
+  "revision": 8,
+  "metadata_api_level": "32",
+  "extension_level": null,
+  "abi": "x86_64",
+  "tags": [
+    "google_apis"
+  ],
+  "archive_name": "x86_64-32_r08.zip",
+  "archive_size": 1538792859,
+  "archive_sha1": "1b52794699c6889a2fd155bf235b67a592eb8f1d",
+  "minimum_emulator_revision": "30.7.3",
+  "local_package_xml_sha256": "5d2b8e4cbbb1a1484ab9f721fa6bf31dc5cf5d0becec315731baf05be12c3091",
+  "local_source_properties_sha256": "0d899ec09983dd45e45303ea5bfbc28f70b4d5303bda5e3778cbf0a3409b233e",
+  "installed_metadata_revision": 8,
+  "owned_avd_name": "CodexVoWiFiApi32",
+  "metadata_alone_is_not_runtime_proof": true
+}

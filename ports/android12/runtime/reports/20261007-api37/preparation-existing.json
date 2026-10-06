@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "passed",
+  "phase": "installed-byte-identity-verified",
+  "installation_method": "existing-owned-avd-payload-verification",
+  "magisk_mount_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "physical_phone_modified": false,
+  "payloads_staged_this_run": false,
+  "guest_reboot_requested": false,
+  "existing_payload_verification_requested": true,
+  "module_sha256": "de5826326df086f2694aae88a3973f817b1cc0f30e1425c6ace42721cf7f70de",
+  "helper_sha256": "ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d",
+  "last_command_kind": "fixed-shell-operation",
+  "guest_data_headroom_kib": 5267416,
+  "payload_observations": {
+    "iwlan": {
+      "package_path_exit": 0,
+      "expected_path_observed": true,
+      "package_path_output_empty": false,
+      "package_path_output_lines": 1,
+      "binder_unavailable_marker": false,
+      "file_hash_exit": 0,
+      "expected_file_hash_observed": true
+    },
+    "qns": {
+      "package_path_exit": 0,
+      "expected_path_observed": true,
+      "package_path_output_empty": false,
+      "package_path_output_lines": 1,
+      "binder_unavailable_marker": false,
+      "file_hash_exit": 0,
+      "expected_file_hash_observed": true
+    },
+    "ims": {
+      "package_path_exit": 0,
+      "expected_path_observed": true,
+      "package_path_output_empty": false,
+      "package_path_output_lines": 1,
+      "binder_unavailable_marker": false,
+      "file_hash_exit": 0,
+      "expected_file_hash_observed": true
+    }
+  },
+  "package_visibility_waits": 0,
+  "installed_permission_xml_byte_identity_verified": true,
+  "installed_apk_sha256": {
+    "iwlan": "5ee8d67d5b9a53d98646c7d64cfdae0261a072dbca05d3c570c3c2d602340528",
+    "qns": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+    "ims": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009"
+  },
+  "helper_staged_and_verified": true,
+  "requested_permission_preparation_completed": true,
+  "permission_profile_independently_verified": false,
+  "staging_cleanup_target_verified": true
+}

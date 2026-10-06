@@ -53,7 +53,11 @@ audio/native-SMS/notification proof or establish own-app-UID UI behavior.
 The preserved first 0.9.2 signed draft is `b79dd1efe21671a1023dac76ce25c8f3d4e0ceeb348e65f266c8ab795e2adf39`
 with module `baec4ae8...`; it is historical, not the current installed tool.
 Tool0.9.1's [recovery record](RECOVERY-BUNDLE-20261006.md) retains its historical
-hashes and then-pending coverage. Runtime API31/API34/API35 now has the new scoped
-evidence, while SDK32/37, modern carrier/application trials, modern Magisk and
+hashes and then-pending coverage. Runtime API31/API34/API35 has the new scoped
+evidence; the [later API32 continuation](../android12/runtime/reports/20261006-api32/README.md)
+uses the identical signed artifacts and adds runtime/app checks and 49 stages.
+The [API37 continuation](../android12/runtime/reports/20261007-api37/README.md)
+adds runtime/app checks with identical artifacts, but its full lifecycle failed
+and cleanup is unconfirmed. SDK37 selection/recovery, modern carrier/application trials, modern Magisk and
 simultaneous active dual SIMs still need work. The full Android11–17 goal remains
 active. [phhusson/ims source and GPL-2.0 notices](../android11/THIRD_PARTY.md) remain intact.

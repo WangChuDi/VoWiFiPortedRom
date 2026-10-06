@@ -125,6 +125,11 @@ helpers/modules: API34/API35 used `2fde9f1d...` / `baec4ae8...`; API31 used
 The final validators separately staged the `ea54aa8d...` helper. `Api31` privileged
 folder names refer to the build profile, not to the guest's Android version.
 
+The subsequent host preparation checks at least128MiB of available guest data
+space before staging. New failures include only a fixed allowlisted `error_reason`
+alongside the phase/class, without raw output or platform exception text. These
+additions do not change this archived batch's signed APK/helper/module bytes.
+
 Temporary staging uses a fixed owned parent and rechecks canonical path, direct
 parent and prefix immediately before recursive cleanup. Changed ownership refuses
 cleanup and retains evidence. This is not a proof against every hostile filesystem
@@ -133,9 +138,14 @@ race. No staging directory or signing material is committed.
 ## Remaining scope
 
 Modern Magisk mount/boot/disable/remove, real USIM/EAP-AKA and IMS carrier selection,
-voice/audio/SMS/notifications, actual dual-active-SIM operation and runtime SDK32/37
-remain unverified. SDK33/36 have separate earlier reports, not fresh runs of these
-final service bytes. This batch leaves the API30 phone engine unchanged; its
+voice/audio/SMS/notifications, actual dual-active-SIM operation and runtime SDK37
+remain unverified by this batch. The [later API32 continuation](../20261006-api32/README.md)
+adds runtime/app and 49 lifecycle checks with identical artifacts; this original
+three-worker final.json remains unchanged. SDK33/36 have separate earlier reports, not fresh runs of these
+artifacts. The [later API37 run](../20261007-api37/README.md) adds successful
+runtime/app observations, but full selection/recovery failed and cleanup remains
+unconfirmed. It is not an additional passed 49-stage run of this batch.
+This batch leaves the API30 phone engine unchanged; its
 tool0.9.2 current-state check is [separately documented](../../../../diagnostic-app/BOUND-IWLAN-BUNDLE-20261006.md).
 IMS keeps the attributed phhusson source and GPL-2.0 license in the module and
 [Android11 notices](../../../../android11/THIRD_PARTY.md).

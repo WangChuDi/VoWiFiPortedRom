@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "persistent": false,
+  "carrier_binder_write_readback": true,
+  "qns_platform_binding": true,
+  "original_qns_restored": true,
+  "original_config_restored": true,
+  "persisted_override_created": false
+}

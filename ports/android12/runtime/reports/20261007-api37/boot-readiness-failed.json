@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "physical_phone_modified": false,
+  "ro.kernel.qemu": {
+    "exit_code": null,
+    "expected_observed": false,
+    "error": "TimeoutExpired"
+  },
+  "ro.build.version.sdk": {
+    "exit_code": null,
+    "expected_observed": false,
+    "error": "TimeoutExpired"
+  },
+  "ro.boot.qemu.avd_name": {
+    "exit_code": null,
+    "expected_observed": false,
+    "error": "TimeoutExpired"
+  },
+  "owned_guest_identity_confirmed": false
+}

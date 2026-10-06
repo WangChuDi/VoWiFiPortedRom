@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "inspect",
+  "status": "failed",
+  "entry_exit": 137,
+  "error": "unclassified",
+  "reason": "unclassified",
+  "raw_output_exported": false
+}

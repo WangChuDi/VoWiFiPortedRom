@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "context_package_android": true,
+  "context_application_system_uid": false,
+  "context_attribution_root": true,
+  "queried_iwlan_system_app": true,
+  "samples": [
+    {
+      "phase": "initial",
+      "list_null": false,
+      "active_count": 0
+    },
+    {
+      "phase": "after_package_query",
+      "list_null": false,
+      "active_count": 0
+    },
+    {
+      "phase": "after_one_second",
+      "list_null": false,
+      "active_count": 0
+    },
+    {
+      "phase": "after_six_seconds",
+      "list_null": false,
+      "active_count": 1
+    }
+  ],
+  "sim_identifiers_exported": false,
+  "carrier_call_sms_verified": false
+}

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "source": "previously-fetched-official-sdk-metadata",
+  "metadata_sha256": "f9856d8c769756f1867a50d22a607123aa7da7554f9f496c88fadb959537f908",
+  "images": {
+    "32": {
+      "package": "system-images;android-32;google_apis;x86_64",
+      "revision": 8,
+      "metadata_api_level": "32",
+      "extension_level": null,
+      "abi": "x86_64",
+      "tags": [
+        "google_apis"
+      ],
+      "archive_name": "x86_64-32_r08.zip",
+      "archive_size": 1538792859,
+      "archive_sha1": "1b52794699c6889a2fd155bf235b67a592eb8f1d",
+      "minimum_emulator_revision": "30.7.3"
+    },
+    "37": {
+      "package": "system-images;android-37.0;google_apis;x86_64",
+      "revision": 6,
+      "metadata_api_level": "37.0",
+      "extension_level": "22",
+      "abi": "x86_64",
+      "tags": [
+        "google_apis",
+        "ai_glasses_compatible"
+      ],
+      "archive_name": "x86_64-37.0_r06.zip",
+      "archive_size": 2234615040,
+      "archive_sha1": "629e507fd5b737c2c836b12b52c81cd0e3b12399",
+      "minimum_emulator_revision": "36.5.11"
+    }
+  },
+  "previous_query_filter_omitted_decimal_api_packages": true,
+  "metadata_proves_installed_or_booted": false,
+  "metadata_proves_carrier_support": false
+}

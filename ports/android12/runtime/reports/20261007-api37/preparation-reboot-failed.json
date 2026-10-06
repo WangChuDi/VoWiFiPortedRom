@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "phase": "reboot-and-observe",
+  "installation_method": "owned-avd-writable-system",
+  "magisk_mount_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "physical_phone_modified": false,
+  "module_sha256": "de5826326df086f2694aae88a3973f817b1cc0f30e1425c6ace42721cf7f70de",
+  "helper_sha256": "ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d",
+  "guest_data_headroom_kib": 5268076,
+  "error": "TimeoutExpired",
+  "error_reason": "unclassified-preparation-failure"
+}

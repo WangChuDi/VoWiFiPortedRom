@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "scope": "host-mocked-existing-payload-safety",
+  "unittest_count": 2,
+  "negative_identity_cases": 4,
+  "no_device_commands_executed": true,
+  "carrier_call_sms_verified": false,
+  "magisk_mount_verified": false
+}

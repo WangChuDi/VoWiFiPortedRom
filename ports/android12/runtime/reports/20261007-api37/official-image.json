@@ -1,0 +1,19 @@
+{
+  "package": "system-images;android-37.0;google_apis;x86_64",
+  "revision": 6,
+  "metadata_api_level": "37.0",
+  "extension_level": "22",
+  "abi": "x86_64",
+  "tags": [
+    "google_apis",
+    "ai_glasses_compatible"
+  ],
+  "archive_name": "x86_64-37.0_r06.zip",
+  "archive_size": 2234615040,
+  "archive_sha1": "629e507fd5b737c2c836b12b52c81cd0e3b12399",
+  "minimum_emulator_revision": "36.5.11",
+  "local_package_xml_sha256": "e9b88edbd8810982f7eee77a9cc32d5d3f72232ec01d326035c20028604e7fc0",
+  "local_source_properties_sha256": "bf15b0b43bd0155b258b3756cf523dd917735042633edbb645b34c285a45832d",
+  "owned_avd_name": "CodexVoWiFiApi37",
+  "metadata_alone_is_not_runtime_proof": true
+}
