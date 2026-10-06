@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "production_continuity_and_policy_contracts": true,
+  "actual_blocked_child_watchdog": true,
+  "main_return_does_not_lose_watchdog_result": true,
+  "single_partial_result": true,
+  "children": [
+    {
+      "mode": "timeout-child",
+      "elapsed_seconds": 32.14,
+      "single_partial_result": true
+    },
+    {
+      "mode": "return-child",
+      "elapsed_seconds": 32.14,
+      "single_partial_result": true
+    }
+  ],
+  "platform_health_fixture_only": true,
+  "device_verified": false
+}

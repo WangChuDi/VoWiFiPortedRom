@@ -45,11 +45,15 @@ def check(guest):
         return r.returncode,value
     try:
         guard()
+        result['root_uid_verified']=True
         if not state_absent():raise ValueError('unused-production-profile-required')
         if call('push',str(apk),remote).returncode or shell('sha256sum '+remote).split()[0]!=sha:raise ValueError('diagnostic-payload-unconfirmed')
         rc,value=entry('RootDiagnostics','0')
         if rc or value.get('error') or value.get('sdk')!=sdk or value.get('slot')!=0 or value.get('engine')!='modern' or value.get('engine_experimental') is not True or value.get('engine_supported') is not False or value.get('controller') is not False or value.get('operator')=='23415':raise ValueError('modern-read-only-diagnostic-unconfirmed')
         result['modern_read_only_diagnostic']=True
+        health=value.get('platform_health',{})
+        if value.get('diagnostic_complete')is not True or value.get('diagnostic_stage')!='finished' or value.get('diagnostic_error') or any(health.get(name,{}).get('state')!='stable'for name in ('phone','system_server')):raise ValueError('complete-stable-platform-observation-unconfirmed')
+        result['complete_stable_platform_observation']=True
         result['diagnostic_fields_observed']={key:key in value for key in ('runtime_abi','sim_state','dns','selected_policy','ims_transport','cap_observed')}
         rc,value=entry('RootDiagnostics','0',True)
         if rc or value.get('error')!='SecurityException' or 'sdk' in value:raise ValueError('nonroot-diagnostic-not-refused')

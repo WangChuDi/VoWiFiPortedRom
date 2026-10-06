@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "tool_version": "0.9.3",
+  "tool_sha256": "26fafab696ddd9c1cd823422babead38a8837078c252ef40ac5e6686397f8ed8",
+  "engine_sha256": {
+    "vowifi-stack-api30-services.zip": "c22f6987d30ba2eaeffa00c1f7cf530b5bf8c11241ded8bc9fe69bd8cc878ce5",
+    "modern-services-installation-stage.zip": "de5826326df086f2694aae88a3973f817b1cc0f30e1425c6ace42721cf7f70de"
+  },
+  "embedded_engines_exact": true,
+  "signature_verified": true,
+  "build_run_in_this_batch": true,
+  "source_freshness_verified": true,
+  "production_contracts_run": true,
+  "device_validated": false,
+  "modern_engine_controls_included": true,
+  "modern_carrier_selection_verified": false,
+  "dual_active_sim_verified": false
+}

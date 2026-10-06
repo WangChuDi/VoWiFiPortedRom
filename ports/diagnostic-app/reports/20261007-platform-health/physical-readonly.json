@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "apk_sha256": "26fafab696ddd9c1cd823422babead38a8837078c252ef40ac5e6686397f8ed8",
+  "concurrent_readonly_slot_workers": 2,
+  "slots": [
+    {
+      "slot": 0,
+      "diagnostic_complete": true,
+      "diagnostic_stage": "finished",
+      "diagnostic_error_class": null,
+      "elapsed_seconds": 1.69,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "sim_ready": false,
+      "engine_supported": false,
+      "controller_present": true,
+      "transaction": "INACTIVE",
+      "components": null,
+      "wlan_registered": false,
+      "capabilities_observed": false,
+      "voice": false,
+      "sms": false,
+      "ims_network_count": 0,
+      "pcscf_count": 0,
+      "ims_error_class": null,
+      "top_error_class": null
+    },
+    {
+      "slot": 1,
+      "diagnostic_complete": true,
+      "diagnostic_stage": "finished",
+      "diagnostic_error_class": null,
+      "elapsed_seconds": 4.6,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "sim_ready": true,
+      "engine_supported": true,
+      "controller_present": true,
+      "transaction": "ACTIVE",
+      "components": "7",
+      "wlan_registered": true,
+      "capabilities_observed": true,
+      "voice": true,
+      "sms": true,
+      "ims_network_count": 1,
+      "pcscf_count": 2,
+      "ims_error_class": null,
+      "top_error_class": null
+    }
+  ],
+  "phone_process_unchanged": true,
+  "module_modified": false,
+  "apn_modified": false,
+  "new_call_sms_sent": false,
+  "own_app_uid_execution_verified": false,
+  "dual_active_sim_verified": false
+}

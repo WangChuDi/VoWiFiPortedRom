@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "sdk": 32,
+  "apk_sha256": "26fafab696ddd9c1cd823422babead38a8837078c252ef40ac5e6686397f8ed8",
+  "production_apk_watchdog_executed": true,
+  "actual_blocked_guest_process": true,
+  "single_partial_result": true,
+  "completed_stage_preserved": true,
+  "changes_disabled": true,
+  "platform_process_continuity_observed": true,
+  "elapsed_seconds": 32.55,
+  "fixture_only": true,
+  "carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false
+}

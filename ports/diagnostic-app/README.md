@@ -26,6 +26,12 @@ The root helper reports only selected-subscription metadata:
   historical log fallback. See [status protocol](../android11/stack/TELEMETRY.md).
 * Latest SMS-dispatch capability observation from the current phone process,
   separated from advertised IMS capability. The check does not send an SMS.
+* Version0.9.3 compares phone/system-server process identities at the beginning
+  and end of the check. Unknown observations remain unknown; identical samples
+  do not prove that Binder, IMS or the carrier is healthy. A32-second watchdog
+  returns completed-stage snapshots and the stalled stage if a system call blocks.
+  Partial observations disable new changes while recorded-owner recovery remains
+  available. PIDs, start times and raw process output are not returned to the UI.
 * Version0.8.0 adds23 core IKE/EAP/IPsec/CarrierConfig signature lookups in the
   root app_process loader. Each lookup reports visible, absent, inaccessible or
   linkage error; explicit constructor/read/proposal aliases are checked in
@@ -247,3 +253,15 @@ The identical signed tool/helper/module subsequently passed the scoped checks on
 The [API37 run](../android12/runtime/reports/20261007-api37/README.md) subsequently
 passed runtime and compiled tool checks with identical artifacts; its full
 selection/recovery lifecycle remains failed and pending.
+
+## Version0.9.3 bounded diagnostic results
+
+VersionCode15 preserves both embedded engine ZIPs byte for byte. The production
+watchdog was exercised with a truly blocked child on the host and on the owned
+API32 guest; each returned one partial JSON result after approximately32 seconds.
+Completed diagnostic results and action refusals passed on API32. Concurrent
+empty/active-slot root checks passed on the physical API30 phone and still observed
+full replacement, WLAN registration and voice/SMS capabilities on the active card.
+The signed app update was installed. The app's own-UID UI regression was blocked
+by the phone's lock screen and is not counted as passed. No new call or SMS was
+sent in this regression. See [source, artifact identities and scoped evidence](PLATFORM-HEALTH-20261007.md).

@@ -22,17 +22,28 @@ public final class RootDiagnostics {
     private static volatile boolean voice=false,sms=false,capObserved=false;
     public static void main(String[] args){
         JSONObject result=new JSONObject();
+        DiagnosticProgress progress=null;PlatformHealth health=null;
         try{
             if(android.os.Process.myUid()!=0)throw new SecurityException("root-required");
             if(args.length!=1)throw new IllegalArgumentException("slot-required");
             int slot=Integer.parseInt(args[0]);
             if(slot<0||slot>7)throw new IllegalArgumentException("slot-range");
+            result.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
+            progress=new DiagnosticProgress();health=new PlatformHealth();
+            progress.checkpoint(result,"platform_health");progress.startWatchdog(health);health.begin();
+            progress.checkpoint(result,"bootstrap");
             Looper.prepareMainLooper();
             Context context=ActivityThread.systemMain().getSystemContext();
             // MIUI app_process does not run the telephony Zygote bootstrap.
             try{initializeTelephony();}catch(Throwable t){result.put("bootstrap_error",errorName(t));}
-            collect(result,context,slot);
+            collect(result,context,slot,progress);
         }catch(Throwable t){try{result.put("error",t.getClass().getSimpleName());for(StackTraceElement frame:t.getStackTrace())if(frame.getClassName().equals(RootDiagnostics.class.getName())){result.put("error_line",frame.getLineNumber());break;}}catch(Exception ignored){}}
+        if(progress!=null)try{
+            JSONObject platform=health.finish();result.put("platform_health",platform);
+            result.put("diagnostic_complete",!result.has("error")).put("diagnostic_stage","finished");
+            if(!PlatformHealth.stable(platform))result.put("engine_supported",false);
+        }catch(Exception ignored){try{result.put("diagnostic_complete",false).put("engine_supported",false).put("diagnostic_error","platform-observation-unavailable");}catch(Exception ignoredAgain){}}
+        if(progress!=null&&!progress.claimTerminal())return;
         System.out.println(result.toString());
         System.exit(0);
     }
@@ -42,11 +53,12 @@ public final class RootDiagnostics {
         if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
             initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
     }
-    private static void collect(JSONObject out,Context context,int slot)throws Exception{
+    private static void collect(JSONObject out,Context context,int slot,DiagnosticProgress progress)throws Exception{
         out.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
         out.put("runtime_abi",new JSONObject(RuntimeAbiProbe.inspect(Build.VERSION.SDK_INT,RootDiagnostics.class.getClassLoader())));
         JSONObject provider=null;
         SubscriptionInfo info=null;
+        progress.checkpoint(out,"subscription");
         try{
             SubscriptionManager subscriptions=context.getSystemService(SubscriptionManager.class);
             if(subscriptions==null)throw new IllegalStateException("subscription-service-unavailable");
@@ -54,17 +66,20 @@ public final class RootDiagnostics {
             if(active!=null)for(SubscriptionInfo candidate:active)if(candidate.getSimSlotIndex()==slot){info=candidate;break;}
         }catch(Throwable t){out.put("subscription_error",errorName(t));}
         int sub=info==null?-1:info.getSubscriptionId();
+        progress.checkpoint(out,"controller");
         try{provider=controller(out,context,slot,sub);}catch(Throwable t){out.put("controller_error",errorName(t));}
         String operator="";int simState=TelephonyManager.SIM_STATE_UNKNOWN;
         out.put("sim",info==null?(out.has("subscription_error")?"订阅信息不可见":"无活动 SIM"):"活动订阅存在，SIM 状态未知");
         if(info!=null){
             out.put("sub_id",sub);
+            progress.checkpoint(out,"telephony");
             try{
                 TelephonyManager telephony=context.getSystemService(TelephonyManager.class);
                 if(telephony==null)throw new IllegalStateException("telephony-service-unavailable");
                 TelephonyManager tm=telephony.createForSubscriptionId(sub);
                 simState=telephony.getSimState(slot);
                 out.put("sim_state",simState).put("sim",simState==TelephonyManager.SIM_STATE_READY?"已就绪":simState==TelephonyManager.SIM_STATE_UNKNOWN?"活动订阅存在，SIM 状态未知":"活动订阅存在，SIM 尚未就绪（状态 "+simState+"）");
+                progress.checkpoint(out,"telephony");
                 operator=tm.getSimOperator();if(operator==null)operator="";
                 out.put("operator",operator);
             }catch(Throwable t){out.put("telephony_error",errorName(t));}
@@ -75,6 +90,7 @@ public final class RootDiagnostics {
         out.put("engine",modern?"modern":"api30").put("engine_experimental",modern);
         out.put("engine_supported",simState==TelephonyManager.SIM_STATE_READY&&((Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE))||modern)&&"23415".equals(operator)&&slot>=0&&slot<8&&sub>=0);
         Network wifi=null;int imsCount=0,pcscfCount=0,unattributed=0;String iface=null;
+        progress.checkpoint(out,"network");
         try{
           ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
           if(cm==null)throw new IllegalStateException("connectivity-service-unavailable");
@@ -95,6 +111,7 @@ public final class RootDiagnostics {
         out.put("ims_interface",iface==null?JSONObject.NULL:iface);
         if(iface!=null)out.put("ims_interface_present",new File("/sys/class/net",iface).exists());
         if(wifi!=null&&operator.matches("[0-9]{5,6}")){
+            progress.checkpoint(out,"dns");
             String hostname=String.format(Locale.US,"epdg.epc.mnc%03d.mcc%s.pub.3gppnetwork.org",Integer.parseInt(operator.substring(3)),operator.substring(0,3));
             ExecutorService dns=Executors.newSingleThreadExecutor();final Network physical=wifi;
             Future<Integer> f=dns.submit(()->physical.getAllByName(hostname).length);
@@ -105,6 +122,7 @@ public final class RootDiagnostics {
         out.put("udp","未主动测试 UDP 500/4500；DNS 成功不代表端口可达");
         // Wi-Fi/controller checks remain useful even when subscriptions are hidden.
         if(info==null)return;
+        progress.checkpoint(out,"apn");
         // Display only APN/type, never APN username/password or subscriber identifiers.
         try(Cursor c=context.getContentResolver().query(Uri.parse("content://telephony/carriers/preferapn/subId/"+sub),new String[]{"apn","type"},null,null,null)){
             out.put("apn",c!=null&&c.moveToFirst()?c.getString(0)+" · "+c.getString(1):"未设置首选互联网 APN");
@@ -114,13 +132,17 @@ public final class RootDiagnostics {
             out.put("apn",fields.find()?fields.group(1)+" · "+fields.group(2):"不可见 · "+e.getClass().getSimpleName());
         }
         ImsMmTelManager manager=null;
+        progress.checkpoint(out,"wfc_settings");
         try{manager=ImsMmTelManager.createForSubscriptionId(sub);}catch(Throwable t){out.put("ims_error",errorName(t));}
         try{
             if(manager==null)throw new IllegalStateException("ims-manager-unavailable");
             out.put("wfc_setting",manager.isVoWiFiSettingEnabled());
+            progress.checkpoint(out,"wfc_settings");
             out.put("wfc_roaming_setting",manager.isVoWiFiRoamingSettingEnabled());
+            progress.checkpoint(out,"wfc_settings");
             out.put("wfc_mode",manager.getVoWiFiModeSetting());
         }catch(Throwable e){out.put("settings_error",e.getClass().getSimpleName());}
+        progress.checkpoint(out,"carrier_policy");
         try{
             PersistableBundle config=context.getSystemService(CarrierConfigManager.class).getConfigForSubId(sub);
             JSONObject policy=new JSONObject();
@@ -132,6 +154,7 @@ public final class RootDiagnostics {
         }catch(Throwable e){out.put("policy_error",e.getClass().getSimpleName());}
         // The modern public method appeared in API33; reflection permits OEM
         // backports and reports inaccessible/missing methods as unknown.
+        progress.checkpoint(out,"provisioning");
         try{
             Class<?> provisionClass=Class.forName("android.telephony.ims.ProvisioningManager");
             Object provision=provisionClass.getMethod("createForSubscriptionId",int.class).invoke(null,sub);
@@ -163,6 +186,7 @@ public final class RootDiagnostics {
             }
         };
         boolean attachedReg=false,attachedCap=false;
+        progress.checkpoint(out,"ims_callbacks");
         try{
             if(manager==null)throw new IllegalStateException("ims-manager-unavailable");
             manager.registerImsRegistrationCallback(Runnable::run,reg);attachedReg=true;
@@ -175,6 +199,7 @@ public final class RootDiagnostics {
             if(attachedReg)try{manager.unregisterImsRegistrationCallback(reg);}catch(Exception ignored){}
             if(attachedCap)try{manager.unregisterMmTelCapabilityCallback(cap);}catch(Exception ignored){}
         }
+        progress.checkpoint(out,"service_status");
         for(Map.Entry<String,Future<JSONObject>> entry:statuses.entrySet()){
             try{
                 JSONObject sampled=entry.getValue().get(Math.max(1,statusDeadline-SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS);
@@ -182,6 +207,7 @@ public final class RootDiagnostics {
                 out.put(entry.getKey()+"_status",sampled);
             }
             catch(Throwable failure){out.put(entry.getKey()+"_status_error",errorName(failure));entry.getValue().cancel(true);}
+            progress.checkpoint(out,"service_status");
         }
         statusWorkers.shutdownNow();
         JSONObject ownIwlan=out.optJSONObject("iwlan_status");
@@ -191,6 +217,7 @@ public final class RootDiagnostics {
             if(ownIwlan.optBoolean("child_open"))out.put("iwlan_interface_matches",iface!=null&&iface.equals(ownIwlan.optString("interface"))&&new File("/sys/class/net",iface).exists());
         }
         if(provider!=null){
+            progress.checkpoint(out,"iwlan_history");
             boolean selectedOwner=provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub;
             if(selectedOwner){String running=observation(out,"iwlan_observation_error",2,"pidof","dev.codex.vowifi.iwlan").trim();if(!out.has("iwlan_observation_error"))out.put("iwlan_process_present",running.matches("[0-9]+"));}
             if(!out.has("ike")&&selectedOwner&&"dev.codex.vowifi.iwlan".equals(provider.optString("carrier_data_service_wlan_package_override_string"))){
@@ -212,6 +239,7 @@ public final class RootDiagnostics {
             }
         }
         // Use current phone PID to exclude observations from a previous reload.
+        progress.checkpoint(out,"sms_dispatcher");
         String pid=observation(out,"sms_observation_error",2,"pidof","com.android.phone").trim();
         String last=null;
         if(pid.matches("[0-9]+")){

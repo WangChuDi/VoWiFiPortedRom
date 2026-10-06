@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "concurrent_workers": 1,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 32,
+      "status": "passed",
+      "apk_sha256": "26fafab696ddd9c1cd823422babead38a8837078c252ef40ac5e6686397f8ed8",
+      "root_uid_verified": true,
+      "modern_read_only_diagnostic": true,
+      "complete_stable_platform_observation": true,
+      "diagnostic_fields_observed": {
+        "runtime_abi": true,
+        "sim_state": true,
+        "dns": true,
+        "selected_policy": true,
+        "ims_transport": false,
+        "cap_observed": false
+      },
+      "nonroot_diagnostic_refused": true,
+      "nonroot_action_refused": true,
+      "invalid_mask_refused": true,
+      "invalid_slot_refused": true,
+      "invalid_subscription_refused": true,
+      "invalid_action_refused": true,
+      "missing_module_action_refused": true,
+      "production_state_presence_unchanged": true,
+      "actual_modern_module_installation_verified": false,
+      "modern_carrier_selection_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false
+    }
+  ]
+}

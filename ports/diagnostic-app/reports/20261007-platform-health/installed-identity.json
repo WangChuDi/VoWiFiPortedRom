@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "apk_sha256": "26fafab696ddd9c1cd823422babead38a8837078c252ef40ac5e6686397f8ed8",
+  "signed_update_installed": true,
+  "installed_bytes_match_final_apk": true,
+  "own_app_uid_ui_verified": false,
+  "ui_blocked_by_lock_screen": true,
+  "module_modified": false
+}

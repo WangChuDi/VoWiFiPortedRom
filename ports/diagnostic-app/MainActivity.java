@@ -110,9 +110,13 @@ public final class MainActivity extends Activity {
         if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
         reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
         StringBuilder unavailable=new StringBuilder();
-        for(String key:new String[]{"error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
+        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
+        JSONObject health=data.optJSONObject("platform_health");
+        card("电话服务进程观测",health==null?"未观测，不能判断进程是否稳定":
+            "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n比较检查开始与结束时的进程身份；一致不代表 IMS 或运营商链路正常。");
+        if(!diagnosticReady())card("检查尚未完成","停留阶段："+diagnosticStage(data.optString("diagnostic_stage"))+"。已取得的结果保留；请刷新检查后再开始替换或安装更新。");
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
         JSONObject abi=data.optJSONObject("runtime_abi");
         if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
@@ -141,6 +145,7 @@ public final class MainActivity extends Activity {
         card("所选 SIM 的 IMS 网络",data.has("network_error")?"不可见 · "+data.optString("network_error"):networks+" 个 · 接口 "+(data.isNull("ims_interface")?"未观测":data.optString("ims_interface","不可见"))+" · P-CSCF "+data.optInt("pcscf_count")+(data.optInt("ims_unattributed_network_count")>0?"\n另有 "+data.optInt("ims_unattributed_network_count")+" 个 IMS 网络无法归属到卡槽":"")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
         int t=data.optInt("ims_transport",-1);
         String registration=t==2?"WLAN 已注册":t==1?"蜂窝网络已注册":t==-2?"注册中":t==-3?"未注册":"不可见 / 尚未回调";
+        if(t==2&&!DiagnosticPolicy.wlanConfirmed(data))registration="本次回调曾报告 WLAN 注册；检查未完整或进程稳定性未确认，请刷新核实当前状态";
         card("IMS 注册",data.has("ims_error")?"不可见 · "+data.optString("ims_error"):registration);
         card("MMTEL 能力",data.optBoolean("cap_observed")?"语音 "+data.optBoolean("voice")+" · SMS "+data.optBoolean("sms"):"尚未观测，不能判定不可用");
         JSONObject service=data.optJSONObject("ims_status");
@@ -155,19 +160,19 @@ public final class MainActivity extends Activity {
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
         card("替换控制器"+(ownerSlot>=0?"（管理 SIM"+(ownerSlot+1)+"）":""),providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));
         if(providers!=null&&"modern".equals(providers.optString("engine")))card("现代模块状态","模块与本工具匹配 "+providers.optBoolean("module_payload_matches_tool")+" · 模块启用 "+providers.optBoolean("module_enabled")+"\n安装事务："+providers.optString("installation_phase","未知")+"\n事务记录属于恢复依据；当前注册与能力以上方实时回调为准。");
-        setActions(data.optBoolean("engine_supported"));
+        setActions(diagnosticReady()&&data.optBoolean("engine_supported"));
         boolean active=providers!=null&&"ACTIVE".equals(providers.optString("transaction"));
         boolean identities=providers!=null&&providers.optInt("identity_selection")==1;
         boolean selectedOwner=providers!=null&&ownerSlot==data.optInt("slot",-1)&&providers.optInt("owner_sub",-1)==data.optInt("sub_id",-2);
         boolean selectable=identities&&providers.optInt("component_selection")==1;
-        for(CheckBox checkbox:components){checkbox.setEnabled(data.optBoolean("engine_supported")&&selectable&&!active);}
+        for(CheckBox checkbox:components){checkbox.setEnabled(diagnosticReady()&&data.optBoolean("engine_supported")&&selectable&&!active);}
         int activeMask=providers==null?-1:providers.optInt("components",-1);
         if(active&&activeMask>=1&&activeMask<=7)for(int index=0;index<components.length;index++)components[index].setChecked((activeMask&(1<<index))!=0);
         if(!selectable)for(CheckBox checkbox:components)checkbox.setChecked(true);
         refreshTrialSelection();
         boolean canRetain=activeMask>=1&&activeMask<=7&&(activeMask==7||providers.optInt("persistent_component_selection")==1);
-        enable.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&canRetain&&!"ENABLED".equals(providers.optString("persistent")));
-        reload.setEnabled(identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
+        enable.setEnabled(diagnosticReady()&&identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&canRetain&&!"ENABLED".equals(providers.optString("persistent")));
+        reload.setEnabled(diagnosticReady()&&identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
         recoveryOwners.clear();ArrayList<String> recoveryLabels=new ArrayList<>();int recoveryIndex=0;
         org.json.JSONArray owners=providers==null?null:providers.optJSONArray("active_owners");
         if(owners!=null)for(int index=0;index<owners.length();index++){
@@ -181,7 +186,30 @@ public final class MainActivity extends Activity {
         recoveries.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,recoveryLabels));
         recoveries.setSelection(recoveryIndex);refreshRecovery();
         if(recoveryOwners.size()>1)card("其他卡的替换事务",recoveryOwners.size()+" 张卡分别管理；恢复所选事务后，其他卡的配置和租约保留。电话服务重载会短暂重建两张卡的连接。");
-        if(data.has("error")){setActions(false);status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
+        if(!diagnosticReady()){status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
+    }
+    private boolean diagnosticReady(){return DiagnosticPolicy.complete(last);}
+    private String processState(JSONObject sample){
+        if(sample==null)return "未观测";
+        switch(sample.optString("state")){
+            case "stable":return "两次采样均存在，身份一致";
+            case "changed":return "检查期间出现、消失或重启";
+            case "absent":return "两次采样均未发现";
+            default:return "观测不可用，不能判断";
+        }
+    }
+    private String diagnosticStage(String stage){
+        switch(stage){
+            case "platform_health":return "电话服务进程";case "bootstrap":return "系统上下文初始化";
+            case "subscription":return "SIM 订阅";case "controller":return "替换事务状态";
+            case "telephony":return "SIM 状态和运营商";case "network":return "网络枚举";
+            case "dns":return "ePDG DNS";case "apn":return "首选 APN";
+            case "wfc_settings":return "Wi-Fi Calling 设置";case "carrier_policy":return "运营商配置";
+            case "provisioning":return "IMS provisioning";case "ims_callbacks":return "IMS 注册和能力回调";
+            case "service_status":return "替换服务状态";case "iwlan_history":return "IWLAN 进程历史";
+            case "sms_dispatcher":return "系统短信分发器";case "finished":return "检查结束";
+            default:return "不可见";
+        }
     }
     private String phaseName(String phase){
         switch(phase){
@@ -216,13 +244,13 @@ public final class MainActivity extends Activity {
     private void refreshTrialSelection(){
         if(trial==null)return;
         JSONObject provider=last==null?null:last.optJSONObject("providers");
-        trial.setEnabled(!busy&&last!=null&&last.optBoolean("engine_supported")&&last.optBoolean("controller")&&provider!=null&&provider.optInt("identity_selection")==1&&!"ACTIVE".equals(provider.optString("transaction"))&&componentMask()!=0);
+        trial.setEnabled(!busy&&diagnosticReady()&&last.optBoolean("engine_supported")&&last.optBoolean("controller")&&provider!=null&&provider.optInt("identity_selection")==1&&!"ACTIVE".equals(provider.optString("transaction"))&&componentMask()!=0);
     }
     private void action(String action){
         if(busy)return;
         if(!Arrays.asList("trial","enable","reload","rollback").contains(action))return;
         if(last==null)return;
-        if(!"rollback".equals(action)&&(last==null||!last.optBoolean("engine_supported")))return;
+        if(!"rollback".equals(action)&&(!diagnosticReady()||!last.optBoolean("engine_supported")))return;
         final int slot=slots.get(sims.getSelectedItemPosition());
         JSONObject provider=last.optJSONObject("providers");
         if(provider==null)return;
@@ -262,17 +290,17 @@ public final class MainActivity extends Activity {
                     observation.remove("ims_transport");observation.remove("cap_observed");observation.remove("voice");observation.remove("sms");
                     break;
                 }
-                if(observation.optInt("ims_transport")==2&&observation.optBoolean("voice")&&observation.optBoolean("sms"))break;
+                if(DiagnosticPolicy.wlanConfirmed(observation)&&observation.optBoolean("voice")&&observation.optBoolean("sms"))break;
             }
             return observation.put("action_result",output);
         },data->{
             last=null;setActions(false);
-            if(data.has("sdk")){render(data);status(data.optInt("ims_transport")==2?"已恢复 WLAN 注册；请查看下方最新能力。":"操作已请求，尚未确认 WLAN 注册；请刷新检查结果。"+(data.has("action_observation_error")?"\n等待检查未完成："+data.optString("action_observation_error"):""));}
+            if(data.has("sdk")){render(data);status(DiagnosticPolicy.wlanConfirmed(data)?"已恢复 WLAN 注册；请查看下方最新能力。":"操作已请求，尚未确认 WLAN 注册；请刷新检查结果。"+(data.has("action_observation_error")?"\n等待检查未完成："+data.optString("action_observation_error"):""));}
             else{status(data.optString("action_result"));diagnose();}
         });
     }
     private void installModule(){
-        if(busy||last==null||!last.optBoolean("engine_supported"))return;
+        if(busy||!diagnosticReady()||!last.optBoolean("engine_supported"))return;
         final boolean modern=last.optBoolean("engine_experimental");
         JSONObject provider=last.optJSONObject("providers");
         if(modern&&last.has("controller_error")){status("当前事务状态未能完整读取。请先核对恢复记录，再更新现代模块。");return;}
@@ -295,7 +323,7 @@ public final class MainActivity extends Activity {
     private void execute(String message,Work work,Show show){
         busy=true;status(message);sims.setEnabled(false);setActions(false);
         worker.submit(()->{JSONObject response;try{response=work.run();}catch(Throwable e){response=new JSONObject();try{response.put("error",e.getClass().getSimpleName());if(e instanceof RootFailure)response.put("action_error",e.getMessage());}catch(Exception ignored){}}
-            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);if(!isFinishing()){if(result.has("error")){last=null;setActions(false);status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
+            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);if(!isFinishing()){if(result.has("error")&&!result.has("sdk")){last=null;setActions(false);status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
         });
     }
     private String shell(String command,int seconds)throws Exception{
