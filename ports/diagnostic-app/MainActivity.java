@@ -112,6 +112,11 @@ public final class MainActivity extends Activity {
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
+        JSONObject abi=data.optJSONObject("runtime_abi");
+        if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
+            " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
+            "\n"+(abi.optBoolean("modern_candidate")?"属于 Android12–17 候选范围；尚未验证安装与服务绑定":abi.optInt("sdk")==30?"Android11 接口范围；替换需匹配已验证设备":"超出当前替换版本范围")+
+            "\n只检查当前 root 进程中的接口；未验证权限、运营商注册或现代模块可用性。独立 IKE 库也可能仅在服务进程可见。");
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
         card("ePDG DNS",data.optString("dns","未观测"));
         card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));

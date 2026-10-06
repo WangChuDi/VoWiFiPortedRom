@@ -43,6 +43,7 @@ public final class RootDiagnostics {
     }
     private static void collect(JSONObject out,Context context,int slot)throws Exception{
         out.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
+        out.put("runtime_abi",new JSONObject(RuntimeAbiProbe.inspect(Build.VERSION.SDK_INT,RootDiagnostics.class.getClassLoader())));
         JSONObject provider=null;
         SubscriptionInfo info=null;
         try{

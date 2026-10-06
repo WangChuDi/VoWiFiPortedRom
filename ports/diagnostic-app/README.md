@@ -26,6 +26,16 @@ The root helper reports only selected-subscription metadata:
   historical log fallback. See [status protocol](../android11/stack/TELEMETRY.md).
 * Latest SMS-dispatch capability observation from the current phone process,
   separated from advertised IMS capability. The check does not send an SMS.
+* Version0.8.0 adds23 core IKE/EAP/IPsec/CarrierConfig signature lookups in the
+  root app_process loader. Each lookup reports visible, absent, inaccessible or
+  linkage error; explicit constructor/read/proposal aliases are checked in
+  production order. No class initialization, method invocation or SIM auth occurs.
+  These23 checks are a scoped pre-install aid, not the entire service ABI.
+  Missing IKE classes in this loader may still be available to a service through
+  its declared shared library. Visibility does not prove Binder permissions,
+  package installation, service binding or carrier acceptance. Modern replacement
+  controls remain disabled; the tested Android11 profile is unchanged.
+  See [runtime preflight evidence and loader limitation](RUNTIME-PREFLIGHT-20261006.md).
 
 DNS success does not prove UDP500/4500 reachability. The tool does not initiate
 an IKE probe, SIM authentication, phone call or SMS. Unknown/inaccessible stages
@@ -142,6 +152,15 @@ must contain alias `stack`. No key is generated or committed by this builder.
 Output is `out/vowifi-tool.apk`; generated files and private signing material
 are ignored. The builder signs and verifies the APK and copies only the module
 ZIP into assets. It never connects to a phone or installs anything.
+
+For one consolidated release batch, run `python validate.py --build` with the
+same environment. It builds/signs once, executes the production lookup contracts
+and verifies actual APK SDK/version/signature plus byte-exact embedded engine.
+`--artifacts-only` permits checking an already-built batch without repeating
+passed contracts. Validation never rebuilds the engine or installs on a device.
+Inspect the resulting `out/validation.json`; its device flag remains false until
+separate live evidence is recorded. This keeps compile, fixture and live evidence
+distinct while avoiding repeated build/check cycles after every small edit.
 
 On 2026-10-06 the APK was installed on the connected device and separately
 authorized through Magisk's superuser UI. SIM1 empty-slot and SIM2 active-slot
