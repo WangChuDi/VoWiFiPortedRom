@@ -147,3 +147,41 @@ does not establish Android17 ROM or release support. This batch made no changes
 to the connected API30 phone. Carrier authentication, calls/SMS, native delivery,
 dual active SIMs and a modern production install/controller profile remain
 unverified by these emulator checks.
+
+## Selected-subscription persistence continuation
+
+The modern helper now includes read-only `ModernPersistenceCheck <slot> <sub>`
+and a disposable `ModernPersistentFrameworkTrial`. The latter exercises the
+[shared modern carrier transaction](../controller/README.md), using persistent
+QNS selection, native-stream file readback, a reopened recovery transaction,
+full configuration restoration and safe repeat restoration. It requires one
+non-VOXI test subscription and an originally absent selected override file.
+This is not a production installation/boot supervisor.
+
+Use the already-prepared, rooted named emulator. This checker does not install
+packages, authorize root, reboot or change physical devices:
+
+```sh
+python check-persistence-emulator.py --adb /path/to/adb --serial emulator-5574 \
+  --sdk 33 --avd-name CodexVoWiFiApi33 --output-dir /path/to/results/api33
+python check-persistence-emulator.py --adb /path/to/adb --serial emulator-5580 \
+  --sdk 36 --avd-name CodexVoWiFiApi36 --output-dir /path/to/results/api36 \
+  --persistent-trial
+```
+
+The default only checks the fresh test baseline using slot0/sub1, the test
+emulators' tuple. `--persistent-trial` explicitly permits the QNS-only configuration
+mutation/restoration; do not pass it to read-only scouts. `--no-push --stdout-only`
+with the default check leaves host/device configuration unchanged. Both modes
+verify qemu, SDK, exact owned AVD, root and the staged helper hash before running.
+The selected trial report starts fresh; malformed/incomplete/wrong-version results
+fail rather than keeping a prior success. Separate output directories prevent
+concurrent version checks from overwriting each other.
+
+The persistence continuation passed concurrently on API33 and API36, with the
+cleaned baseline independently checked afterward. Safe results are in
+[persistence reports](reports/20261006-persistence/matrix.json). Only the new root
+helper was rebuilt; the three signed modern service APKs and API30 phone were
+unchanged. Earlier root-helper static reference counts describe the earlier helper,
+not this expanded carrier-transaction helper. Existing-original-XML/reboot/crash
+recovery and real carrier/voice/SMS/dual-SIM proofs remain outside this test.

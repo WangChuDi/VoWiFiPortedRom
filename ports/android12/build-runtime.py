@@ -36,7 +36,8 @@ classes=out/'classes'
 if out.resolve()!=out.absolute() or classes.resolve()!=classes.absolute() or not classes.resolve().is_relative_to((B/'out').resolve()):raise SystemExit('runtime-output-alias-refused')
 if classes.exists():shutil.rmtree(classes)
 (out/'runtime-check.zip').unlink(missing_ok=True)
-sources=[B/'runtime/ModernRuntimeCheck.java',B/'runtime/ModernPermissionPrep.java',B/'runtime/ModernFrameworkTrial.java',B.parent/'diagnostic-app/RuntimeAbiProbe.java',B.parent/'android11/stack/CarrierConfigReadCompat.java']
+sources=[B/'runtime/ModernRuntimeCheck.java',B/'runtime/ModernPermissionPrep.java',B/'runtime/ModernFrameworkTrial.java',B/'runtime/ModernPersistenceCheck.java',B/'controller/ModernCarrierOverrideFiles.java',B/'controller/ModernCarrierBaseline.java',B.parent/'diagnostic-app/RuntimeAbiProbe.java',B.parent/'android11/stack/CarrierConfigReadCompat.java',B.parent/'android11/stack/CarrierOverrideFiles.java',B.parent/'android11/stack/OverrideFileStore.java']
+sources += [B/'controller/ModernProviderTransaction.java',B/'runtime/ModernPersistentFrameworkTrial.java']
 subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',str(framework),'-d',str(classes),*map(str,sources)],check=True)
 jar=out/'classes.jar'
 with zipfile.ZipFile(jar,'w') as archive:

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "sdk": 33,
+  "selected_target_confirmed": true,
+  "selected_override_present": false,
+  "platform_cache_present": true,
+  "platform_cache_stream_read": true,
+  "transient_override_empty": true,
+  "modern_production_controller_verified": false,
+  "status": "passed",
+  "helper_sha256": "68929f671a0e6481dc3b778cf4f847bdd598cf52b5e15671edcbb16c3f75ca38",
+  "process_exit": 0
+}

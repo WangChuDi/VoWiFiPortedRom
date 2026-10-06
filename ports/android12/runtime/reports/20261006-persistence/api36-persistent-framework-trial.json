@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "sdk": 36,
+  "mask": 2,
+  "persistent": true,
+  "production_snapshot": true,
+  "selected_live_and_native_stream_file": true,
+  "transaction_reopen_required": true,
+  "reopened_transaction_restored": true,
+  "entire_original_config_restored": true,
+  "selected_override_absent": true,
+  "restoration_retry_safe": true,
+  "carrier_registration_verified": false,
+  "voice_sms_verified": false,
+  "dual_sim_verified": false,
+  "helper_sha256": "68929f671a0e6481dc3b778cf4f847bdd598cf52b5e15671edcbb16c3f75ca38",
+  "process_exit": 0,
+  "status": "passed"
+}

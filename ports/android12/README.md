@@ -143,6 +143,12 @@ This checks library lookup in the declared-library process and distinguishes roo
 explicit Binder connection from actual telephony provider selection. The research
 bundle remains unsigned and has no production installer or controller.
 
+The [modern carrier transaction layer](controller/README.md) now adds selected-SIM
+snapshot, native-stream persistence readback and resumable restoration. Its
+QNS-only persistence/reopened-transaction trial passed concurrently on API33 and
+API36. This layer still needs production installation, supervision and app UI;
+it does not enable the modern replacement buttons or prove carrier call/SMS.
+
 * N1 PDU/3GPP extension negotiation, returned slice handling and actual URSP
   matching, before accepting their corresponding requests.
 * Modern controller/Binder/provider selection, permission/install profiles,

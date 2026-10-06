@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "helper_sha256": "68929f671a0e6481dc3b778cf4f847bdd598cf52b5e15671edcbb16c3f75ca38",
+  "source_sha256": {
+    "ports/android12/controller/ModernCarrierOverrideFiles.java": "5e2511533256fc4f2a6291ad05d4618359ddec4b2243e472fd2883164b240afc",
+    "ports/android12/controller/ModernCarrierBaseline.java": "d097018a858b23cba934da5be0af5810cdcb04ab9c003cfaef98db5facb76268",
+    "ports/android12/controller/ModernProviderTransaction.java": "200510052cb8bb805ec4116779cbd76f20b255c827d4d9bfeb9f9e24ac0fc58a",
+    "ports/android12/runtime/ModernPersistenceCheck.java": "5b548ceb01e90a7c4b62fc4b436d1f8b1224bba9fbb2468a8fa1166894fbf87b",
+    "ports/android12/runtime/ModernPersistentFrameworkTrial.java": "96fca0b049bf352215a2feb1aee1963f17a429697c0b1e1f02d6d1037c7d48e2"
+  },
+  "versions": [
+    {
+      "android": "13",
+      "sdk": 33,
+      "persistent_qns_trial": "passed",
+      "independent_readonly_baseline": "passed",
+      "verifier": "/root/android13_persistence_verify",
+      "carrier_call_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    {
+      "android": "16",
+      "sdk": 36,
+      "persistent_qns_trial": "passed",
+      "independent_readonly_baseline": "passed",
+      "verifier": "/root/android16_persistence_verify_retry",
+      "carrier_call_sms_verified": false,
+      "dual_sim_verified": false
+    }
+  ],
+  "mutation_trials_concurrent": true,
+  "final_readonly_agents_concurrent": false,
+  "baseline_parser_contracts": 12,
+  "report_contracts": 21,
+  "original_override_baseline": "absent",
+  "test_component_mask": 2,
+  "real_os_reboot_or_kill_recovery_verified": false,
+  "existing_original_xml_verified": false,
+  "file_restoring_crash_window_verified": false,
+  "production_installer_supervisor_ui_complete": false,
+  "api30_phone_modified": false,
+  "modern_service_apks_rebuilt": false
+}
