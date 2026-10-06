@@ -3,8 +3,8 @@
 This module is the installation prerequisite for the modern IWLAN/QNS/IMS port.
 It mounts the three independently signed SDK31 APKs and their privileged permission
 XML, verifies the installed APK bytes, then prepares their fixed runtime permissions,
-IMS SEND_SMS system restriction exemption and IWLAN IPsec AppOp. It does not yet
-select carrier providers or implement the modern selection/lease/boot supervisor.
+IMS SEND_SMS system restriction exemption and IWLAN IPsec AppOp. It also includes
+fixed owner selection commands and a resident selection/lease/recovery supervisor.
 The application's modern replacement buttons remain disabled. Real Magisk mounting,
 modern VOXI authentication, voice/SMS and dual active SIM behavior are unverified.
 Do not install this SDK31–37 payload over the working SDK30 phone/module.
@@ -42,7 +42,27 @@ system exemption, and the effective IPsec AppOp mode. Phases are PREPARING,
 PREPARED, RESTORING, RESTORED. The original record is committed before mutation;
 PREPARING can resume, and RESTORING can resume without replacing the baseline.
 PREPARED is retained only while the preparation readback remains valid. A RESTORED
-record is not silently reused as a new baseline; lifecycle archiving is separate.
+record is not silently reused as a new baseline; a verified restored record is
+atomically archived before a new preparation cycle. A saved baseline can be read
+when current module APKs are missing; restoration still verifies the installed
+apps against their original UID/hash before changing their permissions.
+
+Root worker commands also include `select SLOT SUB MASK`, `retain|renew|verify
+SLOT SUB TOKEN`, `selection-restore SLOT SUB TOKEN`, `recover|owner-status SLOT SUB`
+and `restore-all|tick|supervise`. Mask bits are IWLAN=1, QNS=2, IMS=4. `select` first
+checks the ready23415 owner without creating owner state, publishes independent
+recovery, prepares installation permissions and confirms a supervisor before
+starting the five-minute trial. Tokens are private root-worker data, not exported
+diagnostic information. Modern application selectors remain disabled.
+
+The supervisor validates the complete owner/carrier inventory under the shared
+global lock. It renews active owners, restores expired/interrupted owners, and
+restores installation policy only after every owner has completed recovery. A
+module disable/remove, invalid payload or interrupted installation journal enters
+recovery. A restored owner is checked without regranting old prepared permissions.
+An empty archived owner directory can be skipped only when its carrier directory
+is also absent; untracked state prevents changes. Multi-SIM permission ownership
+still needs integration; this is not proof that two active SIMs are safe.
 
 Preparation/recovery require all configured phones idle. They serialize on the
 installation lock and production carrier controller's global lock. Recovery
@@ -54,9 +74,18 @@ refuses recovery. Only grants added by preparation are revoked; original grant
 bits/flags, exemption and effective AppOp are checked after recovery. This does
 not claim an inventory restoration of unrelated AppOps or other application policy.
 
-Before calling the preparation helper, `control.sh` preserves the helper and boot
-script outside the module directory and publishes a service.d recovery entry.
-On boot it attempts guarded restoration if the module is disabled/removed/missing.
+Before preparation, `control.sh` publishes recovery under the global carrier lock.
+Complete helper/script/checksum generations are copied and synced to a private
+staging directory, atomically moved to their immutable generation directory, then
+selected by one atomic `current` pointer. An incomplete staging operation does
+not replace the previous selected generation. The independent dispatcher and
+service.d entry are published before permission changes. A different generation
+is refused while a baseline is pending; the restored baseline is verified first.
+Old resident ticks stop before touching owners after the selected generation
+changes. The resident lock records its generation, so a new helper does not count
+an old resident as ready. On boot the independent entry starts supervision for a
+saved installation/owner journal, including an interrupted preparation or invalid
+enabled module, and attempts guarded restoration when recovery is required.
 `uninstall.sh` also attempts restoration. Failed recovery retains the record;
 module deletion is not assumed to stop because an uninstall script failed. If
 the matching privileged apps disappear with the mount, restoration is refused
@@ -66,6 +95,16 @@ directly does not publish the shell recovery hook; normal installation uses
 `control.sh`/`service.sh`.
 
 ## Actual scoped tests
+
+The owner/supervisor integration subsequently passed 33 stages per version on
+the same owned API33/API36 guests, including enabled-module APK loss, pending
+helper upgrade refusal, atomic generation handoff, inventory refusal, expiration,
+retention, disabled module recovery and original policy repeat checks. Evidence
+and failure history are in
+[the supervision report](../runtime/reports/20261006-selection-supervisor/README.md).
+This does not execute the production resident loop or the actual boot hooks.
+
+The earlier installation-only evidence below retains its original scope.
 
 The same final helper and module payload passed concurrently on owned Android13/
 API33 and Android16/API36 Google-APIs emulators. Existing privileged installs were

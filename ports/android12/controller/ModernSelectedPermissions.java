@@ -34,7 +34,17 @@ final class ModernSelectedPermissions {
         return Integer.parseInt(record.getProperty(prefix+"flags"));
     }
     static void validate(Context context,Properties record)throws Exception {
+        validateRecord(record);
         PackageManager pm=context.getPackageManager();for(int i=0;i<PACKAGES.length;i++)if(selected(record,i))before(pm,record,i);
+    }
+    static void validateRecord(Properties record)throws Exception {
+        for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
+            String prefix="role."+i+".";
+            if(!record.getProperty(prefix+"uid","").matches("[0-9]{5}")||!record.getProperty(prefix+"apk","").matches("[0-9a-f]{64}")||!Arrays.asList("true","false").contains(record.getProperty(prefix+"grant")))throw new IOException("selected-role-record-refused");
+            Integer.parseInt(record.getProperty(prefix+"flags"));
+            if(record.getProperty(prefix+"observed")!=null)Integer.parseInt(record.getProperty(prefix+"observed"));
+            if(record.getProperty(prefix+"apply_requested")!=null&&!"true".equals(record.getProperty(prefix+"apply_requested")))throw new IOException("selected-role-intent-refused");
+        }
         if(selected(record,0))for(int i=0;i<DATA_OPS.length;i++)if(!record.getProperty("role.data.op."+i,"").matches("[0-4]"))throw new IOException("selected-data-appop-baseline-refused");
     }
     static void requested(Properties record) {
@@ -55,6 +65,7 @@ final class ModernSelectedPermissions {
         }
     }
     static void restore(Context context,Properties record)throws Exception {
+        validateRecord(record);
         PackageManager pm=context.getPackageManager();
         int[] originals=new int[PACKAGES.length];
         for(int i=0;i<PACKAGES.length;i++)if(selected(record,i))originals[i]=before(pm,record,i);

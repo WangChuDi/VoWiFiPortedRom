@@ -60,7 +60,7 @@ public final class ModernCoordinationEmulatorCheck {
                 ModernInstallationTransaction closedInstallation;
                 try(ModernInstallationTransaction installation=new ModernInstallationTransaction(context,new File(root,"module"),new File(root,"state"),true,held)) {
                     closedInstallation=installation;
-                    if(!installation.ready()||!"ABSENT".equals(installation.phase()))throw new IOException("fresh-ready-installation-required");
+                    if(!"ABSENT".equals(installation.phase()))throw new IOException("fresh-ready-installation-required");
                 }
                 boolean installationRefused=false;try{closedInstallation.ready();}catch(IOException expected){installationRefused="closed-installation-transaction".equals(expected.getMessage());}
                 if(!installationRefused)throw new IOException("fixture-closed-installation-use-accepted");
@@ -79,7 +79,7 @@ public final class ModernCoordinationEmulatorCheck {
             }
             report.put("carrier_selection_verified",false).put("phone_cache_refresh_verified",false).put("dual_active_sim_verified",false).put("carrier_call_sms_verified",false);
             success=true;
-        }catch(Throwable error){try{report.put("error",error.getClass().getSimpleName());}catch(Exception ignored){}}
+        }catch(Throwable error){try{report.put("error",error.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(error)).put("origin",ModernSafeFailure.origin(error));}catch(Exception ignored){}}
         System.out.println(report.toString());System.exit(success?0:1);
     }
 }

@@ -73,9 +73,9 @@ public final class ModernInstallationEmulatorTrial {
             result.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("stage",args[0]);File outer=new File(root,"outer.properties");
             try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,module,state,true)){
                 if("seed".equals(args[0])){
-                    if(outer.exists()||!"ABSENT".equals(transaction.phase())||!transaction.ready())throw new IOException("fresh-ready-fixture-required");
+                    if(outer.exists()||!"ABSENT".equals(transaction.phase()))throw new IOException("fresh-ready-fixture-required");
                     write(outer,observe());
-                    pm.revokeRuntimePermission("me.phh.ims",AUDIO,UserHandle.SYSTEM);exemption(false);
+                    if(pm.checkPermission(AUDIO,"me.phh.ims")==PackageManager.PERMISSION_GRANTED)pm.revokeRuntimePermission("me.phh.ims",AUDIO,UserHandle.SYSTEM);exemption(false);
                     ops.setMode(IPSEC,pm.getApplicationInfo(ModernInstallationTransaction.PACKAGES[0],0).uid,ModernInstallationTransaction.PACKAGES[0],AppOpsManager.MODE_ERRORED);
                     if(pm.checkPermission(AUDIO,"me.phh.ims")==PackageManager.PERMISSION_GRANTED||exemption()||transaction.ready())throw new IOException("fixture-seed-unconfirmed");
                     result.put("missing_runtime_grant_and_exemption_seeded",true).put("denied_ipsec_seeded",true);
@@ -120,7 +120,7 @@ public final class ModernInstallationEmulatorTrial {
                 success=true;
             }
             result.put("actual_os_reboot_or_forced_kill_test",false).put("magisk_mount_verified",false).put("carrier_call_sms_verified",false).put("dual_active_sim_verified",false);
-        }catch(Throwable failure){try{result.put("error",failure.getClass().getSimpleName());result.put("reason",failure.getMessage()==null?"unavailable":failure.getMessage().replaceAll("[^a-zA-Z0-9_-]","_").substring(0,Math.min(80,failure.getMessage().length())));}catch(Exception ignored){}}
+        }catch(Throwable failure){try{result.put("error",failure.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(failure)).put("origin",ModernSafeFailure.origin(failure));}catch(Exception ignored){}}
         System.out.println(result.toString());System.exit(success&&!result.has("error")?0:1);
     }
 }

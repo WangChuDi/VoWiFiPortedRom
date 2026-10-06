@@ -16,7 +16,7 @@ public final class ModernInstallationController {
             result.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("action",args[0]);
             try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,new File("/data/adb/modules/codex_vowifi_stack_modern"),new File("/data/adb/codex_vowifi_stack_modern/installation"),false)){
                 switch(args[0]){
-                case "prepare":transaction.prepare();result.put("installation_permissions_ready",true);break;
+                case "prepare":if("RESTORED".equals(transaction.phase()))transaction.archiveRestored();transaction.prepare();result.put("installation_permissions_ready",true);break;
                 case "restore":transaction.restore();result.put("original_permission_policy_restored",true);break;
                 case "check":if(!transaction.ready())throw new IllegalStateException("installation-permissions-not-ready");result.put("installation_permissions_ready",true);break;
                 }

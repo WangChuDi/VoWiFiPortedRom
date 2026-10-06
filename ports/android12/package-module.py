@@ -40,8 +40,8 @@ for name in ('module.prop','customize.sh','control.sh','service.sh','uninstall.s
 payload['THIRD_PARTY.md']=(B.parent/'android11/THIRD_PARTY.md').read_bytes()
 payload['LICENSE-phhusson-ims']=(B.parent/'android11/vendor/phhusson-ims/LICENSE').read_bytes()
 payload['LICENSE-upstream']=(B.parent.parent/'LICENSE').read_bytes()
-metadata=dict(schema=1,stage='privileged-installation-and-permission-preparation',sdk_min=31,sdk_max=37,
-              carrier_selection_included=False,boot_selection_supervisor_included=False,magisk_mount_verified=False,
+metadata=dict(schema=1,stage='privileged-installation-owner-selection-and-supervision',sdk_min=31,sdk_max=37,
+              carrier_selection_included=True,boot_selection_supervisor_included=True,magisk_mount_verified=False,
               carrier_call_sms_verified=False,dual_active_sim_verified=False)
 payload['module-profile.json']=(json.dumps(metadata,indent=2)+'\n').encode()
 payload['payload.sha256']=''.join(digest(data)+'  '+name+'\n' for name,data in sorted(payload.items())).encode()

@@ -95,7 +95,7 @@ public final class ModernSelectionEmulatorTrial {
                 }
             }
             output.put("carrier_registration_verified",false).put("call_sms_verified",false).put("dual_active_sim_verified",false).put("phone_cache_refresh_verified",false);success=true;
-        }catch(Throwable error){try{output.put("error",error.getClass().getSimpleName());output.put("reason",error.getMessage()==null?"unavailable":error.getMessage().replaceAll("[^a-zA-Z0-9_-]","_").substring(0,Math.min(80,error.getMessage().length())));}catch(Exception ignored){}}
+        }catch(Throwable error){try{output.put("error",error.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(error));}catch(Exception ignored){}}
         System.out.println(output.toString());System.exit(success?0:1);
     }
 }

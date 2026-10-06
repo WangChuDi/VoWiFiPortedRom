@@ -14,8 +14,11 @@ public final class ModernSelectionTransaction implements AutoCloseable {
     private final Context context;private final int slot,sub;private final boolean test;
     private final File module,installation,coordination,carrierState,lockRoot;
     private final ModernControllerLock held;private final ModernStateFiles files;
-    private final String prefix;private boolean closed;
+    private final String prefix;private final boolean ownsLock;private boolean closed;
     public ModernSelectionTransaction(Context context,int slot,int sub,File module,File installation,File coordination,File carrierState,boolean test)throws Exception {
+        this(context,slot,sub,module,installation,coordination,carrierState,test,null);
+    }
+    ModernSelectionTransaction(Context context,int slot,int sub,File module,File installation,File coordination,File carrierState,boolean test,ModernControllerLock borrowed)throws Exception {
         if(android.os.Process.myUid()!=0||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37||slot<0||slot>7||sub<0)throw new SecurityException("modern-root-owner-required");
         this.context=context;this.slot=slot;this.sub=sub;this.test=test;
         this.module=module.getAbsoluteFile();this.installation=installation.getAbsoluteFile();this.coordination=coordination.getAbsoluteFile();this.carrierState=carrierState.getAbsoluteFile();
@@ -30,9 +33,9 @@ public final class ModernSelectionTransaction implements AutoCloseable {
             !this.installation.equals(new File("/data/adb/codex_vowifi_stack_modern/installation"))||!owner.equals(this.carrierState.getName()))throw new SecurityException("fixed-selection-path-required");
         if(!lockRoot.equals(this.carrierState.getParentFile()))throw new SecurityException("fixed-selection-carrier-root-required");
         for(File path:Arrays.asList(this.module,this.installation,this.coordination,this.carrierState))ModernStateFiles.canonical(path);
-        owner();held=new ModernControllerLock(lockRoot,test);ModernStateFiles state;
+        owner();ownsLock=borrowed==null;held=ownsLock?new ModernControllerLock(lockRoot,test):borrowed;held.requireHeld(lockRoot);ModernStateFiles state;
         try {state=new ModernStateFiles(new File(this.coordination,"owners/"+owner));}
-        catch(Exception error){held.close();throw error;}
+        catch(Exception error){if(ownsLock)held.close();throw error;}
         files=state;prefix="codex_wfc_stack_slot_"+slot+"_";
     }
     private void requireLock()throws Exception {if(closed)throw new IOException("closed-selection-transaction");held.requireHeld(lockRoot);owner();}
@@ -54,7 +57,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
             !Arrays.asList("true","false").contains(value.getProperty("persistent"))||!Arrays.asList("true","false").contains(value.getProperty("mode_owned")))throw new IOException("selection-record-refused");
         for(String field:LEASE_FIELDS)if(!Arrays.asList("true","false").contains(value.getProperty("before."+field+".present"))||value.getProperty("before."+field+".value")==null||value.getProperty("before."+field+".value").length()>256)throw new IOException("selection-lease-baseline-refused");
         if(Integer.parseInt(value.getProperty("boot","-1"))<0||Long.parseLong(value.getProperty("trial.until","0"))<=0)throw new IOException("selection-deadline-refused");
-        ModernSelectedPermissions.validate(context,value);return value;
+        ModernSelectedPermissions.validateRecord(value);return value;
     }
     private void phase(Properties value,String phase)throws Exception {value.setProperty("phase",phase);files.write(RECORD,value);}
     private void token(Properties value,String token)throws Exception {if(token==null||!token.equals(value.getProperty("token")))throw new SecurityException("stale-selection-token-refused");}
@@ -181,7 +184,13 @@ public final class ModernSelectionTransaction implements AutoCloseable {
             transaction.restore();if("RESTORED_FILE".equals(transaction.statePhase()))transaction.reloadRestored();
             if(!transaction.confirmRestored())throw new IOException("original-carrier-restore-unconfirmed");
         }
-        ModernSelectedPermissions.restore(context,value);
+        boolean originalInstallation=false;
+        if(restored)try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,module,installation,test,held)) {
+            if("RESTORED".equals(transaction.phase())){transaction.restore();originalInstallation=true;}
+        }
+        // Carrier/file/lease recovery can still complete if a disabled module's
+        // privileged app is absent. Its permission journal remains pending.
+        if(!originalInstallation)ModernSelectedPermissions.restore(context,value);
         if(Boolean.parseBoolean(value.getProperty("mode_owned"))) {
             boolean other=otherIwlanOwner();ModernSharedIwlan shared=mode();shared.release(other);
             if(!other)shared.finishCycle(new File(new ModernStateFiles(new File(coordination,"mode-history")).root,"mode-"+value.getProperty("token")+".properties"));
@@ -190,6 +199,17 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         phase(value,"RESTORED");
     }
     public Properties status()throws Exception {Properties value=record();Properties safe=new Properties();for(String name:Arrays.asList("phase","mask","persistent","mode_owned"))safe.setProperty(name,value.getProperty(name));return safe;}
+    String currentToken()throws Exception {return record().getProperty("token");}
+    void confirmRestoredOwner()throws Exception {
+        Properties value=record();if(!"RESTORED".equals(value.getProperty("phase"))||Boolean.parseBoolean(value.getProperty("mode_owned")))throw new IOException("restored-selection-required");
+        for(String field:LEASE_FIELDS)if(!Objects.equals(get(field),before(value,field)))throw new IOException("original-slot-lease-changed");
+        if(!originalCarrierRestored())throw new IOException("original-carrier-restore-unconfirmed");
+    }
+    public boolean originalCarrierRestored()throws Exception {
+        requireLock();try(ModernProviderTransaction transaction=carrier()) {
+            return Arrays.asList("RESTORED_FILE","RESTORED").contains(transaction.statePhase())&&transaction.confirmRestored();
+        }
+    }
     void finishArchive(String token)throws Exception {Properties value=record();token(value,token);archive(value);}
-    @Override public void close()throws Exception {if(closed)return;held.requireHeld(lockRoot);closed=true;held.close();}
+    @Override public void close()throws Exception {if(closed)return;held.requireHeld(lockRoot);closed=true;if(ownsLock)held.close();}
 }

@@ -20,13 +20,14 @@ public final class ModernInstallationTransaction implements AutoCloseable {
     private final Context context;private final PackageManager pm;private final AppOpsManager ops;
     private final File state,module;private final RandomAccessFile lockFile;private final FileLock lock;
     private final ModernControllerLock carrierLock;private final boolean ownsCarrierLock;
-    private final File carrierRoot;private boolean closed;
+    private final File carrierRoot;private final boolean test;private boolean closed;
     public ModernInstallationTransaction(Context context,File module,File state,boolean test)throws Exception {
         this(context,module,state,test,null);
     }
     public ModernInstallationTransaction(Context context,File module,File state,boolean test,ModernControllerLock held)throws Exception {
         if(android.os.Process.myUid()!=0||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37)throw new SecurityException("modern-root-required");
         this.context=context;this.pm=context.getPackageManager();this.ops=context.getSystemService(AppOpsManager.class);
+        this.test=test;
         this.state=state.getAbsoluteFile();this.module=module.getAbsoluteFile();
         if(test){
             if(!"1".equals(SystemProperties.get("ro.kernel.qemu"))||!("CodexVoWiFiApi"+Build.VERSION.SDK_INT).equals(SystemProperties.get("ro.boot.qemu.avd_name"))||
@@ -34,10 +35,13 @@ public final class ModernInstallationTransaction implements AutoCloseable {
                 !this.module.equals(new File(this.state.getParentFile(),"module")))throw new SecurityException("owned-installation-fixture-required");
         }else if(!this.module.equals(new File("/data/adb/modules/codex_vowifi_stack_modern"))||!this.state.equals(new File("/data/adb/codex_vowifi_stack_modern/installation")))throw new SecurityException("installation-path-refused");
         canonical(this.module);
-        // Reject an invalid new payload before creating any production state.
-        // Recovery can still use the private baseline after the module was removed.
-        if(this.module.isDirectory())installed(payload(),true);
-        else if(!new File(this.state,"baseline.properties").isFile())throw new IOException("installation-module-unavailable");
+        // Recovery reads the original record independently of the current payload.
+        // A partially removed module must not block earlier carrier recovery.
+        // prepare()/ready() still validate every current and installed APK byte.
+        canonical(this.state);
+        if(new File(this.state,"baseline.properties").exists())read();
+        else if(this.module.isDirectory())installed(payload(),true);
+        else throw new IOException("installation-module-unavailable");
         privateDirectory(this.state);
         File path=file("permissions.lock");lockFile=new RandomAccessFile(path,"rw");
         FileLock acquired=null;try{acquired=lockFile.getChannel().tryLock();if(acquired==null)throw new IOException("installation-busy");}catch(Exception failure){lockFile.close();throw failure;}lock=acquired;
@@ -100,6 +104,7 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         if(!Arrays.asList("PREPARING","PREPARED","RESTORING","RESTORED").contains(value.getProperty("phase")))throw new IOException("installation-phase-refused");
         // Validate the complete recovery record before any grant/revoke/AppOp call.
         for(int i=0;i<PACKAGES.length;i++){
+            if(!value.getProperty("apk."+i,"").matches("[0-9a-f]{64}"))throw new IOException("installation-apk-profile-refused");
             if(!value.getProperty("uid."+i,"").matches("[0-9]+"))throw new IOException("installation-uid-record-invalid");
             for(String permission:RUNTIME[i]){
                 if(!Arrays.asList("true","false").contains(value.getProperty("grant."+i+"."+permission)))throw new IOException("installation-grant-record-invalid");
@@ -116,8 +121,19 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(!granted(i,permission))return false;
         return exemption()&&mode(apps)==AppOpsManager.MODE_ALLOWED;
     }
+    void validatePayload()throws Exception {requireLock();installed(payload(),true);}
+    public void archiveRestored()throws Exception {
+        requireLock();ModernPhoneIdle.requireIdle(context);requireNoSelectedCarrier();Properties before=read();
+        if(!"RESTORED".equals(before.getProperty("phase")))throw new IOException("restored-installation-required-before-archive");
+        verifyRestored(before,installed(before,false));
+        File history=new File(state,"history");privateDirectory(history);
+        File destination=new File(history,"installation-"+UUID.randomUUID().toString().replace("-","")+".properties");canonical(destination);
+        if(destination.exists())throw new IOException("installation-archive-conflict");
+        Files.move(file("baseline.properties").toPath(),destination.toPath(),StandardCopyOption.ATOMIC_MOVE);
+    }
     public void prepare()throws Exception {
         requireLock();
+        validatePayload();
         if(new File(module,"disable").exists()||new File(module,"remove").exists())throw new IOException("enabled-installation-module-required");
         ModernPhoneIdle.requireIdle(context);
         Properties before;
@@ -164,11 +180,25 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         // Caller holds the carrier controller's global lock. Permission recovery
         // must follow carrier recovery for every owner, never disrupt another SIM.
         File root=new File("/data/adb/codex_vowifi_stack_modern/transactions");canonical(root);
-        if(!root.exists())return;
-        File[] children=root.listFiles();if(children==null)throw new IOException("carrier-inventory-unavailable");
-        for(File child:children)if(child.getName().startsWith("slot-")){
-            canonical(child);File phase=new File(child,"phase");canonical(phase);
-            if(!child.isDirectory()||!phase.isFile()||phase.length()>64||!"RESTORED".equals(new String(Files.readAllBytes(phase.toPath()),"UTF-8")))throw new IOException("carrier-recovery-must-finish-first");
+        if(root.exists()) {
+            File[] children=root.listFiles();if(children==null)throw new IOException("carrier-inventory-unavailable");
+            for(File child:children)if(child.getName().startsWith("slot-")){
+                canonical(child);File phase=new File(child,"phase");canonical(phase);
+                if(!child.isDirectory()||!phase.isFile()||phase.length()>64||!"RESTORED".equals(new String(Files.readAllBytes(phase.toPath()),"UTF-8")))throw new IOException("carrier-recovery-must-finish-first");
+            }
+        }
+        File owners=new File(test?state.getParentFile().getPath()+"/selection/owners":"/data/adb/codex_vowifi_stack_modern/coordination/owners");canonical(owners);
+        if(!owners.exists())return;File[] rows=owners.listFiles();if(rows==null)throw new IOException("owner-inventory-unavailable");
+        for(File child:rows) {
+            canonical(child);if(!child.isDirectory()||!child.getName().matches("slot-[0-7]-sub-[0-9]+"))throw new IOException("owner-inventory-refused");
+            File record=new File(child,"selection.properties");canonical(record);
+            if(!record.exists()) {
+                File[] contents=child.listFiles();if(contents!=null&&contents.length==0)continue;
+                throw new IOException("owner-recovery-must-finish-first");
+            }
+            Properties value=new ModernStateFiles(child).read("selection.properties");
+            if(!"3".equals(value.getProperty("schema"))||!(Build.VERSION.SDK_INT+":"+Build.FINGERPRINT).equals(value.getProperty("build"))||!child.getName().equals("slot-"+value.getProperty("slot")+"-sub-"+value.getProperty("sub"))||!Arrays.asList("RESTORED","ARCHIVING").contains(value.getProperty("phase"))||!"false".equals(value.getProperty("mode_owned")))throw new IOException("owner-recovery-must-finish-first");
+            ModernSelectedPermissions.validateRecord(value);
         }
     }
     private void verifyRestored(Properties before,ApplicationInfo[] apps)throws Exception {

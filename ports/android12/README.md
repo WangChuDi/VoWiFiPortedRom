@@ -1,9 +1,9 @@
 # Android12+ service adaptation experiment
 
 This directory builds separate unsigned API31 IWLAN, QNS and IMS applications.
-It is **not** a complete modern installation profile and is not included in the
-Android11 module or diagnostic app. Android12–17 replacement engines remain
-disabled. The connected MIUI Android11 phone continues using the published
+The unsigned research bundle is separate from the signed experimental
+[installation and supervision module](module/README.md). Modern diagnostic-app
+replacement buttons remain disabled. The connected MIUI Android11 phone uses
 tool0.8.0/controller0.9.0 APKs;
 no experimental modern APK has been installed on it.
 
@@ -146,7 +146,8 @@ bundle remains unsigned and has no production installer or controller.
 The [modern carrier transaction layer](controller/README.md) now adds selected-SIM
 snapshot, native-stream persistence readback and resumable restoration. Its
 QNS-only persistence/reopened-transaction trial passed concurrently on API33 and
-API36. This layer still needs production installation, supervision and app UI;
+API36. The experimental module now includes installation and supervision; app UI,
+real device lifecycle and shared dual-SIM permission ownership still need work;
 it does not enable the modern replacement buttons or prove carrier call/SMS.
 
 * N1 PDU/3GPP extension negotiation, returned slice handling and actual URSP

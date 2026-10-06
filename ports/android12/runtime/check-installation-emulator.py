@@ -24,6 +24,21 @@ STAGES={
     'restore':('original_seeded_policy_restored',),
     'arm-restore-resume':('simulated_restore_handoff_armed',),
     'recover':('restore_resumed_and_repeated',),
+    'supervisor-publish':('independent_helper_script_and_hook_published','arbitrary_failure_messages_not_exported'),
+    'supervisor-publication-handoff':('uncommitted_generation_leaves_previous_recovery_usable','publication_reopen_preserves_selected_generation'),
+    'supervisor-trial':('fresh_installation_cycle_archives_original','supervised_full_mask_trial_ready'),
+    'supervisor-renew':('inventory_renews_trial_owner',),
+    'supervisor-upgrade-refusal':('pending_owner_prevents_recovery_helper_replacement',),
+    'supervisor-payload-loss':('missing_module_apk_does_not_block_carrier_recovery','installed_app_original_policy_restored_without_payload'),
+    'supervisor-reprepare':('second_installation_cycle_reprepared_after_recovery',),
+    'supervisor-inventory':('missing_owner_record_refused_before_any_mutation','empty_archived_owner_directory_skipped'),
+    'supervisor-expire':('inventory_restores_expired_trial',),
+    'supervisor-persistent':('inventory_renews_retained_owner',),
+    'supervisor-role-failure':('carrier_restores_before_role_identity_refusal','pending_owner_blocks_installation_restore'),
+    'supervisor-disable':('disabled_module_restores_owner_before_permissions',),
+    'supervisor-repeat':('repeat_recovery_keeps_original_installation_policy',),
+    'supervisor-generation':('older_supervisor_stops_before_changing_new_generation',),
+    'supervisor-cleanup':('supervisor_fixture_cleanup_completed',),
     'cleanup':('entire_outer_permission_observation_restored',),
 }
 
@@ -40,7 +55,7 @@ def trial(adb,sdk,serial,module_zip):
             raise ValueError('named-root-emulator-required')
     def stage(name):
         guard()
-        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
+        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSupervisorEmulatorTrial' if name.startswith('supervisor-') else 'ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
         reply=command('shell','CLASSPATH='+remote+' timeout 75s app_process /system/bin '+entry,check=False,timeout=85)
         lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
         if len(lines)!=1:raise ValueError('fixture-json-unavailable')
@@ -76,6 +91,21 @@ def trial(adb,sdk,serial,module_zip):
             record[name]=True
         record['refused_installation_state_presence_unchanged']=(command('shell','test -e '+production,check=False).returncode==0)==before
         if not record['refused_installation_state_presence_unchanged']:raise ValueError('refused-installation-created-state')
+        coordination='/data/adb/codex_vowifi_stack_modern/coordination'
+        before_coordination=command('shell','test -e '+coordination,check=False).returncode==0
+        for name,text,error in [
+            ('nonroot_selection_refused','su 2000 env CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernSelectionController trial 0 1 7','SecurityException'),
+            ('invalid_selection_mask_refused','CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernSelectionController trial 0 1 8','IllegalArgumentException'),
+            ('non_voxi_selection_refused','CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernSelectionController owner-check 0 1','SecurityException')]:
+            reply=command('shell',text,check=False)
+            lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
+            if reply.returncode!=1 or len(lines)!=1 or json.loads(lines[0]).get('error')!=error:raise ValueError('production-selection-guard-unconfirmed')
+            record[name]=True
+        alive_reply=command('shell','CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernSelectionSupervisor alive',check=False)
+        alive_lines=[line for line in alive_reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
+        if alive_reply.returncode or len(alive_lines)!=1 or json.loads(alive_lines[0]).get('supervisor_alive') is not False:raise ValueError('supervisor-alive-probe-unconfirmed')
+        record['supervisor_probe_does_not_create_state']=(command('shell','test -e '+coordination,check=False).returncode==0)==before_coordination
+        if not record['supervisor_probe_does_not_create_state']:raise ValueError('refused-selection-created-state')
         for script in sorted((B.parent/'module').glob('*.sh')):
             subprocess.run([adb,'-s',serial,'shell','sh','-n'],input=script.read_text(encoding='utf-8'),capture_output=True,text=True,timeout=15,check=True)
         record['module_shell_syntax_checked']=True
@@ -83,7 +113,7 @@ def trial(adb,sdk,serial,module_zip):
         if not re.fullmatch(r'[0-9]+',phone):raise ValueError('single-phone-process-required')
         started=True
         for name in STAGES:
-            if name not in ('selection-cleanup','cleanup'):stage(name)
+            if name not in ('supervisor-cleanup','selection-cleanup','cleanup'):stage(name)
     except Exception as error:
         failure=type(error).__name__
         if started:
@@ -94,6 +124,8 @@ def trial(adb,sdk,serial,module_zip):
             except Exception:record['pre_cleanup_policy_audit_unavailable']=True
     finally:
         if started:
+            try:stage('supervisor-cleanup')
+            except Exception as error:record['supervisor_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
             try:stage('selection-cleanup')
             except Exception as error:record['selection_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
             try:stage('cleanup')
