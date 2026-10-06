@@ -70,7 +70,7 @@ public final class ModernCoordinationEmulatorCheck {
                 if(test.isAlive()||!wrongThread[0])throw new IOException("fixture-thread-owner-not-enforced");report.put("cross_thread_lock_use_refused",true);
                 ModernIwlanObservation.Result mode=ModernIwlanObservation.read(ModernSystemObservation.telephonyDebug(),0);
                 if(Boolean.TRUE.equals(mode.legacy)||(mode.legacy==null&&Build.VERSION.SDK_INT<=33))throw new IOException("fixture-already-ap-assisted-required");
-                String before=property();ModernSharedIwlan shared=new ModernSharedIwlan(new File(root,"shared-mode"));
+                String before=property();ModernSharedIwlan shared=new ModernSharedIwlan(context,new File(root,"shared-mode"),held,true);
                 if(shared.acquire(0)||shared.release(true)||shared.release(false))throw new IOException("fixture-no-mode-reset-required");
                 shared.finishCycle(new File(root,"mode-before-archive.properties"));
                 if(!before.equals(property()))throw new IOException("fixture-original-mode-changed");

@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "concurrent_device_workers": 2,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 33,
+      "status": "failed",
+      "stages": {
+        "coordination": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "coordination",
+          "closed_carrier_handle_refused": true,
+          "borrowed_carrier_close_keeps_global_lock": true,
+          "closed_installation_handle_refused": true,
+          "borrowed_installation_close_keeps_global_lock": true,
+          "cross_thread_lock_use_refused": true,
+          "shared_mode_no_reset_cycle_preserves_presence_and_value": true,
+          "other_owner_flag_contract_only": true,
+          "carrier_selection_verified": false,
+          "phone_cache_refresh_verified": false,
+          "dual_active_sim_verified": false,
+          "carrier_call_sms_verified": false
+        },
+        "seed": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resume": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "resume",
+          "new_process_retention_verified": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "selection-trial": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "selection-trial",
+          "error": "SecurityException",
+          "reason": "Unable_to_find_app_for_caller_android_app_IApplicationThread_Stub_Proxy_fd2d3fe_"
+        },
+        "selection-cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "selection-cleanup",
+          "selection_outer_cleanup_completed": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "72acbb90cfd3edc0bf63c80fa35e21456ca769b0a3e1ca048c59db05c48a7cae",
+      "module_sha256": "5797f6c59e9d4b869917a656255a99ffa14829a9286d5a763a499e91b48a44bf",
+      "nonroot_installation_refused": true,
+      "missing_module_installation_refused": true,
+      "refused_installation_state_presence_unchanged": true,
+      "module_shell_syntax_checked": true,
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "error": "ValueError"
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "status": "failed",
+      "stages": {
+        "coordination": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "coordination",
+          "closed_carrier_handle_refused": true,
+          "borrowed_carrier_close_keeps_global_lock": true,
+          "closed_installation_handle_refused": true,
+          "borrowed_installation_close_keeps_global_lock": true,
+          "cross_thread_lock_use_refused": true,
+          "shared_mode_no_reset_cycle_preserves_presence_and_value": true,
+          "other_owner_flag_contract_only": true,
+          "carrier_selection_verified": false,
+          "phone_cache_refresh_verified": false,
+          "dual_active_sim_verified": false,
+          "carrier_call_sms_verified": false
+        },
+        "seed": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resume": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "resume",
+          "new_process_retention_verified": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "selection-trial": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-trial",
+          "error": "SecurityException",
+          "reason": "Unable_to_find_app_for_caller_android_app_IApplicationThread_Stub_Proxy_1941c18_"
+        },
+        "selection-cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-cleanup",
+          "selection_outer_cleanup_completed": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "72acbb90cfd3edc0bf63c80fa35e21456ca769b0a3e1ca048c59db05c48a7cae",
+      "module_sha256": "5797f6c59e9d4b869917a656255a99ffa14829a9286d5a763a499e91b48a44bf",
+      "nonroot_installation_refused": true,
+      "missing_module_installation_refused": true,
+      "refused_installation_state_presence_unchanged": true,
+      "module_shell_syntax_checked": true,
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "error": "ValueError"
+    }
+  ]
+}

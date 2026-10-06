@@ -13,6 +13,12 @@ public final class ModernSystemObservation {
         if(android.os.Process.myUid()!=0)throw new SecurityException("fixed-root-observation-required");
         return run(new String[]{"dumpsys","activity","service","com.android.phone/.TelephonyDebugService"});
     }
+    static int phonePid()throws Exception {
+        if(android.os.Process.myUid()!=0)throw new SecurityException("fixed-root-observation-required");
+        String value=run(new String[]{"pidof","com.android.phone"}).trim();
+        if(!value.matches("[0-9]{1,9}"))throw new IOException("single-phone-process-required");
+        int pid=Integer.parseInt(value);if(pid<=1)throw new IOException("phone-process-invalid");return pid;
+    }
     private static String run(String[] command)throws Exception {
         java.lang.Process child=new ProcessBuilder(command).redirectErrorStream(true).start();
         ByteArrayOutputStream bytes=new ByteArrayOutputStream();

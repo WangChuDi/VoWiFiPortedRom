@@ -162,3 +162,56 @@ python ../runtime/test-persistence-report.py
 See [runtime commands and reports](../runtime/README.md) for guarded emulator
 execution. New sources retain GPL-2.0. The attributed phhusson/ims source and
 license remain under the Android11 port and are not replaced by this carrier layer.
+
+## Owner selection coordinator
+
+`ModernSelectionTransaction` now coordinates the carrier transaction, prepared
+installation, per-slot component lease and shared IWLAN resource under the same
+device-wide lock. This backend is not yet connected to a production command,
+boot watchdog or application selector. Its production owner remains a ready23415
+SIM; disposable non-VOXI fixtures have separate paths and QEMU/AVD guards.
+
+Each private schema3 owner record keeps its original slot lease settings,
+component mask, unexported token, build and subscription ownership, boot count,
+five-minute trial deadline, retention choice and shared-mode ownership. The
+90-second component lease is published with `until=0` first and a journaled
+intent before updating the other keys. Reopening can finish a partial publication;
+foreign settings and stale tokens are refused. Expiry restores a trial, while
+retention permits renewal. A new cycle archives the fully restored original
+carrier snapshot instead of overwriting it.
+
+The shared IWLAN journal separately records property changes and pending phone
+manager refresh. Resuming a refresh uses the previously observed phone PID and
+boot count to avoid a second kill if reconstruction already happened. Original
+property presence and value are retained; another recorded IWLAN owner prevents
+release of the shared mode. The legacy/resetprop/cache-refresh branches and real
+two-SIM ownership remain untested; the default-mode fixture does not exercise them.
+
+Root app_process is not a registered ActivityManager application thread. The
+fixed `ModernRootSettings` wrapper uses the platform settings CLI for only the
+component-lease keys and boot count, preserving absent and literal-null values.
+It does not accept arbitrary settings names or shell command strings.
+
+Telephony provider selection also changes native role permission grants and
+flags. `ModernSelectedPermissions` records only the selected fixed IWLAN/IMS
+role permissions and journals the apply intent before changing providers.
+Restoration refuses flag changes outside the role-owned default/system-fixed
+bits and requires the entire original grant/flag state to remain stable for an
+observed interval. This interval is bounded observation, not an acknowledgement
+that no future OEM callback can occur. On the tested Android13 image, root UID0
+could not clear the role's SYSTEM_FIXED bit; the fixed system-UID broker restores
+only three hard-coded package/permission pairs after UID and privileged APK hash
+checks. Only root-owned code is staged for that child; private baselines are not
+made readable. Real Magisk `su 1000` and SELinux behavior still need device evidence.
+
+The selected IWLAN role also snapshots and restores its effective IPsec and fine
+location AppOps. [AOSP DataServiceManager](https://android.googlesource.com/platform/frameworks/opt/telephony/+/ee88fa09b5e59a3960ba0c096164c2e803b90c2f/src/java/com/android/internal/telephony/data/DataServiceManager.java)
+sets both operations to allowed on activation and errored on deactivation.
+Restoration accepts only the original or those role-produced values; other policy
+changes are refused. These AppOps participate in the stable full-role comparison.
+The earlier prototype owner schemas are not silently rebaselined or migrated.
+
+An incomplete core PREPARING snapshot is preserved rather than reused. Modern
+watchdog/disable/remove/boot recovery and UI integration remain pending. See the
+[owner-selection batch reports](../runtime/reports/20261006-owner-selection/README.md)
+for actual per-version evidence and failed intermediate attempts.

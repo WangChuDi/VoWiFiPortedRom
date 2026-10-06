@@ -62,7 +62,7 @@ public final class ModernInstallationEmulatorTrial {
         JSONObject result=new JSONObject();boolean success=false;
         try{
             if(android.os.Process.myUid()!=0||args.length!=2||!args[1].matches("[0-9a-f]{32}")||Build.VERSION.SDK_INT<31||Build.VERSION.SDK_INT>37||!"1".equals(SystemProperties.get("ro.kernel.qemu"))||!("CodexVoWiFiApi"+Build.VERSION.SDK_INT).equals(SystemProperties.get("ro.boot.qemu.avd_name")))throw new SecurityException("owned-test-emulator-required");
-            if(!Arrays.asList("seed","prepare","resume","external-policy","restore","arm-restore-resume","recover","cleanup").contains(args[0]))throw new IllegalArgumentException("fixture-stage-invalid");
+            if(!Arrays.asList("seed","prepare","resume","external-policy","restore","arm-restore-resume","recover","cleanup","audit","repair-data-role").contains(args[0]))throw new IllegalArgumentException("fixture-stage-invalid");
             Looper.prepareMainLooper();context=ActivityThread.systemMain().getSystemContext();ModernInstallationController.initializeTelephony();pm=context.getPackageManager();ops=context.getSystemService(AppOpsManager.class);
             List<SubscriptionInfo> active=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
             if(active==null||active.size()!=1)throw new SecurityException("single-fake-subscription-required");
@@ -82,6 +82,23 @@ public final class ModernInstallationEmulatorTrial {
                 }else{
                     Properties original=read(outer);owner(original);
                     switch(args[0]){
+                    case "repair-data-role":
+                        Properties oldSelection=read(new File(root,"selection/owners/slot-0-sub-"+selected.getSubscriptionId()+"/selection.properties"));
+                        if(!"RESTORED".equals(oldSelection.getProperty("phase"))||!"7".equals(oldSelection.getProperty("mask"))||!"false".equals(oldSelection.getProperty("mode_owned")))throw new IOException("known-restored-data-role-fixture-required");
+                        int originalRoleFlags=Integer.parseInt(original.getProperty("flags.0.READ_PHONE_STATE")),actualFlags=pm.getPermissionFlags("android.permission.READ_PHONE_STATE",ModernInstallationTransaction.PACKAGES[0],UserHandle.SYSTEM);
+                        int roleMask=PackageManager.FLAG_PERMISSION_SYSTEM_FIXED|PackageManager.FLAG_PERMISSION_GRANTED_BY_DEFAULT;
+                        if(((originalRoleFlags^actualFlags)&~roleMask)!=0)throw new IOException("unknown-fixture-data-role-policy");
+                        ModernRolePermissionBroker.restore(0,Integer.parseInt(original.getProperty("uid.0")),original.getProperty("apk.0"),originalRoleFlags,Boolean.parseBoolean(original.getProperty("grant.0.READ_PHONE_STATE")));
+                        if(!original.equals(observe()))throw new IOException("fixture-role-repair-unconfirmed");
+                        result.put("known_data_role_original_policy_recovered",true);break;
+                    case "audit":
+                        Properties actual=observe();org.json.JSONArray changes=new org.json.JSONArray();
+                        for(int i=0;i<ModernInstallationTransaction.PACKAGES.length;i++)for(String permission:RUNTIME[i])for(String kind:Arrays.asList("grant","flags")){
+                            String key=kind+"."+i+"."+permission;
+                            if(!Objects.equals(original.getProperty(key),actual.getProperty(key)))changes.put(new JSONObject().put("field",key).put("before",original.getProperty(key)).put("after",actual.getProperty(key)));
+                        }
+                        for(String key:Arrays.asList("sms.exemption","ipsec.mode"))if(!Objects.equals(original.getProperty(key),actual.getProperty(key)))changes.put(new JSONObject().put("field",key).put("before",original.getProperty(key)).put("after",actual.getProperty(key)));
+                        result.put("fixed_policy_changes",changes).put("permission_profile_ready",transaction.ready()).put("installation_phase",transaction.phase());break;
                     case "prepare":transaction.prepare();if(!transaction.ready()||!"PREPARED".equals(transaction.phase()))throw new IOException("fixture-preparation-unconfirmed");result.put("installed_permissions_prepared",true);break;
                     case "resume":transaction.prepare();if(!transaction.ready())throw new IOException("fixture-retention-unconfirmed");result.put("new_process_retention_verified",true);break;
                     case "external-policy":

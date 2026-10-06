@@ -318,3 +318,35 @@ workers ran concurrently; creating more agents was refused by the thread limit.
 Android13 exposes `isInLegacy=false`; Android16 lacks that field. Both permission
 profiles are ready, but only QNS phone binding was observed. Modern production
 selection/watchdog/UI and genuine carrier call/SMS/dual-SIM proof remain pending.
+
+## Full component selection lifecycle batch
+
+The installation runner now combines owner mask7 selection with the prior
+installation and shared-lock checks. It runs one serial worker per distinct
+SDK/owned emulator, concurrently across versions. Each stage opens a separate
+root helper process; the helper and retained signed APK payloads are hashed
+before execution. Agent thread exhaustion does not turn those device workers
+into agents; the latest runs use two host workers, not two new scouts.
+
+```sh
+python check-installation-emulator.py --adb /path/to/adb \
+  --guest 33:emulator-5574 --guest 36:emulator-5580 \
+  --module ../out/modern-services-installation-stage.zip \
+  --output /path/to/fresh-owner-selection-report.json
+```
+
+The extended fixture verifies live and disk mask7 selection, lease publication,
+new-process retention and renewal, stale-token and foreign-lease refusal,
+original configuration/lease/mode restoration, a new QNS-only archived cycle,
+expiry recovery, original installation policy and complete outer cleanup.
+Partial lease publication, omitted post-apply role observations and an expired
+trial deadline are simulated journal handoffs, not actual process kills/reboots.
+On failure a safe pre-cleanup fixed-permission audit is recorded where available;
+finally performs selection recovery before installation cleanup.
+
+The same three modern APKs are retained; only the helper is rebuilt. No API30
+phone installation, calls or SMS are part of this batch. Provider selection and
+cleanup do not establish USIM authentication, ePDG tunnelling, IMS/MMTEL carrier
+registration, voice/SMS acceptance, Magisk mounting or real dual-SIM behavior.
+The [batch record](reports/20261006-owner-selection/README.md) distinguishes failed
+attempts from the latest complete evidence. Modern app selectors remain disabled.

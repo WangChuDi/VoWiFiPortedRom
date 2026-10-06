@@ -132,3 +132,28 @@ GPL-2.0 与 phhusson/ims 来源和许可证继续保留。
   手机、三套服务 APK 或 phhusson/ims 的来源和许可证。
 
 详见 [本批证据与限制](runtime/reports/20261006-parallel-mode/README.md)。
+
+## 续批：三组件选择生命周期与 Android13／16 并行验证
+
+- 新增 owner 选择协调器，使用同一全局锁控制安装就绪、运营商掩码、每卡租约和
+  共享 IWLAN 模式。保存原 settings 存在性／值、私有 token、boot、试用截止和
+  保留状态；支持重开续租、部分发布续接、过期恢复以及归档后开始新一轮。
+- 共享模式把属性操作与待重建电话缓存分为可续接阶段，以已记录 PID／boot 判断
+  是否已重建；其他已记录 owner 使用 IWLAN 时保留共享模式。legacy／resetprop
+  及实际电话缓存重建分支仍未实测。
+- 修复 root app_process 无法当成已注册应用线程调用 Settings 的问题，改为只接受
+  固定租约键／boot 的 settings CLI；不接收任意 shell 指令或任意设置键。
+- 记录原角色权限及选择前的操作意图。Android13 的 SYSTEM_FIXED 恢复通过固定
+  system UID 子进程完成，核对固定包、UID、特权 APK 摘要；不公开私有基线。
+- 额外审计定位 Android16 回滚后 IPsec AppOp 被设为 errored；将数据服务角色的
+  IPsec／定位 AppOp 纳入快照与恢复，并连续核对原角色完整状态稳定。仅靠恢复
+  权限 flags 或延长等待没有解决这个问题，失败报告保留。
+- 同一最终 helper 并发在 Android13／16 完成各 18 个阶段，覆盖 mask7 实时与落盘
+  选择、重新保留／续租、旧 token／外部租约拒绝、原配置恢复、新 QNS 周期归档、
+  模拟中断／过期续接及完整外层固定权限恢复；电话 PID 均不变。
+- 新 agent 派发仍因 thread limit 被拒绝；这批是两个设备 worker 并行，未声称是
+  新 agent 并行。实体 API30 手机及三个现代 APK未改，phhusson/ims 来源和许可保留。
+- 现代生产选择命令／守护／应用入口仍待接入，模拟器不能验证真实运营商通话短信、
+  真 Magisk 挂载、真重启／杀进程恢复或双活动 SIM，未开放现代替换按钮。
+
+详见 [18 阶段最终结果及失败记录](runtime/reports/20261006-owner-selection/README.md)。

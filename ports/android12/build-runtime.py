@@ -46,6 +46,12 @@ sources += [B/'controller/ModernControllerLock.java']
 sources += [B/'controller/ModernStateFiles.java', B/'controller/ModernSharedIwlan.java']
 sources += [B/'controller/ModernIwlanObservation.java', B/'runtime/ModernIwlanModeCheck.java']
 sources += [B/'runtime/ModernCoordinationEmulatorCheck.java']
+sources += [B/'controller/ModernPhoneRefresh.java']
+sources += [B/'controller/ModernSelectionTransaction.java']
+sources += [B/'runtime/ModernSelectionEmulatorTrial.java']
+sources += [B/'controller/ModernRootSettings.java']
+sources += [B/'controller/ModernSelectedPermissions.java']
+sources += [B/'controller/ModernRolePermissionBroker.java']
 subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',str(framework),'-d',str(classes),*map(str,sources)],check=True)
 jar=out/'classes.jar'
 with zipfile.ZipFile(jar,'w') as archive:

@@ -11,6 +11,15 @@ STAGES={
     'seed':('missing_runtime_grant_and_exemption_seeded','denied_ipsec_seeded'),
     'prepare':('installed_permissions_prepared',),
     'resume':('new_process_retention_verified',),
+    'selection-trial':('full_mask_live_disk_and_lease_verified',),
+    'selection-reopen':('reopened_retention_and_renewal_verified','stale_token_refused_without_change'),
+    'selection-partial-lease':('partial_lease_publication_resumed',),
+    'selection-foreign-lease':('foreign_lease_renew_and_restore_refused',),
+    'selection-role-handoff':('pre_observation_role_handoff_armed',),
+    'selection-restore':('original_config_lease_and_mode_restored','repeat_restore_verified'),
+    'selection-repeat':('new_qns_only_cycle_preserves_previous_snapshot','previous_cycle_token_refused'),
+    'selection-expire':('expired_trial_restores_entire_owner',),
+    'selection-cleanup':('selection_outer_cleanup_completed',),
     'external-policy':('external_policy_preserved_on_restore_refusal',),
     'restore':('original_seeded_policy_restored',),
     'arm-restore-resume':('simulated_restore_handoff_armed',),
@@ -31,8 +40,8 @@ def trial(adb,sdk,serial,module_zip):
             raise ValueError('named-root-emulator-required')
     def stage(name):
         guard()
-        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ('ModernInstallationEmulatorTrial '+name+' '+nonce)
-        reply=command('shell','CLASSPATH='+remote+' timeout 35s app_process /system/bin '+entry,check=False,timeout=45)
+        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
+        reply=command('shell','CLASSPATH='+remote+' timeout 75s app_process /system/bin '+entry,check=False,timeout=85)
         lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
         if len(lines)!=1:raise ValueError('fixture-json-unavailable')
         observation=json.loads(lines[0]);record['stages'][name]=observation
@@ -73,10 +82,20 @@ def trial(adb,sdk,serial,module_zip):
         phone=shell('pidof com.android.phone')
         if not re.fullmatch(r'[0-9]+',phone):raise ValueError('single-phone-process-required')
         started=True
-        for name in list(STAGES)[:-1]:stage(name)
-    except Exception as error:failure=type(error).__name__
+        for name in STAGES:
+            if name not in ('selection-cleanup','cleanup'):stage(name)
+    except Exception as error:
+        failure=type(error).__name__
+        if started:
+            try:
+                reply=command('shell','CLASSPATH='+remote+' timeout 25s app_process /system/bin ModernInstallationEmulatorTrial audit '+nonce,check=False)
+                lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
+                if len(lines)==1:record['pre_cleanup_policy_audit']=json.loads(lines[0])
+            except Exception:record['pre_cleanup_policy_audit_unavailable']=True
     finally:
         if started:
+            try:stage('selection-cleanup')
+            except Exception as error:record['selection_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
             try:stage('cleanup')
             except Exception as error:record['cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
             try:
