@@ -1,0 +1,22 @@
+{
+  "sdk": 33,
+  "avd": "CodexVoWiFiApi33",
+  "serial": "emulator-5574",
+  "artifacts": {
+    "iwlan": {
+      "package": "dev.codex.vowifi.iwlan",
+      "sha256": "e2564fb392ecb60b5d4e4c4855b9a71ce38709f60fa9696f0f5a3ad4e5b2cd9b",
+      "path": "/system/priv-app/Api31Iwlan/Api31Iwlan.apk"
+    },
+    "qns": {
+      "package": "dev.codex.vowifi.qns",
+      "sha256": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+      "path": "/system/priv-app/Api31Qns/Api31Qns.apk"
+    },
+    "ims": {
+      "package": "me.phh.ims",
+      "sha256": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009",
+      "path": "/system/priv-app/Api31Ims/Api31Ims.apk"
+    }
+  }
+}

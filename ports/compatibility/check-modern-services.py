@@ -62,9 +62,14 @@ def check_binding(role,package,tree):
         actions=[attribute(item,'name') for item in node.findall('intent-filter/action')]
         if actions!=([action] if action else []):raise AssertionError('compiled-service-action-mismatch')
     providers=application.findall('provider')
-    if len(providers)!=1:raise AssertionError('compiled-status-provider-registration-mismatch')
-    provider=providers[0]
-    if full_name(package,attribute(provider,'name'))!='dev.codex.vowifi.common.StackTelemetryProvider' or attribute(provider,'authorities')!=package+'.status' or attribute(provider,'permission')!='android.permission.READ_PRIVILEGED_PHONE_STATE' or attribute(provider,'exported')!='true' or attribute(provider,'directBootAware')!='true':raise AssertionError('compiled-status-provider-guard-mismatch')
+    expected_providers={'dev.codex.vowifi.common.StackTelemetryProvider':package+'.status'}
+    if role=='iwlan':expected_providers['dev.codex.vowifi.runtime.ModernRuntimeProvider']=package+'.runtime'
+    if len(providers)!=len(expected_providers):raise AssertionError('compiled-status-provider-registration-mismatch')
+    names=[]
+    for provider in providers:
+        name=full_name(package,attribute(provider,'name'));names.append(name)
+        if name not in expected_providers or attribute(provider,'authorities')!=expected_providers[name] or attribute(provider,'permission')!='android.permission.READ_PRIVILEGED_PHONE_STATE' or attribute(provider,'exported')!='true' or attribute(provider,'directBootAware')!='true':raise AssertionError('compiled-status-provider-guard-mismatch')
+    if set(names)!=set(expected_providers):raise AssertionError('compiled-status-provider-registration-mismatch')
     if role=='iwlan' and not any(attribute(node,'name')=='android.net.ipsec.ike' and attribute(node,'required')=='true' for node in application.findall('uses-library')):raise AssertionError('compiled-required-IKE-library-missing')
 manifest=json.loads((OUT/'services-manifest.json').read_text(encoding='utf-8'))
 if manifest['kind']!='unsigned-service-research-bundle' or manifest['installer_included'] or manifest['device_validated']:raise AssertionError('unexpected-deployment-claim')
@@ -83,6 +88,7 @@ for role,(package,service) in roles.items():
         if ('L'+service.replace('.','/')+';').encode() not in dex:raise AssertionError('compiled-service-missing')
         if b'Ldev/codex/vowifi/common/StackTelemetryProvider;' not in dex:raise AssertionError('compiled-status-provider-missing')
         if role=='iwlan' and b'Ldev/codex/vowifi/iwlan/TrialIwlanDataService;' in dex:raise AssertionError('legacy-IWLAN-provider-in-modern-APK')
+        if role=='iwlan' and any(symbol not in dex for symbol in (b'Ldev/codex/vowifi/runtime/ModernRuntimeProvider;',b'Ldev/codex/vowifi/runtime/ModernServiceBindings;',b'Ldev/codex/vowifi/tool/RuntimeAbiProbe;')):raise AssertionError('service-loader-runtime-probe-missing')
     records.append({'role':role,'package':package,'min_sdk':31,'target_sdk':31,'compiled_service_present':True,'compiled_bindings_verified':True,'sha256':metadata['sha256']})
 ims=decode((OUT/'ims-kotlin-classes/me/phh/ims/PhhImsService.class').read_bytes())
 for name,descriptor in {

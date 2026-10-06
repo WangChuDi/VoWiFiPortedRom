@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "sdk": 33,
+  "installation_permissions": true,
+  "service_library_lookups": 20,
+  "explicit_iwlan_ims_bindings": true,
+  "shell_and_privileged_nonroot_refused": true,
+  "carrier_binder_read": true,
+  "carrier_call_sms_verified": false,
+  "dual_sim_verified": false
+}

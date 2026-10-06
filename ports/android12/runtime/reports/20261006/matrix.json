@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "scope": "owned Google-APIs x86_64 emulator integration; no real carrier authentication",
+  "parallel_runtime_agent_versions": [
+    33,
+    36
+  ],
+  "versions": {
+    "33": {
+      "integration": {
+        "schema": 1,
+        "status": "passed",
+        "sdk": 33,
+        "installation_permissions": true,
+        "service_library_lookups": 20,
+        "explicit_iwlan_ims_bindings": true,
+        "shell_and_privileged_nonroot_refused": true,
+        "carrier_binder_read": true,
+        "carrier_call_sms_verified": false,
+        "dual_sim_verified": false
+      },
+      "framework": {
+        "schema": 1,
+        "sdk": 33,
+        "persistent": false,
+        "carrier_binder_write_readback": true,
+        "qns_platform_binding": true,
+        "original_qns_restored": true,
+        "original_config_restored": true,
+        "persisted_override_created": false,
+        "exit_code": 0,
+        "status": "passed"
+      },
+      "installed_signed_artifact_sha256": {
+        "iwlan": "e2564fb392ecb60b5d4e4c4855b9a71ce38709f60fa9696f0f5a3ad4e5b2cd9b",
+        "qns": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+        "ims": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009"
+      },
+      "verification_agent": "/root/runtime_api33_parallel"
+    },
+    "36": {
+      "integration": {
+        "schema": 1,
+        "status": "passed",
+        "sdk": 36,
+        "installation_permissions": true,
+        "service_library_lookups": 20,
+        "explicit_iwlan_ims_bindings": true,
+        "shell_and_privileged_nonroot_refused": true,
+        "carrier_binder_read": true,
+        "carrier_call_sms_verified": false,
+        "dual_sim_verified": false
+      },
+      "framework": {
+        "schema": 1,
+        "sdk": 36,
+        "persistent": false,
+        "carrier_binder_write_readback": true,
+        "qns_platform_binding": true,
+        "original_qns_restored": true,
+        "original_config_restored": true,
+        "persisted_override_created": false,
+        "exit_code": 0,
+        "status": "passed"
+      },
+      "installed_signed_artifact_sha256": {
+        "iwlan": "e2564fb392ecb60b5d4e4c4855b9a71ce38709f60fa9696f0f5a3ad4e5b2cd9b",
+        "qns": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+        "ims": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009"
+      },
+      "verification_agent": "/root/runtime_api36_parallel"
+    }
+  },
+  "runtime_helper_sha256": "cef7044777dad9b2243c7ee81fd96a9ffb8a32c31698dd6364f131ff6ab7714b",
+  "other_evidence": {
+    "31": "prior isolated emulator integration and QNS restoration passed; earlier helper revision",
+    "32": "static 271 Android references and 22 superclass contracts passed; runtime not run",
+    "34": "static 271 Android references and 22 superclass contracts passed; runtime not run",
+    "35": "static 271 Android references and 22 superclass contracts passed; runtime not run",
+    "37": "static 271 service and 26 root-helper references passed; no official matching Google-APIs x86_64 image listed"
+  },
+  "post_review_report_failure_freshness_test": true,
+  "physical_phone_changed": false,
+  "carrier_registration_verified": false,
+  "voice_sms_verified": false,
+  "dual_active_sim_verified": false
+}

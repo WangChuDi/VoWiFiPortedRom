@@ -4,7 +4,7 @@ This directory builds separate unsigned API31 IWLAN, QNS and IMS applications.
 It is **not** a complete modern installation profile and is not included in the
 Android11 module or diagnostic app. Android12–17 replacement engines remain
 disabled. The connected MIUI Android11 phone continues using the published
-tool0.7.0/controller0.9.0 APKs;
+tool0.8.0/controller0.9.0 APKs;
 no experimental modern APK has been installed on it.
 
 ## Boundary and implementation
@@ -116,12 +116,14 @@ checker validates the exact archive, compiled manifest service/action/binding
 permissions/exports, status-provider guard, required IKE library and DEX roles; it does
 not prove permission grants, binding or carrier behavior.
 
-The full modern stack has251 Android/internal-framework references and21
-Android-derived classes. The existing linkage/lifecycle checkers passed all
-seven pinned12–17 samples without missing references, findings or unresolved
-Android ancestors. Reports are `../compatibility/out/modern-services-linkage.json`
-and `modern-services-lifecycle.json`, distinct from IWLAN-only reports. Reflective
-calls and Binder/permission/SELinux/network behavior are excluded.
+The original three-service stack had251 Android/internal-framework references
+and21 Android-derived classes. After adding the service-runtime validation
+provider, the current stack has271 references and22 Android-derived classes.
+Independent checks passed the pinned12L–17 samples without missing references,
+findings or unresolved Android ancestors. The earlier251-reference reports under
+`../compatibility/out/modern-services-*` describe the earlier build. Reflective
+calls and Binder/permission/SELinux/network behavior are excluded. Runtime
+results and their version-specific scope are documented in `runtime/README.md`.
 
 CarrierConfig read resolution now recognizes the framework's
 `getConfigForSubIdWithFeature(int,String,String)` name when the two-argument
@@ -133,6 +135,13 @@ does not remove the controller's API30 device/profile gates or establish modern
 Binder permissions. The source change has not replaced the installed API30 helper.
 
 ## Remaining modern work
+
+The IWLAN experiment includes a root-only service-loader runtime probe and a
+separate root integration helper. Build all related pieces in one batch with
+`python build-runtime.py --services`; see [runtime checks](runtime/README.md).
+This checks library lookup in the declared-library process and distinguishes root
+explicit Binder connection from actual telephony provider selection. The research
+bundle remains unsigned and has no production installer or controller.
 
 * N1 PDU/3GPP extension negotiation, returned slice handling and actual URSP
   matching, before accepting their corresponding requests.

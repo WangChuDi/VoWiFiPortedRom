@@ -11,6 +11,8 @@ with FRAMEWORK.open('rb') as f:
 AAPT=Path(os.environ.get('AAPT2',str(TOOLS/'android-build-tools'/('aapt2.exe' if os.name=='nt' else 'aapt2'))))
 OUT=BASE/'out'
 OUT.mkdir(exist_ok=True)
+for path in [OUT]+[OUT/name for name in ('iwlan-classes','iwlan.log','iwlan-dex.log','iwlan-manifest.log','iwlan-classes.jar','iwlan-dex.zip','iwlan-unsigned.apk')]:
+    if path.resolve()!=path.absolute():raise RuntimeError('modern-artifact-alias-refused')
 def run(name,args):
     result=subprocess.run([str(a)for a in args],capture_output=True,timeout=120)
     (OUT/(name+'.log')).write_bytes(result.stdout+result.stderr)
@@ -19,10 +21,12 @@ def run(name,args):
         print((result.stdout+result.stderr).decode('utf-8','replace'));raise SystemExit(result.returncode)
 SHARED=BASE.parent/'android11/stack'
 classes=OUT/'iwlan-classes'
+if OUT.resolve()!=OUT.absolute() or classes.resolve()!=classes.absolute() or not classes.resolve().is_relative_to(OUT.resolve()):raise RuntimeError('modern-output-alias-refused')
 if classes.exists():shutil.rmtree(classes)
 sources=sorted((SHARED/'common').glob('*.java'))+[
     SHARED/'iwlan'/name for name in ('EpdgSession.java','EpdgAddressRequest.java','IkeApiCompat.java','TrialIwlanNetworkService.java')]
 sources+=sorted((BASE/'iwlan').glob('*.java'))
+sources += [BASE/'runtime/ModernRuntimeProvider.java', BASE/'runtime/ModernServiceBindings.java', BASE.parent/'diagnostic-app/RuntimeAbiProbe.java']
 run('iwlan',[JAVA,'-jar',TOOLS/'ecj.jar','-encoding','UTF-8','-source','8','-target','8','-proc:none',
     '-classpath',FRAMEWORK,'-d',classes,*sources])
 jar=OUT/'iwlan-classes.jar'
