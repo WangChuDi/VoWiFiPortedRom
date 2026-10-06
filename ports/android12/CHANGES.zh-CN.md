@@ -39,6 +39,26 @@ GPL-2.0 与 phhusson/ims 来源和许可证继续保留。
 
 详见 [事务说明](controller/README.md) 与 [本批结果](runtime/reports/20261006-persistence/matrix.json)。
 
+## 续批：已有覆盖文件恢复与正式命令后端
+
+- 新增所有已配置 modem 的通话空闲检查，覆盖空卡槽，缺失／重复／未知状态
+  一律拒绝定向重载；13 项解析契约通过。
+- 恢复采用 `updateConfigForPhoneId(slot, "LOADED")` 重新读取选中卡的原持久层，
+  无需 kill 电话进程；仍比较完整原配置，而非只比较四个服务字段。
+- 修复准备基线的完整性条件：AOSP 保存时会把内部包版本字段写入 RAM bundle，
+  从文件读回时会去掉它。事务拒绝尚未从磁盘加载的这种基线；试验先从磁盘
+  加载种入的原文件再快照，未放宽完整比较。
+- Android13／16 并行完成六个独立 app_process 阶段，验证已有原 XML、文件
+  恢复但内存未恢复时拒绝确认、模拟 FILE_RESTORING 中断后的续接、完整恢复、
+  重复恢复、记录掩码核验、错误掩码拒绝及整个试验电话 PID 不变。未执行真杀
+  进程或系统重启；最初失败与最终成功的结果分别保存。
+- 新增 ModernCarrierController 正式 root 命令后端，供之后的协调器／应用接入。
+  模拟器实际验证非 root／非23415 owner／非法掩码被拒绝且事务目录未被创建。
+- 尚未完成现代安装器、模式／租约／开机协调及应用入口，真实现代 VOXI 通话
+  短信与双卡并发仍未验证。当前 API30 手机与三个现代服务 APK 没有改动。
+
+详见 [恢复结果](runtime/reports/20261006-recovery/matrix.json)。
+
 ## 此前：现代三组件独立构建
 
 - 新增 `build-services.py`，实际编译 API31 IWLAN／QNS／IMS 三个 APK；

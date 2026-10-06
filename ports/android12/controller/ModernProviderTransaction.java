@@ -92,11 +92,14 @@ public final class ModernProviderTransaction implements AutoCloseable {
         if(file("phase").exists())throw new IOException("existing-transaction-refused");
         OverrideFileStore.Target target=target();PersistableBundle original=config();
         if(original==null||!original.getBoolean(CarrierConfigManager.KEY_CARRIER_CONFIG_APPLIED_BOOL)||!ModernCarrierBaseline.hasEmptyTransientOverride(slot))throw new IOException("clean-loaded-baseline-required");
+        // Saving mutates the in-memory persistent bundle with serialization metadata;
+        // the loader removes that metadata on read. Snapshot a disk-loaded baseline.
+        if(original.containsKey("__carrier_config_package_version__"))throw new IOException("carrier-layer-not-loaded-from-disk");
         for(String key:KEYS)for(String value:VALUES)if(value.equals(original.getString(key)))throw new IOException("untracked-replacement-refused");
         phase("PREPARING");writeText("profile",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);OverrideFileStore store=CarrierOverrideFiles.store(state);store.snapshot(target);store.verifyRestored(target);writeBefore(original);phase("PREPARED");
     }
     private void override(PersistableBundle value)throws Exception {target();api.getMethod("overrideConfig",int.class,PersistableBundle.class,boolean.class).invoke(loader(),sub,value,true);}
-    private static boolean same(PersistableBundle left,PersistableBundle right){
+    static boolean same(PersistableBundle left,PersistableBundle right){
         if(left==null||right==null||!left.keySet().equals(right.keySet()))return false;
         for(String key:left.keySet())if(left.get(key) instanceof PersistableBundle){if(!(right.get(key) instanceof PersistableBundle)||!same((PersistableBundle)left.get(key),(PersistableBundle)right.get(key)))return false;}
         else if(!Objects.deepEquals(left.get(key),right.get(key)))return false;
@@ -128,6 +131,18 @@ public final class ModernProviderTransaction implements AutoCloseable {
         }
         return true;
     }
+    /** Retention checks must match this transaction's recorded component mask. */
+    public boolean verifySelection(int mask)throws Exception {
+        if(mask<1||mask>7||!"ACTIVE".equals(phase()))throw new IOException("active-selection-required");
+        sameProfile();File record=file("components");
+        if(!record.isFile()||record.length()>8||!Integer.toString(mask).equals(new String(Files.readAllBytes(record.toPath()),"UTF-8")))throw new IOException("selected-components-changed");
+        return selected(mask);
+    }
+    public String statePhase()throws IOException {
+        sameProfile();String value=phase();
+        if(!Arrays.asList("PREPARING","PREPARED","APPLYING","ACTIVE","CLEARING","FILE_RESTORING","RESTORED_FILE","RESTORED").contains(value))throw new IOException("transaction-phase-unverified");
+        return value;
+    }
     public void restore()throws Exception {
         String phase=phase();
         sameProfile();
@@ -152,7 +167,23 @@ public final class ModernProviderTransaction implements AutoCloseable {
         // Revalidate live identity immediately before touching its original XML.
         store.requireIdentity(target());store.restore(target);CarrierOverrideFiles.restoreLabel(target);phase("RESTORED_FILE");
     }
-    /** Existing original XML needs an idle phone reload before this confirmation. */
+    /** Reload this owner's saved carrier layer without killing the shared phone process. */
+    public void reloadRestored()throws Exception {
+        if(!"RESTORED_FILE".equals(phase()))throw new IOException("restored-file-required");
+        sameProfile();
+        OverrideFileStore.Target target=target();CarrierOverrideFiles.store(state).verifyRestored(target);
+        if(confirmRestored())return;
+        ModernPhoneIdle.requireIdle(context);
+        target();
+        api.getMethod("updateConfigForPhoneId",int.class,String.class).invoke(loader(),slot,"LOADED");
+        long deadline=SystemClock.elapsedRealtime()+15000;
+        for(int attempt=0;attempt<20&&SystemClock.elapsedRealtime()<deadline;attempt++){
+            if(confirmRestored())return;
+            Thread.sleep(500);
+        }
+        throw new IOException("restored-loader-reload-unconfirmed");
+    }
+    /** A restored XML alone does not prove the loader consumed the original layer. */
     public boolean confirmRestored()throws Exception {
         if(!Arrays.asList("RESTORED_FILE","RESTORED").contains(phase()))throw new IOException("restored-file-required");
         sameProfile();

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "sdk": 36,
+  "status": "passed",
+  "helper_sha256": "fb94ea3722a2582172abf222e80f46a29cb3b909c2879ee4f61a68e68bbab59b",
+  "nonroot_refused": true,
+  "non_voxi_owner_refused": true,
+  "invalid_mask_refused": true,
+  "transaction_inventory_presence_unchanged": true,
+  "production_voxi_action_verified": false,
+  "production_installer_supervisor_verified": false,
+  "carrier_call_sms_verified": false,
+  "dual_sim_verified": false
+}

@@ -185,3 +185,41 @@ helper was rebuilt; the three signed modern service APKs and API30 phone were
 unchanged. Earlier root-helper static reference counts describe the earlier helper,
 not this expanded carrier-transaction helper. Existing-original-XML/reboot/crash
 recovery and real carrier/voice/SMS/dual-SIM proofs remain outside this test.
+
+## Existing original file and selected-loader reload
+
+The next continuation adds `ModernSeededPersistenceTrial`, a controlled fake-SIM
+fixture that seeds an original file, loads it as a normal disk layer and uses
+separate app_process invocations for all six stages. It verifies the production
+snapshot/selection, refuses file-only restoration as complete, models the
+FILE_RESTORING handoff left after copying the original, resumes, and invokes
+`updateConfigForPhoneId(slot, "LOADED")` through the production idle/owner gate.
+Full seeded and pristine bundle comparisons, repeat recovery, mask ownership and
+phone PID continuity passed on Android13/API33 and Android16/API36 concurrently.
+
+The first run failed full comparison because its freshly saved RAM baseline still
+contained AOSP's serialization version entry. The corrected fixture loads that
+baseline from disk before snapshot; the production transaction refuses the
+unnormalized RAM layer instead of weakening full comparison. The initial failure
+and successful final results are separately preserved in
+[reload/recovery reports](reports/20261006-recovery/matrix.json).
+
+```sh
+python check-seeded-emulator.py --adb /path/to/adb --serial emulator-5574 \
+  --sdk 33 --avd-name CodexVoWiFiApi33 --output-dir /path/to/results/api33
+python check-modern-controller-guard.py --adb /path/to/adb --serial emulator-5580 \
+  --sdk 36 --avd-name CodexVoWiFiApi36 --output-dir /path/to/results/api36
+```
+
+The seeded checker explicitly mutates/restores only the owned fake-SIM guest,
+validates its staged helper hash and attempts outer-baseline cleanup in finally.
+The guard checker is read-only and never pushes the helper. `--stdout-only` makes
+that guard check suitable for a scout without host result writes. Failed cleanup
+is a failed trial, not restoration proof. The production CLI itself remains
+strictly ready23415 and root, without the fixture's non-VOXI mode.
+
+The two-slot phone-idle parser has13 contracts alongside the12 baseline contracts.
+These are controlled parser tests, not two active real SIMs. Production VOXI
+commands, full modern installer/boot supervision/app UI, abrupt kill/OS reboot,
+real IMS/call/SMS and simultaneous dual-SIM behavior remain unverified. This
+continuation made no changes to the connected API30 phone or three modern APKs.

@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "sdk": 33,
+  "status": "passed",
+  "stages": {
+    "prepare": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "prepare",
+      "seeded_save_metadata_visible": true,
+      "seeded_disk_layer_loaded": true,
+      "seeded_original_file_snapshotted": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    "apply": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "apply",
+      "persistent_qns_selected": true,
+      "recorded_mask_verified": true,
+      "other_mask_refused": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    "restore-file": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "restore-file",
+      "original_file_restored": true,
+      "loader_not_yet_restored": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    "arm-file-resume": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "arm-file-resume",
+      "simulated_copy_interruption_armed": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    "recover-and-reload": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "recover-and-reload",
+      "interrupted_copy_resumed": true,
+      "selected_loader_reloaded": true,
+      "entire_seeded_config_restored": true,
+      "repeat_restore_safe": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    },
+    "cleanup": {
+      "schema": 1,
+      "sdk": 33,
+      "stage": "cleanup",
+      "entire_pristine_config_restored": true,
+      "selected_override_absent": true,
+      "carrier_registration_verified": false,
+      "voice_sms_verified": false,
+      "dual_sim_verified": false
+    }
+  },
+  "helper_sha256": "fb94ea3722a2582172abf222e80f46a29cb3b909c2879ee4f61a68e68bbab59b",
+  "phone_process_unchanged": true,
+  "carrier_call_sms_verified": false,
+  "dual_sim_verified": false,
+  "actual_os_reboot_or_forced_kill_test": false,
+  "simulated_copy_phase_test": true
+}

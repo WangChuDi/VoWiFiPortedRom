@@ -11,5 +11,6 @@ classes=B.parent/'out/runtime/classes'
 framework=B.parents[1]/'compatibility/out/frameworks/android-all-12-robolectric-7732740.jar'
 import os
 classpath=os.pathsep.join(map(str,(classes,framework)))
-subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',classpath,'-d',str(out),str(B/'tests/ModernCarrierBaselineTest.java')],check=True)
-subprocess.run([JAVA,'-cp',str(out)+os.pathsep+classpath,'ModernCarrierBaselineTest'],check=True)
+tests=('ModernCarrierBaselineTest','ModernPhoneIdleTest')
+subprocess.run([JAVA,'-jar',str(TOOLS/'ecj.jar'),'-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',classpath,'-d',str(out),*[str(B/'tests'/(name+'.java')) for name in tests]],check=True)
+for name in tests:subprocess.run([JAVA,'-cp',str(out)+os.pathsep+classpath,name],check=True)

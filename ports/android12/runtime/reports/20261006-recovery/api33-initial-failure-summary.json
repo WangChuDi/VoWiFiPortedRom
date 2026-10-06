@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "sdk": 33,
+  "status": "failed",
+  "helper_sha256": "1e94491d3399393481e62f8da96e41e0abd45b5fcfbeed7babc799365924c10d",
+  "stage": "recover-and-reload",
+  "error": "IOException",
+  "pristine_cleanup_verified": true,
+  "phone_process_unchanged": true,
+  "scope": "before_disk_loaded_baseline_normalization"
+}

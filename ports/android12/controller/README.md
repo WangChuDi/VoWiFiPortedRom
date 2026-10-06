@@ -48,6 +48,14 @@ and the exact selected persisted file (including its prior absence). Unknown dum
 formats and nonempty RAM overrides are refused because their prior contents
 cannot be reconstructed losslessly from a text dump.
 
+The AOSP save routine inserts `__carrier_config_package_version__` into its RAM
+bundle, while the read routine removes that serialization entry. Preparation
+refuses a baseline still containing it; otherwise exact restoration after a
+disk reload could appear different. The existing-file fixture loads its seeded
+original from disk before the production snapshot and observes this difference
+on both tested SDKs. Effective carrier values are never silently dropped from
+the saved baseline or its full comparison.
+
 Masks are IWLAN=1, QNS=2, IMS=4. Apply checks the unchanged baseline and original
 file, then writes the selected provider keys with persistent=true. Success
 requires both live readback and the selected native-stream file to match.
@@ -62,9 +70,13 @@ the original file without deleting it. An unused PREPARED transaction can finish
 only if the original baseline is still unchanged. PREPARING remains refused and
 retained for future supervisor-controlled archival; partial backups are not reused.
 
-If the original XML existed, restoring it also requires an idle phone-process
-reload to make the loader consume that original layer again. The future supervisor
-must own that reload and call `confirmRestored()` afterward. Confirmation compares
+If the original XML existed, restoring it also requires the loader to consume
+that original layer again. `reloadRestored()` checks every configured modem's
+observed call state, revalidates the owner and calls the selected phone's
+`updateConfigForPhoneId(slot, "LOADED")`. It polls full confirmation without
+killing the shared phone process. The AOSP Android13/16 source routes this API
+to the selected phone's persistent XML reader; actual emulator tests confirm
+the same phone PID across the entire trial. Confirmation compares
 the entire original bundle and requires an empty temporary layer, rather than
 masking restoration by applying a full bundle as a new temporary override.
 
@@ -87,13 +99,57 @@ input. They caught and fixed a trailing-blank-line split error. The report check
 has21 contracts for incomplete proof, wrong-version proof and stale success after
 refusing a physical-device serial. These checks do not operate on a phone.
 
-This trial does not yet test a pre-existing original XML, restoration across an
-actual OS reboot or externally killed helper, or the FILE_RESTORING crash window
-itself. Ordinary exceptions attempt recovery; a forced timeout/kill is a failed
+The follow-up existing-file fixture also passed on API33/API36 concurrently.
+Each prepare/apply/restore/arm/resume/cleanup stage runs in a separate app_process.
+It uses a synthetic persisted marker as the original layer, proves that file-only
+restoration remains unconfirmed, models FILE_RESTORING after the file was already
+copied, then resumes and reloads through the production method. It compares the
+entire seeded original bundle, tests repeat restore and restores the entire
+pristine pre-test bundle with no selected override. It also verifies the recorded
+mask and rejects a different mask. The interruption is simulated persisted state;
+no actual abrupt kill or OS reboot was performed.
+
+The phone-idle parser has13 host contracts, including both slots idle, another
+slot ringing/offhook, missing/duplicate states, unknown values and incomplete
+phone inventory. It requires an observed state for every active modem, including
+empty slots; unknown observations refuse a reload rather than defaulting to idle.
+
+Actual OS reboot/externally killed helper recovery remains untested.
+Ordinary exceptions attempt recovery; a forced timeout/kill is a failed
 disposable test and cannot guarantee cleanup. Private phase evidence is retained.
 It does not prove real carrier authentication, IMS registration, call/SMS/native
 delivery, simultaneous active SIMs or a production installer/lease/watchdog/UI.
 All those remain separate work; modern buttons in the diagnostic app stay disabled.
+
+## Production command backend
+
+`ModernCarrierController` now exposes this carrier layer to a future supervisor
+and application root worker. It accepts root, SDK31–37, an explicit ready23415
+slot/sub owner and fixed commands; it has no emulator/test-owner override.
+The private state is exactly
+`/data/adb/codex_vowifi_stack_modern/transactions/slot-N-sub-S`.
+
+```sh
+CLASSPATH=/path/to/runtime-check.zip app_process /system/bin \
+  ModernCarrierController ACTION SLOT SUB [MASK]
+```
+
+| Action | Result |
+|---|---|
+| owner-check | Read-only profile/owner check; no transaction directory creation |
+| snapshot | Prepare a clean disk-loaded original bundle and selected file |
+| apply MASK | Require idle phones, select mask1–7 and verify live/disk plus recorded mask |
+| verify MASK | Recheck ACTIVE phase, exact recorded mask, build/owner and live/disk selections |
+| restore | Require idle phones, resume original-file restore, reload if needed, compare full bundle |
+| confirm-restored | Recheck original file, full original bundle and empty temporary layer |
+| status | Fixed phase/transaction presence only; no subscriber identity or carrier dump |
+
+All successful commands still report installer/supervisor/carrier/dual-SIM proof
+false. The completed API33/API36 guard suite checks actual nonroot, non-VOXI and
+invalid-mask refusals with transaction-inventory presence unchanged. It does not
+prove a successful production VOXI command on a real modern phone. This backend
+does not own APK installation, IWLAN operation mode, companion conflicts, leases,
+boot recovery or lifecycle archival; the future coordinator must supply those.
 
 Build and run the parser/report contracts:
 

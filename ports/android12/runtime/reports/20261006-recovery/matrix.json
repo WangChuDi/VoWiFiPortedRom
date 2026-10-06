@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "helper_sha256": "fb94ea3722a2582172abf222e80f46a29cb3b909c2879ee4f61a68e68bbab59b",
+  "versions": [
+    {
+      "android": 13,
+      "sdk": 33,
+      "existing_original_file_restoration": true,
+      "independent_process_stages": 6,
+      "selected_carrier_reload": true,
+      "full_seeded_and_pristine_config_restoration": true,
+      "mask_ownership_verification": true,
+      "phone_process_unchanged": true,
+      "production_cli_rejection_guards": true,
+      "production_voxi_action_verified": false
+    },
+    {
+      "android": 16,
+      "sdk": 36,
+      "existing_original_file_restoration": true,
+      "independent_process_stages": 6,
+      "selected_carrier_reload": true,
+      "full_seeded_and_pristine_config_restoration": true,
+      "mask_ownership_verification": true,
+      "phone_process_unchanged": true,
+      "production_cli_rejection_guards": true,
+      "production_voxi_action_verified": false
+    }
+  ],
+  "version_trials_concurrent": true,
+  "source_sha256": {
+    "ports/android12/controller/ModernCarrierBaseline.java": "e9343043e06fd3fca2d4211df86e3ea36c6058d8bc18891b6a066fae837581bf",
+    "ports/android12/controller/ModernProviderTransaction.java": "0e827fa8a2684533a4b5d48e738f4538f66249b3de2e72a6286067bf7758f0e6",
+    "ports/android12/controller/ModernSystemObservation.java": "93eee49ce10a0ecf0e5133a5966295564907b6d12f7d9eb9a3a3051430119bda",
+    "ports/android12/controller/ModernPhoneIdle.java": "4dac5e1ac0f27f0b7a3f7f8f5a7420a4434a7b02b036e907fe63fb9262ac5060",
+    "ports/android12/controller/ModernCarrierController.java": "cca6d5e4b59580386f7d6e6aec5476f6d54ea4cad3ec446622e7c286b74dc6f5",
+    "ports/android12/runtime/ModernSeededPersistenceTrial.java": "0c260b129adc59acc63a830d3465c3929ea5976643358e8c1366dbc4668272df"
+  },
+  "simulated_copy_phase_resumption": true,
+  "actual_os_reboot_or_forced_kill_verified": false,
+  "baseline_parser_contracts": 12,
+  "phone_idle_contracts": 13,
+  "serialization_metadata_observed_and_disk_baseline_required": true,
+  "source_review": "review_modern_cli_final",
+  "modern_service_apks_rebuilt": false,
+  "api30_phone_modified": false,
+  "production_installer_supervisor_ui_complete": false,
+  "carrier_call_sms_verified": false,
+  "dual_sim_verified": false
+}
