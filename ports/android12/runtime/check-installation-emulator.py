@@ -20,6 +20,13 @@ STAGES={
     'selection-repeat':('new_qns_only_cycle_preserves_previous_snapshot','previous_cycle_token_refused'),
     'selection-expire':('expired_trial_restores_entire_owner',),
     'selection-cleanup':('selection_outer_cleanup_completed',),
+    'roles-prepare':('previous_installation_original_restored_and_archived','new_shared_role_installation_cycle_prepared'),
+    'roles-trial':('shared_role_originals_created_before_selection',),
+    'roles-share':('pending_peer_reuses_first_original_role_baselines',),
+    'roles-release-first':('first_owner_restores_carrier_while_shared_role_baseline_retained','pending_peer_blocks_installation_policy_restore'),
+    'roles-foreign-policy':('foreign_appop_preserved_and_shared_recovery_left_pending',),
+    'roles-release-last':('last_pending_peer_restores_shared_originals','synthetic_peer_removed_only_after_original_restoration','interrupted_shared_resource_release_resumed'),
+    'roles-cleanup':('roles_fixture_cleanup_completed',),
     'external-policy':('external_policy_preserved_on_restore_refusal',),
     'restore':('original_seeded_policy_restored',),
     'arm-restore-resume':('simulated_restore_handoff_armed',),
@@ -55,7 +62,7 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
             raise ValueError('named-root-emulator-required')
     def stage(name):
         guard()
-        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSupervisorEmulatorTrial' if name.startswith('supervisor-') else 'ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
+        entry=('ModernCoordinationEmulatorCheck '+nonce) if name=='coordination' else ((('ModernSharedRolesEmulatorTrial' if name.startswith('roles-') else 'ModernSupervisorEmulatorTrial' if name.startswith('supervisor-') else 'ModernSelectionEmulatorTrial' if name.startswith('selection-') else 'ModernInstallationEmulatorTrial')+' '+name+' '+nonce))
         reply=command('shell','CLASSPATH='+remote+' timeout 75s app_process /system/bin '+entry,check=False,timeout=85)
         lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
         if len(lines)!=1:raise ValueError('fixture-json-unavailable')
@@ -183,7 +190,7 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
         prerequisites=('coordination','seed','supervisor-publish','prepare','restore') if resident_only else STAGES
         record['resident_prerequisites_only']=resident_only
         for name in prerequisites:
-            if name not in ('supervisor-cleanup','selection-cleanup','cleanup'):stage(name)
+            if name not in ('roles-cleanup','supervisor-cleanup','selection-cleanup','cleanup'):stage(name)
         if resident:resident_cycle()
     except Exception as error:
         failure=type(error).__name__
@@ -221,12 +228,14 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
                 record['resident_processes_terminal_before_policy_cleanup']=resident_stopped
                 if not resident_stopped:failure=failure or 'ResidentCleanupNotTerminal'
             if resident_stopped:
-                try:stage('supervisor-cleanup')
-                except Exception as error:record['supervisor_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
-                try:stage('selection-cleanup')
-                except Exception as error:record['selection_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
-                try:stage('cleanup')
-                except Exception as error:record['cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+                # Never let the outer fixture overwrite unresolved carrier/role
+                # recovery. Each cleanup boundary must succeed before the next.
+                for name in ('roles-cleanup','supervisor-cleanup','selection-cleanup','cleanup'):
+                    try:stage(name)
+                    except Exception as error:
+                        record[name.replace('-','_')+'_error']=type(error).__name__;failure=failure or type(error).__name__
+                        record['remaining_policy_cleanup_deferred_after']=name
+                        break
             else:record['policy_cleanup_deferred_until_residents_stop']=True
             try:
                 record['phone_process_unchanged']=shell('pidof com.android.phone')==phone

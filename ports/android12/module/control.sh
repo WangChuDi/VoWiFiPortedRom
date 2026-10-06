@@ -17,12 +17,22 @@ recovery_check() {
 installation() { CLASSPATH="$MODDIR/controller.zip" timeout 45s app_process /system/bin ModernInstallationController "$1"; }
 selection() { CLASSPATH="$RECOVERY/controller.zip" timeout 75s app_process /system/bin ModernSelectionController "$@"; }
 alive() { CLASSPATH="$RECOVERY/controller.zip" timeout 25s app_process /system/bin ModernSelectionSupervisor alive | grep -q '"supervisor_alive":true'; }
+uptime_seconds() {
+  read elapsed unused < /proc/uptime || return 1
+  elapsed=${elapsed%%.*}
+  case "$elapsed" in ''|*[!0-9]*) return 1 ;; esac
+  printf '%s\n' "$elapsed"
+}
 ensure_supervisor() {
   recovery_check || return 1
+  began=$(uptime_seconds) || return 1
+  deadline=$((began + 60))
   if alive; then return 0; fi
   sh "$MODDIR/control.sh" supervise >"$ROOT/selection-supervisor.json" 2>&1 </dev/null &
   attempt=0
   while [ "$attempt" -lt 60 ]; do
+    now=$(uptime_seconds) || return 1
+    [ "$now" -lt "$deadline" ] || return 1
     sleep 1
     if alive; then return 0; fi
     attempt=$((attempt + 1))

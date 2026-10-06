@@ -46,7 +46,7 @@ public final class ModernInstallationTransaction implements AutoCloseable {
         File path=file("permissions.lock");lockFile=new RandomAccessFile(path,"rw");
         FileLock acquired=null;try{acquired=lockFile.getChannel().tryLock();if(acquired==null)throw new IOException("installation-busy");}catch(Exception failure){lockFile.close();throw failure;}lock=acquired;
         ModernControllerLock shared=null;ownsCarrierLock=held==null;
-        carrierRoot=new File(test?(held==null?this.state.getParentFile().getPath()+"/carrier-coordination":"/data/local/tmp/codex-modern-persistence-tests"):"/data/adb/codex_vowifi_stack_modern/transactions");
+        carrierRoot=new File(test?"/data/local/tmp/codex-modern-persistence-tests":"/data/adb/codex_vowifi_stack_modern/transactions");
         try{
             shared=ownsCarrierLock?new ModernControllerLock(carrierRoot,test):held;shared.requireHeld(carrierRoot);
         }catch(Exception failure){if(ownsCarrierLock&&shared!=null)shared.close();lock.release();lockFile.close();throw failure;}
@@ -179,16 +179,19 @@ public final class ModernInstallationTransaction implements AutoCloseable {
     private void requireNoSelectedCarrier()throws Exception {
         // Caller holds the carrier controller's global lock. Permission recovery
         // must follow carrier recovery for every owner, never disrupt another SIM.
-        File root=new File("/data/adb/codex_vowifi_stack_modern/transactions");canonical(root);
+        File root=carrierRoot;canonical(root);String suffix="";
+        if(test) {
+            byte[] bytes=MessageDigest.getInstance("SHA-256").digest((state.getParentFile().getName()+":selection").getBytes("UTF-8"));StringBuilder hash=new StringBuilder();for(byte value:bytes)hash.append(String.format(Locale.ROOT,"%02x",value&255));suffix="-"+hash.substring(0,32);
+        }
         if(root.exists()) {
             File[] children=root.listFiles();if(children==null)throw new IOException("carrier-inventory-unavailable");
-            for(File child:children)if(child.getName().startsWith("slot-")){
+            for(File child:children)if(child.getName().startsWith("slot-")&&(!test||child.getName().endsWith(suffix))){
                 canonical(child);File phase=new File(child,"phase");canonical(phase);
                 if(!child.isDirectory()||!phase.isFile()||phase.length()>64||!"RESTORED".equals(new String(Files.readAllBytes(phase.toPath()),"UTF-8")))throw new IOException("carrier-recovery-must-finish-first");
             }
         }
         File owners=new File(test?state.getParentFile().getPath()+"/selection/owners":"/data/adb/codex_vowifi_stack_modern/coordination/owners");canonical(owners);
-        if(!owners.exists())return;File[] rows=owners.listFiles();if(rows==null)throw new IOException("owner-inventory-unavailable");
+        File[] rows=owners.exists()?owners.listFiles():new File[0];if(rows==null)throw new IOException("owner-inventory-unavailable");
         for(File child:rows) {
             canonical(child);if(!child.isDirectory()||!child.getName().matches("slot-[0-7]-sub-[0-9]+"))throw new IOException("owner-inventory-refused");
             File record=new File(child,"selection.properties");canonical(record);
@@ -200,6 +203,8 @@ public final class ModernInstallationTransaction implements AutoCloseable {
             if(!"3".equals(value.getProperty("schema"))||!(Build.VERSION.SDK_INT+":"+Build.FINGERPRINT).equals(value.getProperty("build"))||!child.getName().equals("slot-"+value.getProperty("slot")+"-sub-"+value.getProperty("sub"))||!Arrays.asList("RESTORED","ARCHIVING").contains(value.getProperty("phase"))||!"false".equals(value.getProperty("mode_owned")))throw new IOException("owner-recovery-must-finish-first");
             ModernSelectedPermissions.validateRecord(value);
         }
+        File coordination=owners.getParentFile();
+        if(new File(coordination,"resources/roles-1.properties").exists()||new File(coordination,"resources/roles-4.properties").exists())new ModernSharedSelectedRoles(context,coordination,carrierLock,test).recoverUnused();
     }
     private void verifyRestored(Properties before,ApplicationInfo[] apps)throws Exception {
         for(int i=0;i<PACKAGES.length;i++)for(String permission:RUNTIME[i])if(granted(i,permission)!=Boolean.parseBoolean(before.getProperty("grant."+i+"."+permission))||flags(i,permission)!=Integer.parseInt(before.getProperty("flags."+i+"."+permission)))throw new IOException("installation-permission-restore-unconfirmed");

@@ -5,7 +5,7 @@ It mounts the three independently signed SDK31 APKs and their privileged permiss
 XML, verifies the installed APK bytes, then prepares their fixed runtime permissions,
 IMS SEND_SMS system restriction exemption and IWLAN IPsec AppOp. It also includes
 fixed owner selection commands and a resident selection/lease/recovery supervisor.
-The application's modern replacement buttons remain disabled. Real Magisk mounting,
+Diagnostic tool0.9.0 includes experimental modern replacement buttons. Real Magisk mounting,
 modern VOXI authentication, voice/SMS and dual active SIM behavior are unverified.
 Do not install this SDK31–37 payload over the working SDK30 phone/module.
 
@@ -53,7 +53,9 @@ and `restore-all|tick|supervise`. Mask bits are IWLAN=1, QNS=2, IMS=4. `select` 
 checks the ready23415 owner without creating owner state, publishes independent
 recovery, prepares installation permissions and confirms a supervisor before
 starting the five-minute trial. Tokens are private root-worker data, not exported
-diagnostic information. Modern application selectors remain disabled.
+diagnostic information. The application root worker consumes CLI tokens privately
+and returns only fixed action-result fields; modern reload checks/renews the
+selection without killing the shared phone process.
 
 The supervisor validates the complete owner/carrier inventory under the shared
 global lock. It renews active owners, restores expired/interrupted owners, and
@@ -61,8 +63,9 @@ restores installation policy only after every owner has completed recovery. A
 module disable/remove, invalid payload or interrupted installation journal enters
 recovery. A restored owner is checked without regranting old prepared permissions.
 An empty archived owner directory can be skipped only when its carrier directory
-is also absent; untracked state prevents changes. Multi-SIM permission ownership
-still needs integration; this is not proof that two active SIMs are safe.
+is also absent; untracked state prevents changes. Shared role-policy resources now
+retain the first baseline across overlapping owners and restore it at final release.
+Synthetic pending-peer tests passed; this is not proof of actual two-active-SIM safety.
 
 Preparation/recovery require all configured phones idle. They serialize on the
 installation lock and production carrier controller's global lock. Recovery
@@ -93,6 +96,15 @@ rather than granting to another UID. Recovery hooks and real disable/remove/rebo
 behavior have not yet run on a modern Magisk device. Calling the bare Java CLI
 directly does not publish the shell recovery hook; normal installation uses
 `control.sh`/`service.sh`.
+
+Supervisor startup now uses an overall monotonic uptime deadline of 60 seconds,
+including its initial readiness observation. A final already-started 25-second
+probe can finish beyond that deadline; it cannot launch another probe afterward.
+This avoids treating sixty potentially 25-second probes as a sixty-second wait.
+The shell contract tests exercise the actual readiness body with slow failing
+probes, an already-ready resident and unavailable time observation. They suppress
+only daemon-launch redirection and mock the daemon/probe/clock boundaries; they
+do not prove production boot timing on a modern Magisk device.
 
 ## Actual scoped tests
 

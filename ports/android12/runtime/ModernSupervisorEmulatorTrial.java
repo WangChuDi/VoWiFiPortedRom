@@ -57,8 +57,15 @@ public final class ModernSupervisorEmulatorTrial {
                 if(!new ModernRecoveryPublication(context,module,installation,true).publish().getBoolean("helper_generation_unchanged"))throw new IOException("fixture-publication-resume-unconfirmed");
                 output.put("uncommitted_generation_leaves_previous_recovery_usable",true).put("publication_reopen_preserves_selected_generation",true).put("simulated_publication_handoff",true);break;
             case "supervisor-trial":
+                File historyDirectory=new File(installation,"history");ModernStateFiles.canonical(historyDirectory);
+                Map<String,String> previousHistory=new HashMap<>();File[] earlier=historyDirectory.exists()?historyDirectory.listFiles():new File[0];
+                if(earlier==null)throw new IOException("fixture-installation-history-unconfirmed");
+                for(File entry:earlier){ModernStateFiles.canonical(entry);if(!entry.isFile()||!entry.getName().matches("installation-[0-9a-f]{32}\\.properties"))throw new IOException("fixture-installation-history-unconfirmed");previousHistory.put(entry.getName(),ModernInstallationTransaction.digest(entry));}
+                String restoredBaseline=ModernInstallationTransaction.digest(new File(installation,"baseline.properties"));
                 try(ModernInstallationTransaction transaction=new ModernInstallationTransaction(context,module,installation,true)){transaction.archiveRestored();transaction.prepare();if(!transaction.ready())throw new IOException("fixture-new-installation-cycle-unconfirmed");}
-                File[] history=new File(installation,"history").listFiles();if(history==null||history.length!=1)throw new IOException("fixture-installation-history-unconfirmed");
+                File[] history=historyDirectory.listFiles();if(history==null||history.length!=previousHistory.size()+1)throw new IOException("fixture-installation-history-unconfirmed");
+                int added=0;for(File entry:history){ModernStateFiles.canonical(entry);String digest=ModernInstallationTransaction.digest(entry),priorArchive=previousHistory.get(entry.getName());if(priorArchive!=null){if(!priorArchive.equals(digest))throw new IOException("fixture-installation-history-unconfirmed");}else{if(!restoredBaseline.equals(digest))throw new IOException("fixture-installation-history-unconfirmed");added++;}}
+                if(added!=1)throw new IOException("fixture-installation-history-unconfirmed");
                 try(ModernSelectionTransaction transaction=selection()){String token=transaction.trial(7);if(!transaction.verify(token))throw new IOException("fixture-supervised-trial-unconfirmed");}
                 output.put("fresh_installation_cycle_archives_original",true).put("supervised_full_mask_trial_ready",true);break;
             case "supervisor-renew":

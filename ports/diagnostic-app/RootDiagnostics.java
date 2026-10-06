@@ -30,16 +30,17 @@ public final class RootDiagnostics {
             Looper.prepareMainLooper();
             Context context=ActivityThread.systemMain().getSystemContext();
             // MIUI app_process does not run the telephony Zygote bootstrap.
-            try{
-                Class<?> initializer=Class.forName("android.telephony.TelephonyFrameworkInitializer");
-                Class<?> services=Class.forName("android.os.TelephonyServiceManager");
-                if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
-                    initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
-            }catch(Throwable t){result.put("bootstrap_error",errorName(t));}
+            try{initializeTelephony();}catch(Throwable t){result.put("bootstrap_error",errorName(t));}
             collect(result,context,slot);
         }catch(Throwable t){try{result.put("error",t.getClass().getSimpleName());for(StackTraceElement frame:t.getStackTrace())if(frame.getClassName().equals(RootDiagnostics.class.getName())){result.put("error_line",frame.getLineNumber());break;}}catch(Exception ignored){}}
         System.out.println(result.toString());
         System.exit(0);
+    }
+    static void initializeTelephony()throws Exception {
+        Class<?> initializer=Class.forName("android.telephony.TelephonyFrameworkInitializer");
+        Class<?> services=Class.forName("android.os.TelephonyServiceManager");
+        if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
+            initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
     }
     private static void collect(JSONObject out,Context context,int slot)throws Exception{
         out.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
@@ -53,7 +54,7 @@ public final class RootDiagnostics {
             if(active!=null)for(SubscriptionInfo candidate:active)if(candidate.getSimSlotIndex()==slot){info=candidate;break;}
         }catch(Throwable t){out.put("subscription_error",errorName(t));}
         int sub=info==null?-1:info.getSubscriptionId();
-        try{provider=controller(out,slot,sub);}catch(Throwable t){out.put("controller_error",errorName(t));}
+        try{provider=controller(out,context,slot,sub);}catch(Throwable t){out.put("controller_error",errorName(t));}
         String operator="";int simState=TelephonyManager.SIM_STATE_UNKNOWN;
         out.put("sim",info==null?(out.has("subscription_error")?"订阅信息不可见":"无活动 SIM"):"活动订阅存在，SIM 状态未知");
         if(info!=null){
@@ -68,8 +69,11 @@ public final class RootDiagnostics {
                 out.put("operator",operator);
             }catch(Throwable t){out.put("telephony_error",errorName(t));}
         }
-        // The bundled engine is deliberately limited to the actually tested profile.
-        out.put("engine_supported",simState==TelephonyManager.SIM_STATE_READY&&Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE)&&"23415".equals(operator)&&slot>=0&&slot<8&&sub>=0);
+        boolean modern=Build.VERSION.SDK_INT>=31&&Build.VERSION.SDK_INT<=37;
+        // This means an available, guarded engine profile, not completed carrier
+        // or device validation. Experimental modern controls are labelled as such.
+        out.put("engine",modern?"modern":"api30").put("engine_experimental",modern);
+        out.put("engine_supported",simState==TelephonyManager.SIM_STATE_READY&&((Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE))||modern)&&"23415".equals(operator)&&slot>=0&&slot<8&&sub>=0);
         Network wifi=null;int imsCount=0,pcscfCount=0,unattributed=0;String iface=null;
         try{
           ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
@@ -281,7 +285,11 @@ public final class RootDiagnostics {
     private static String observation(JSONObject out,String key,int seconds,String...args)throws Exception{
         try{return command(seconds,args);}catch(Throwable t){out.put(key,errorName(t));return "";}
     }
-    private static JSONObject controller(JSONObject out,int slot,int sub)throws Exception{
+    private static JSONObject controller(JSONObject out,Context context,int slot,int sub)throws Exception{
+        if(Build.VERSION.SDK_INT>=31&&Build.VERSION.SDK_INT<=37) {
+            JSONObject provider=ModernControllerObservation.inspect(context,slot,sub);
+            out.put("controller",provider!=null);if(provider!=null)out.put("providers",provider).put("providers_slot",slot);return provider;
+        }
         if(!new File(CONTROLLER).isFile()){out.put("controller",false);return null;}
         String status=command(8,"sh",CONTROLLER,"status",Integer.toString(slot),Integer.toString(sub));
         JSONObject provider=new JSONObject();

@@ -98,7 +98,9 @@ public final class ModernInstallationEmulatorTrial {
                             if(!Objects.equals(original.getProperty(key),actual.getProperty(key)))changes.put(new JSONObject().put("field",key).put("before",original.getProperty(key)).put("after",actual.getProperty(key)));
                         }
                         for(String key:Arrays.asList("sms.exemption","ipsec.mode"))if(!Objects.equals(original.getProperty(key),actual.getProperty(key)))changes.put(new JSONObject().put("field",key).put("before",original.getProperty(key)).put("after",actual.getProperty(key)));
-                        result.put("fixed_policy_changes",changes).put("permission_profile_ready",transaction.ready()).put("installation_phase",transaction.phase());break;
+                        org.json.JSONArray missing=new org.json.JSONArray();
+                        for(int i=0;i<ModernInstallationTransaction.PACKAGES.length;i++)for(String permission:RUNTIME[i])if(pm.checkPermission("android.permission."+permission,ModernInstallationTransaction.PACKAGES[i])!=PackageManager.PERMISSION_GRANTED)missing.put("runtime."+i+"."+permission);
+                        result.put("fixed_policy_changes",changes).put("missing_runtime_permissions",missing).put("sms_exemption_ready",exemption()).put("ipsec_allowed",ops.unsafeCheckOpNoThrow(IPSEC,pm.getApplicationInfo(ModernInstallationTransaction.PACKAGES[0],0).uid,ModernInstallationTransaction.PACKAGES[0])==AppOpsManager.MODE_ALLOWED).put("permission_profile_ready",transaction.ready()).put("installation_phase",transaction.phase());break;
                     case "prepare":transaction.prepare();if(!transaction.ready()||!"PREPARED".equals(transaction.phase()))throw new IOException("fixture-preparation-unconfirmed");result.put("installed_permissions_prepared",true);break;
                     case "resume":transaction.prepare();if(!transaction.ready())throw new IOException("fixture-retention-unconfirmed");result.put("new_process_retention_verified",true);break;
                     case "external-policy":

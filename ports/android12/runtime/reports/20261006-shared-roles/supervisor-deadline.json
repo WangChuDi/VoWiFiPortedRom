@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "versions": [
+    {
+      "sdk": 33,
+      "slow_failed_probes_stop_at_overall_deadline": true,
+      "already_running_returns_without_loop": true,
+      "unavailable_monotonic_clock_refused_before_probe": true,
+      "actual_daemon_started": false
+    },
+    {
+      "sdk": 36,
+      "slow_failed_probes_stop_at_overall_deadline": true,
+      "already_running_returns_without_loop": true,
+      "unavailable_monotonic_clock_refused_before_probe": true,
+      "actual_daemon_started": false
+    }
+  ]
+}

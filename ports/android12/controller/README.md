@@ -1,8 +1,8 @@
 # Modern selected-subscription carrier transaction
 
 This is the carrier-configuration layer used by the experimental modern owner
-controller and installation/supervision module. Diagnostic-app modern replacement
-buttons remain disabled pending their integration and device/dual-SIM evidence.
+controller and installation/supervision module. Diagnostic tool0.9.0 now integrates
+experimental modern controls; positive modern-device/dual-SIM evidence is pending.
 The Android11 controller/profile and its working installed APKs remain separate.
 The modern research APK bundle still does not contain an installer/controller.
 
@@ -122,8 +122,9 @@ Ordinary exceptions attempt recovery; a forced timeout/kill is a failed
 disposable test and cannot guarantee cleanup. Private phase evidence is retained.
 It does not prove real carrier authentication, IMS registration, call/SMS/native
 delivery, simultaneous active SIMs or real Magisk lifecycle behavior. The modern
-installer/lease/watchdog backend is implemented below; application integration
-remains separate and modern buttons in the diagnostic app stay disabled.
+installer/lease/watchdog backend is implemented below. Application integration
+now exists in tool0.9.0; its modern root checks and refusal evidence are separate
+from positive modern-device installation and carrier validation.
 
 ## Production command backend
 
@@ -217,8 +218,8 @@ changes are refused. These AppOps participate in the stable full-role comparison
 The earlier prototype owner schemas are not silently rebaselined or migrated.
 
 An incomplete core PREPARING snapshot is preserved rather than reused. Modern
-UI integration, shared multi-SIM role-permission ownership and real Magisk lifecycle
-remain pending. Watchdog/disable/remove/boot recovery is now implemented by
+UI integration and shared role-policy ownership now exist; real multi-SIM operation
+and real Magisk lifecycle remain pending. Watchdog/disable/remove/boot recovery is implemented by
 `ModernSelectionSupervisor` and independently published recovery generations. See the
 [owner-selection batch reports](../runtime/reports/20261006-owner-selection/README.md)
 for actual per-version evidence and failed intermediate attempts.
@@ -252,3 +253,40 @@ This proves a supervised process lifecycle on two single-fake-SIM emulators.
 It does not prove phone-process kill/cache reconstruction, core PREPARING recovery,
 OS reboot, real Magisk boot hooks, modem/USIM authentication, carrier call/SMS,
 simultaneous dual SIMs or complete SDK31–37 runtime coverage.
+
+## Shared original role policy across owners
+
+`ModernSharedSelectedRoles` stores one original permission/AppOp baseline per
+component group (IWLAN1, IMS4), independent of slot. New overlapping owners copy
+that original baseline and reference its private resource identity rather than
+resampling policy already changed for another owner. The same carrier lock protects
+the complete owner inventory, resource journals, native apply intent and release.
+QNS2 has no additional tracked role-policy resource.
+
+An actual selected ACTIVE peer must pass current live/disk provider verification
+before its recorded native role policy can be maintained. A pending peer retains
+the first baseline without claiming a second selected SIM. The first owner can
+restore its own carrier/lease while other holders remain; only the final holder
+restores the resource's original policy. Resource RESTORING and per-owner released
+markers permit recovery to continue without resampling. Fully restored resources
+are atomically archived before a new cycle. Orphaned mutation intent, changed
+references, duplicate tokens, foreign flags and untracked inventory are refused.
+
+Exact Android13/16 `DataServiceManager` sources revoke unused service permissions
+using only the current `mPhone` transport selection, without a cross-phone scan
+in those methods:
+
+| Release | Primary source | Decoded SHA256 |
+|---|---|---|
+| Android13 | [DataServiceManager](https://android.googlesource.com/platform/frameworks/opt/telephony/+/refs/tags/android-13.0.0_r1/src/java/com/android/internal/telephony/data/DataServiceManager.java) | `96eea9b70b46910016300148083b042e548329e2a5254adf7d610bd9284b4a08` |
+| Android16 | [DataServiceManager](https://android.googlesource.com/platform/frameworks/opt/telephony/+/refs/tags/android-16.0.0_r1/src/java/com/android/internal/telephony/data/DataServiceManager.java) | `d9dd7ad8726139c8ea3beb81be9b74d8921a2a25c2d723fc32718fcf223ab22e` |
+
+Both set IPsec/fine-location AppOps allowed on activation and errored on unused
+service revocation. The coordinator accepts only baseline or those native modes;
+an external actor choosing the exact same allowed/errored value cannot be
+distinguished by value alone. It does not claim to detect every external writer.
+
+The [final shared-role batch](../runtime/reports/20261006-shared-roles/README.md)
+passed 46 stages per API33/API36 guest, including the resident lifecycle. Its peer
+is a synthetic pending journal: no second active SIM or provider was fabricated.
+Actual ACTIVE-peer permission repair still needs two-subscription device evidence.

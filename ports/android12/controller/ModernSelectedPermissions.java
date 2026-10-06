@@ -62,7 +62,44 @@ final class ModernSelectedPermissions {
             }while(SystemClock.elapsedRealtime()<deadline);
             // Persist the observed role flags, not a claim that a carrier registered.
             record.setProperty("role."+i+".observed",Integer.toString(actual));
+            record.setProperty("role."+i+".observed.grant",Boolean.toString(pm.checkPermission(PERMISSIONS[i],PACKAGES[i])==PackageManager.PERMISSION_GRANTED));
         }
+        if(selected(record,0)) {
+            AppOpsManager ops=context.getSystemService(AppOpsManager.class);int uid=Integer.parseInt(record.getProperty("role.0.uid"));
+            for(int i=0;i<DATA_OPS.length;i++)record.setProperty("role.data.observed.op."+i,Integer.toString(ops.unsafeCheckOpNoThrow(DATA_OPS[i],uid,PACKAGES[0])));
+        }
+    }
+    static void validateObserved(Properties record)throws Exception {
+        validateRecord(record);
+        for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
+            int original=Integer.parseInt(record.getProperty("role."+i+".flags")),actual=Integer.parseInt(record.getProperty("role."+i+".observed"));
+            if(((original^actual)&~allowed(i))!=0||!Arrays.asList("true","false").contains(record.getProperty("role."+i+".observed.grant")))throw new IOException("shared-role-observation-refused");
+        }
+        if(selected(record,0))for(int i=0;i<DATA_OPS.length;i++) {
+            int original=Integer.parseInt(record.getProperty("role.data.op."+i)),actual=Integer.parseInt(record.getProperty("role.data.observed.op."+i));
+            if(actual!=original&&actual!=AppOpsManager.MODE_ALLOWED&&actual!=AppOpsManager.MODE_ERRORED)throw new IOException("shared-role-observation-refused");
+        }
+    }
+    static Properties activeTarget(Properties original)throws Exception {
+        validateObserved(original);Properties target=new Properties();target.putAll(original);
+        for(int i=0;i<PACKAGES.length;i++)if(selected(original,i)) {
+            target.setProperty("role."+i+".flags",original.getProperty("role."+i+".observed"));
+            target.setProperty("role."+i+".grant",original.getProperty("role."+i+".observed.grant"));
+        }
+        if(selected(original,0))for(int i=0;i<DATA_OPS.length;i++)target.setProperty("role.data.op."+i,original.getProperty("role.data.observed.op."+i));
+        return target;
+    }
+    static boolean matches(Context context,Properties record)throws Exception {
+        validate(context,record);PackageManager pm=context.getPackageManager();
+        for(int i=0;i<PACKAGES.length;i++)if(selected(record,i)) {
+            if(pm.getPermissionFlags(PERMISSIONS[i],PACKAGES[i],UserHandle.SYSTEM)!=Integer.parseInt(record.getProperty("role."+i+".flags"))||
+                (pm.checkPermission(PERMISSIONS[i],PACKAGES[i])==PackageManager.PERMISSION_GRANTED)!=Boolean.parseBoolean(record.getProperty("role."+i+".grant")))return false;
+        }
+        if(selected(record,0)) {
+            AppOpsManager ops=context.getSystemService(AppOpsManager.class);int uid=Integer.parseInt(record.getProperty("role.0.uid"));
+            for(int i=0;i<DATA_OPS.length;i++)if(ops.unsafeCheckOpNoThrow(DATA_OPS[i],uid,PACKAGES[0])!=Integer.parseInt(record.getProperty("role.data.op."+i)))return false;
+        }
+        return true;
     }
     static void restore(Context context,Properties record)throws Exception {
         validateRecord(record);

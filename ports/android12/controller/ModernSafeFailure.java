@@ -20,7 +20,12 @@ final class ModernSafeFailure {
         "selection-archive-carrier-unavailable","selection-archive-phase-refused",
         "original-carrier-required-before-archive","untracked-carrier-state-recovery-required",
         "supervisor-already-running","fixture-resident-process-owner-refused","fixture-resident-lease-unconfirmed",
-        "shared-mode-legacy-observation-required","shared-mode-manager-unobserved","shared-mode-cache-changed"));
+        "shared-mode-legacy-observation-required","shared-mode-manager-unobserved","shared-mode-cache-changed",
+        "shared-role-observation-refused","shared-role-owner-record-refused","shared-role-inventory-refused",
+        "shared-role-reference-unavailable","shared-role-resource-refused","shared-role-reference-changed",
+        "shared-role-active-provider-unconfirmed","shared-role-active-goal-unavailable","shared-role-recovery-required",
+        "shared-role-archive-conflict","shared-role-untracked-policy-refused","shared-role-released-owner-refused",
+        "shared-role-owner-recovery-required"));
     static String reason(Throwable error){String value=error.getMessage();return REASONS.contains(value)?value:"unclassified";}
     static String origin(Throwable error) {
         for(StackTraceElement frame:error.getStackTrace())if(frame.getClassName().matches("Modern[A-Za-z0-9]+")&&frame.getMethodName().matches("[A-Za-z0-9_<>]+"))return frame.getClassName()+"."+frame.getMethodName()+":"+frame.getLineNumber();

@@ -33,8 +33,8 @@ The root helper reports only selected-subscription metadata:
   These23 checks are a scoped pre-install aid, not the entire service ABI.
   Missing IKE classes in this loader may still be available to a service through
   its declared shared library. Visibility does not prove Binder permissions,
-  package installation, service binding or carrier acceptance. Modern replacement
-  controls remain disabled; the tested Android11 profile is unchanged.
+  package installation, service binding or carrier acceptance. Version0.9.0 now
+  contains experimental modern replacement controls; the Android11 engine remains separate.
   See [runtime preflight evidence and loader limitation](RUNTIME-PREFLIGHT-20261006.md).
 
 DNS success does not prove UDP500/4500 reachability. The tool does not initiate
@@ -60,7 +60,8 @@ actions require a freshly observed SIM_READY in the tested profile.
 
 ## Optional replacement
 
-The APK embeds the already-built `vowifi-stack-api30-services.zip`. Install it
+The APK embeds the independently built API30 and SDK31–37 engine ZIPs, with
+compiled artifact digests. The API30 asset is `vowifi-stack-api30-services.zip`. Install it
 with the app's explicit button, reboot, inspect, then start a timed trial. The
 three components can be selected independently for a timed experiment. With
 controller0.9.0, any nonempty selection can be retained after original/selected
@@ -108,9 +109,10 @@ IMS-only UI trial did not register WLAN. IWLAN+IMS retaining original QNS
 configuration later passed reboot recovery, native SMS/inbox/notification and
 191 calling, following an explicit idle reload when switching selections.
 See [optional persistence evidence](../android11/stack/OPTIONAL-PERSISTENCE-20261006.md).
-Android12–17 replacement engines remain disabled. They require device and
-provider/routing compatibility validation; installing
-the diagnostic APK does not establish it. No modem/vendor/APN replacement is
+Version0.9.0 adds experimental Android12–17 component controls and the modern
+root worker, with read-only modern diagnostics and fixed mutation guards verified
+on API33/API36. Modern device/provider/routing/carrier compatibility still needs
+validation; installing the diagnostic APK does not establish it. No modem/vendor/APN replacement is
 performed. See [engine build, validation and recovery](../android11/stack/README.md).
 
 ## Android versions and dual SIM
@@ -118,13 +120,13 @@ performed. See [engine build, validation and recovery](../android11/stack/README
 | Version | API | Read-only diagnostic | Bundled replacement |
 | --- | --- | --- | --- |
 | Android11 | 30 | Backend verified on the connected MIUI device, including empty SIM1 and active SIM2 | Live-tested on the fixed profile above |
-| Android12 | 31 | Built on API30 methods; device validation pending | Disabled |
-| Android12L | 32 | Device validation pending | Disabled |
-| Android13 | 33 | Device validation pending; provisioning queried reflectively | Disabled |
-| Android14 | 34 | Device validation pending | Disabled |
-| Android15 | 35 | Device validation pending | Disabled |
-| Android16 | 36 | Device validation pending | Disabled |
-| Android17 | 37 | Device validation pending | Disabled |
+| Android12 | 31 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android12L | 32 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android13 | 33 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
+| Android14 | 34 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android15 | 35 | Runtime validation pending | Experimental modern controls; runtime validation pending |
+| Android16 | 36 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
+| Android17 | 37 | Runtime/device validation pending; framework sample is not ROM evidence | Experimental candidate only; no Android17 device/carrier proof |
 
 Minimum SDK30 means the APK can be considered for Android11 and later; it is
 not a claim of tested compatibility. OEM hidden-API/service/permission changes
@@ -145,17 +147,19 @@ hidden implementations and treats absent/empty sets as attribution unavailable:
 
 ## Build
 
-Build/sign the engine first using its documented Java17/ECJ/Kotlin/D8 toolchain.
+Build/sign both engine bundles first using their documented Java17/ECJ/Kotlin/D8 toolchains.
 Then set `JAVA`, `IMS_PORT_TOOLCHAIN`, `STACK_KEYSTORE` and
 `STACK_KEYSTORE_PASSWORD`, and run `python build.py` here. The external keystore
 must contain alias `stack`. No key is generated or committed by this builder.
 Output is `out/vowifi-tool.apk`; generated files and private signing material
-are ignored. The builder signs and verifies the APK and copies only the module
-ZIP into assets. It never connects to a phone or installs anything.
+are ignored. The builder signs and verifies the APK, generates engine identities
+and copies the two module ZIPs into assets. It never connects to a phone or installs anything.
+`python validate.py --build --unsigned` permits source/DEX/metadata/assets checks
+without signing material and explicitly reports signature verification false.
 
 For one consolidated release batch, run `python validate.py --build` with the
 same environment. It builds/signs once, executes the production lookup contracts
-and verifies actual APK SDK/version/signature plus byte-exact embedded engine.
+and verifies actual APK SDK/version/signature plus both byte-exact embedded engines.
 `--artifacts-only` permits checking an already-built batch without repeating
 passed contracts. Validation never rebuilds the engine or installs on a device.
 Inspect the resulting `out/validation.json`; its device flag remains false until
@@ -195,3 +199,23 @@ voice/SMS registration. Real wrong-slot/wrong-subscription requests to controlle
 and carrier helper were refused with transaction/baseline/persistence and phone
 PID unchanged. IKE close reasons are now inspected even without an IMS network,
 using only bounded safe error identifiers; logs remain historical observations.
+
+## Modern application integration, version0.9.0
+
+The app now routes SDK31–37 to a fixed modern root worker for component trial,
+retention, lease check/renewal and selected-owner recovery. Its modern reload button
+does not kill/reload the phone process; it is labelled as a check/renew operation.
+Only a freshly observed ready23415 SIM is eligible. `engine_supported` now means
+the bundled guarded profile is available; it does not mean that device/carrier
+validation is complete. Every modern screen labels the engine experimental.
+Component actions additionally require the module helper/script and installed
+privileged APK bytes to match this tool's compiled engine identities. Update
+refuses incomplete status, pending installation or pending-owner inventory; core preparation/recovery
+still revalidates ownership and uses its shared transaction lock.
+
+Read-only modern inventory parses only fixed private records and CarrierConfig,
+without constructing controller locks or creating state directories. Private
+worker tokens are consumed inside root, not returned to the activity. Existing
+Android11 controller routing and component behavior remain separate. Full build,
+scope and per-version evidence are in
+[the integration record](MODERN-INTEGRATION-20261006.md).

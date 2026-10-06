@@ -2,9 +2,9 @@
 
 This directory builds separate unsigned API31 IWLAN, QNS and IMS applications.
 The unsigned research bundle is separate from the signed experimental
-[installation and supervision module](module/README.md). Modern diagnostic-app
-replacement buttons remain disabled. The connected MIUI Android11 phone uses
-tool0.8.0/controller0.9.0 APKs;
+[installation and supervision module](module/README.md). Diagnostic tool0.9.0
+includes experimental modern component selectors and fixed root workers.
+The connected MIUI Android11 phone uses tool0.9.0/controller0.9.0 APKs;
 no experimental modern APK has been installed on it.
 
 ## Boundary and implementation
@@ -146,9 +146,12 @@ bundle remains unsigned and has no production installer or controller.
 The [modern carrier transaction layer](controller/README.md) now adds selected-SIM
 snapshot, native-stream persistence readback and resumable restoration. Its
 QNS-only persistence/reopened-transaction trial passed concurrently on API33 and
-API36. The experimental module now includes installation and supervision; app UI,
-real device lifecycle and shared dual-SIM permission ownership still need work;
-it does not enable the modern replacement buttons or prove carrier call/SMS.
+API36. The experimental module includes installation, supervision and shared
+role-policy journals. Tool0.9.0 integrates selection, retention and recovery;
+its new modern root diagnostics/refusal tests passed on API33/API36. These tests
+do not prove modern carrier call/SMS or real two-active-SIM operation.
+See [shared-role batch evidence](runtime/reports/20261006-shared-roles/README.md)
+and [application integration](../diagnostic-app/MODERN-INTEGRATION-20261006.md).
 
 * N1 PDU/3GPP extension negotiation, returned slice handling and actual URSP
   matching, before accepting their corresponding requests.

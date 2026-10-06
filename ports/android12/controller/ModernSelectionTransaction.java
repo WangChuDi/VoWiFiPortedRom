@@ -49,6 +49,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
     }
     private ModernProviderTransaction carrier()throws Exception {return new ModernProviderTransaction(context,slot,sub,carrierState,test,held);}
     private ModernSharedIwlan mode()throws Exception {return new ModernSharedIwlan(context,new File(coordination,"resources"),held,test);}
+    private ModernSharedSelectedRoles roles()throws Exception {return new ModernSharedSelectedRoles(context,coordination,held,test);}
     private Properties record()throws Exception {
         requireLock();Properties value=files.read(RECORD);
         if(!"3".equals(value.getProperty("schema"))||!(Build.VERSION.SDK_INT+":"+Build.FINGERPRINT).equals(value.getProperty("build"))||!Integer.toString(slot).equals(value.getProperty("slot"))||!Integer.toString(sub).equals(value.getProperty("sub"))||
@@ -108,7 +109,12 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         for(File child:children) {
             ModernStateFiles.canonical(child);if(!child.isDirectory()||!child.getName().matches("slot-[0-7]-sub-[0-9]+"))throw new IOException("selection-inventory-refused");
             if(child.equals(files.root))continue;
-            ModernStateFiles state=new ModernStateFiles(child);if(!state.file(RECORD).exists())throw new IOException("other-owner-record-unavailable");Properties value=state.read(RECORD);
+            ModernStateFiles state=new ModernStateFiles(child);
+            if(!state.file(RECORD).exists()) {
+                String suffix=carrierState.getName().substring(("slot-"+slot+"-sub-"+sub).length());File core=new File(lockRoot,child.getName()+suffix);ModernStateFiles.canonical(core);File[] content=child.listFiles();
+                if(content!=null&&content.length==0&&!core.exists())continue;throw new IOException("other-owner-record-unavailable");
+            }
+            Properties value=state.read(RECORD);
             if(!"3".equals(value.getProperty("schema"))||!(Build.VERSION.SDK_INT+":"+Build.FINGERPRINT).equals(value.getProperty("build"))||!value.getProperty("mask","").matches("[1-7]")||!Arrays.asList("true","false").contains(value.getProperty("mode_owned"))||
                 !value.getProperty("slot","").matches("[0-7]")||!value.getProperty("sub","").matches("[0-9]+")||!child.getName().equals("slot-"+value.getProperty("slot")+"-sub-"+value.getProperty("sub"))||
                 !Arrays.asList("PREPARING","PREPARED","SELECTING","ACTIVE","RESTORING","RESTORED","ARCHIVING").contains(value.getProperty("phase"))||
@@ -144,21 +150,21 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         if(carrierState.exists())throw new IOException("untracked-carrier-state-recovery-required");
         Properties value=new Properties();value.setProperty("schema","3");value.setProperty("build",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);value.setProperty("slot",Integer.toString(slot));value.setProperty("sub",Integer.toString(sub));
         value.setProperty("token",UUID.randomUUID().toString().replace("-",""));value.setProperty("mask",Integer.toString(components));value.setProperty("persistent","false");value.setProperty("mode_owned","false");
-        value.setProperty("boot",Integer.toString(ModernPhoneRefresh.boot(context)));value.setProperty("trial.until",Long.toString(SystemClock.elapsedRealtime()+TRIAL_MILLIS));baselineLease(value);ModernSelectedPermissions.snapshot(context,value);phase(value,"PREPARING");
+        value.setProperty("boot",Integer.toString(ModernPhoneRefresh.boot(context)));value.setProperty("trial.until",Long.toString(SystemClock.elapsedRealtime()+TRIAL_MILLIS));baselineLease(value);roles().snapshot(value);phase(value,"PREPARING");
         try {
             try(ModernProviderTransaction transaction=carrier()){transaction.snapshot();}phase(value,"PREPARED");
             if((components&1)!=0){value.setProperty("mode_owned","true");files.write(RECORD,value);mode().acquire(slot);owner();}
             phase(value,"SELECTING");publishLease(value,false);
-            ModernSelectedPermissions.requested(value);files.write(RECORD,value);
+            roles().requested(value);files.write(RECORD,value);
             try(ModernProviderTransaction transaction=carrier()){transaction.apply(components);if(!transaction.verifySelection(components))throw new IOException("selected-providers-unconfirmed");}
-            ModernSelectedPermissions.observed(context,value);
+            roles().observed(value);
             phase(value,"ACTIVE");return value.getProperty("token");
         } catch(Exception failure) {
             try{restore(value.getProperty("token"));}catch(Exception recovery){failure.addSuppressed(recovery);}throw failure;
         }
     }
     public boolean verify(String token)throws Exception {
-        Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");installed();checkLease(value,false);
+        Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");roles().verifyOwner(value);installed();checkLease(value,false);
         if(number(get("boot"),-1)!=ModernPhoneRefresh.boot(context)||number(get("until"),0)<=SystemClock.elapsedRealtime())return false;
         try(ModernProviderTransaction transaction=carrier()){return transaction.verifySelection(mask(value));}
     }
@@ -170,7 +176,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
     public boolean renew(String token)throws Exception {
         Properties value=record();token(value,token);if(!"ACTIVE".equals(value.getProperty("phase")))throw new IOException("active-selection-required");
         if(!Boolean.parseBoolean(value.getProperty("persistent"))&&(ModernPhoneRefresh.boot(context)!=Integer.parseInt(value.getProperty("boot"))||SystemClock.elapsedRealtime()>=Long.parseLong(value.getProperty("trial.until")))){restore(token);return false;}
-        installed();if("PUBLISHING".equals(value.getProperty("lease.phase")))completeLease(value);checkLease(value,false);try(ModernProviderTransaction transaction=carrier()){if(!transaction.verifySelection(mask(value)))throw new IOException("selected-providers-changed");}
+        if("PUBLISHING".equals(value.getProperty("lease.phase")))completeLease(value);checkLease(value,false);roles().maintain(value);installed();try(ModernProviderTransaction transaction=carrier()){if(!transaction.verifySelection(mask(value)))throw new IOException("selected-providers-changed");}
         if(Boolean.parseBoolean(value.getProperty("mode_owned")))mode().acquire(slot);publishLease(value,true);return true;
     }
     public void restore(String token)throws Exception {
@@ -190,7 +196,7 @@ public final class ModernSelectionTransaction implements AutoCloseable {
         }
         // Carrier/file/lease recovery can still complete if a disabled module's
         // privileged app is absent. Its permission journal remains pending.
-        if(!originalInstallation)ModernSelectedPermissions.restore(context,value);
+        if(!originalInstallation)roles().release(value);
         if(Boolean.parseBoolean(value.getProperty("mode_owned"))) {
             boolean other=otherIwlanOwner();ModernSharedIwlan shared=mode();shared.release(other);
             if(!other)shared.finishCycle(new File(new ModernStateFiles(new File(coordination,"mode-history")).root,"mode-"+value.getProperty("token")+".properties"));

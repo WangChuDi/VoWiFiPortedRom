@@ -45,7 +45,7 @@ public final class MainActivity extends Activity {
         body.addView(button("只读检查链路",v->diagnose()));
         results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
         body.addView(text("可选替换",21));
-        body.addView(text("分别选择要替换的组件，先进行最多 5 分钟的试用，再决定是否保留常驻。未选择的组件沿用原配置；修改组合前先恢复当前事务。不同组合需检查实际通话和短信。替换引擎目前限 Android 11 / raphael / VOXI；每张卡分别保存配置，共享电话服务仅在空闲时重载。双卡同时注册仍需实机验证。",14));
+        body.addView(text("分别选择组件，先试用最多 5 分钟，再决定是否保留常驻。修改组合前先恢复当前事务。Android 11 已验证 raphael / VOXI；Android 12–17 提供实验引擎，需验证当前机型的隧道、通话和短信。每张卡分别保存配置；双卡同时注册仍需实机验证。",14));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
         for(int i=0;i<components.length;i++){
             components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setChecked(true);body.addView(components[i]);
@@ -107,6 +107,8 @@ public final class MainActivity extends Activity {
         last=data;results.removeAllViews();
         if(data.has("error")&&!data.has("sdk")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
         status("Android API "+data.optInt("sdk")+" · SIM"+(data.optInt("slot")+1)+" · 只读结果");
+        if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
+        reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
         StringBuilder unavailable=new StringBuilder();
         for(String key:new String[]{"error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
@@ -115,7 +117,7 @@ public final class MainActivity extends Activity {
         JSONObject abi=data.optJSONObject("runtime_abi");
         if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
             " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
-            "\n"+(abi.optBoolean("modern_candidate")?"属于 Android12–17 候选范围；尚未验证安装与服务绑定":abi.optInt("sdk")==30?"Android11 接口范围；替换需匹配已验证设备":"超出当前替换版本范围")+
+            "\n"+(abi.optBoolean("modern_candidate")?"属于 Android12–17 候选范围；需检查当前机型安装与服务绑定":abi.optInt("sdk")==30?"Android11 接口范围；替换需匹配已验证设备":"超出当前替换版本范围")+
             "\n只检查当前 root 进程中的接口；未验证权限、运营商注册或现代模块可用性。独立 IKE 库也可能仅在服务进程可见。");
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
         card("ePDG DNS",data.optString("dns","未观测"));
@@ -152,6 +154,7 @@ public final class MainActivity extends Activity {
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
         card("替换控制器"+(ownerSlot>=0?"（管理 SIM"+(ownerSlot+1)+"）":""),providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));
+        if(providers!=null&&"modern".equals(providers.optString("engine")))card("现代模块状态","模块与本工具匹配 "+providers.optBoolean("module_payload_matches_tool")+" · 模块启用 "+providers.optBoolean("module_enabled")+"\n安装事务："+providers.optString("installation_phase","未知")+"\n事务记录属于恢复依据；当前注册与能力以上方实时回调为准。");
         setActions(data.optBoolean("engine_supported"));
         boolean active=providers!=null&&"ACTIVE".equals(providers.optString("transaction"));
         boolean identities=providers!=null&&providers.optInt("identity_selection")==1;
@@ -232,8 +235,15 @@ public final class MainActivity extends Activity {
         if(("enable".equals(action)||"reload".equals(action))&&(provider.optInt("owner_slot",-1)!=targetSlot||provider.optInt("owner_sub",-1)!=targetSub))return;
         final int mask=componentMask();
         if("trial".equals(action)&&mask==0)return;
+        final boolean modern=last.optBoolean("engine_experimental");
         execute("正在执行所选操作…",()->{
-            String output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:"")+" "+targetSlot+" "+targetSub,35);
+            String output;
+            if(modern){
+                String raw=shell("CLASSPATH="+quote(getApplicationInfo().sourceDir)+" app_process /system/bin dev.codex.vowifi.tool.ModernAppActions "+action+" "+targetSlot+" "+targetSub+" "+Math.max(1,mask),310);
+                JSONObject accepted=null;for(String line:raw.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))accepted=new JSONObject(line);
+                if(accepted==null||!accepted.optBoolean("action_completed")||!action.equals(accepted.optString("action")))throw new IOException("modern-action-result-unconfirmed");
+                output="操作已完成；请查看最新注册与能力。";
+            }else output=shell("sh "+CONTROL+" "+action+("trial".equals(action)?" "+mask:"")+" "+targetSlot+" "+targetSub,35);
             if(!action.equals("reload")&&!action.equals("trial"))return new JSONObject().put("action_result",output);
             runOnUiThread(()->{if(!isFinishing())status("已请求重新拉起，正在等待 IMS 注册…");});
             long deadline=SystemClock.elapsedRealtime()+60000;
@@ -263,10 +273,20 @@ public final class MainActivity extends Activity {
     }
     private void installModule(){
         if(busy||last==null||!last.optBoolean("engine_supported"))return;
+        final boolean modern=last.optBoolean("engine_experimental");
+        JSONObject provider=last.optJSONObject("providers");
+        if(modern&&last.has("controller_error")){status("当前事务状态未能完整读取。请先核对恢复记录，再更新现代模块。");return;}
+        if(modern&&provider!=null&&!Arrays.asList("ABSENT","RESTORED").contains(provider.optString("installation_phase"))){status("请先恢复现代模块的安装事务，再更新模块。");return;}
+        if(modern&&provider!=null&&provider.optJSONArray("active_owners")!=null&&provider.optJSONArray("active_owners").length()>0){status("请先恢复各 SIM 的替换事务，再更新现代模块。");return;}
         execute("正在安装配套模块更新…",()->{
-            File zip=new File(getCacheDir(),"vowifi-stack-api30-services.zip");
-            try(InputStream in=getAssets().open("vowifi-stack-api30-services.zip");OutputStream out=new FileOutputStream(zip)){byte[] b=new byte[8192];int n;while((n=in.read(b))>=0)out.write(b,0,n);}
-            try{return new JSONObject().put("action_result",shell("/product/bin/magisk --install-module "+quote(zip.getAbsolutePath()),30));}
+            String asset=modern?EngineAssets.MODERN_ASSET:EngineAssets.API30_ASSET;String expected=modern?EngineAssets.MODERN_SHA256:EngineAssets.API30_SHA256;
+            File zip=new File(getCacheDir(),asset);
+            try(InputStream in=getAssets().open(asset);OutputStream out=new FileOutputStream(zip)){byte[] b=new byte[8192];int n;while((n=in.read(b))>=0)out.write(b,0,n);}
+            try{
+                if(!expected.equals(ModernControllerObservation.digest(zip)))throw new IOException("bundled-module-digest-mismatch");
+                String invocation="magisk --install-module "+quote(zip.getAbsolutePath());
+                return new JSONObject().put("action_result",shell("if command -v magisk >/dev/null 2>&1; then "+invocation+"; else /product/bin/"+invocation+"; fi",45));
+            }
             finally{zip.delete();}
         },data->{status(data.optString("action_result")+"\n安装成功后请手动重启，再运行只读检查。");setActions(false);});
     }

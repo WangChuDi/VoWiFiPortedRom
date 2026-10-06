@@ -349,7 +349,8 @@ phone installation, calls or SMS are part of this batch. Provider selection and
 cleanup do not establish USIM authentication, ePDG tunnelling, IMS/MMTEL carrier
 registration, voice/SMS acceptance, Magisk mounting or real dual-SIM behavior.
 The [batch record](reports/20261006-owner-selection/README.md) distinguishes failed
-attempts from the latest complete evidence. Modern app selectors remain disabled.
+attempts from that batch's complete evidence. Modern app selectors were disabled
+at that point; tool0.9.0 later added the experimental integration described below.
 
 ## Resident loop, actual SIGKILL and automatic disable recovery
 
@@ -369,7 +370,8 @@ python check-installation-emulator.py --adb /path/to/adb \
 ```
 
 `--resident-only` requires `--resident` and limits an investigation to five
-prerequisite stages, the six new stages and three final cleanup stages. It is
+prerequisite stages, the six lifecycle stages and four final cleanup stages
+(including the subsequently added shared-role cleanup). It is
 explicitly reported and is not a full regression result. Each invocation uses
 a fresh nonce and report, including after failures.
 
@@ -395,3 +397,23 @@ handoff scope. This is not a kill at every carrier phase, real Magisk mount/boot
 phone-cache reconstruction, carrier call/SMS or dual-active-SIM proof. The three
 signed service APKs were retained and the API30 phone received no configuration
 change, call or SMS in this batch.
+
+## Shared role resources and modern application integration
+
+The latest full runner adds seven shared-role stages to the former 39-stage
+resident suite, for 46 stages per guest. The final API33/API36 concurrent run
+passed with matching helper/module hashes. Its synthetic pending peer references
+the original IWLAN/IMS role resources without claiming a second selected SIM.
+It verifies first-owner carrier restoration while retaining those resources,
+installation recovery refusal with a pending peer, foreign ignored AppOp refusal,
+RESTORING resumption and final-holder policy restoration. See
+[report history and evidence boundary](reports/20261006-shared-roles/README.md).
+
+The separate app runner executes tool0.9.0's actual root diagnostics and mutation
+refusal paths concurrently on the same named guests. It does not install/mount
+an engine, select a production carrier or send any traffic. Root observations
+leave production state absent. App worker tokens stay outside UI/results; only
+the guarded root worker passes them to the existing CLI. The modern activity
+contains experimental selection/retention/recovery controls, with positive modern
+device interaction still pending. See
+[application source, build and evidence](../../diagnostic-app/MODERN-INTEGRATION-20261006.md).
