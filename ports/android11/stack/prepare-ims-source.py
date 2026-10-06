@@ -13,7 +13,7 @@ for p in dest.rglob('*'):
     if p.suffix=='.java':t=t.replace('Rlog.','PortLog.')
     t=t.replace('android.util.Log.e(', 'me.phh.ims.PortLog.e(')
     p.write_text(t,encoding='utf-8',newline='\n')
-for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt'):
+for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java'):
     shutil.copyfile(B/'ims'/name,dest/'me/phh/ims'/name)
 shutil.copyfile(B/'ims/Api30SipTcpServer.kt',dest/'me/phh/sip/Api30SipTcpServer.kt')
 shutil.copyfile(B/'ims/RpDeliveryError.kt',dest/'me/phh/sip/RpDeliveryError.kt')
@@ -33,18 +33,16 @@ edit(feature,'val imsService = PhhImsService.Companion.instance!!','''val imsSer
 edit(feature,'imsService.getRegistration(slotId)','imsRegistration',expected=3)
 edit(feature,'import android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE','import android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN')
 p=dest/feature;t=p.read_text(encoding='utf-8').replace('REGISTRATION_TECH_LTE','REGISTRATION_TECH_IWLAN')
-t=t.replace('imsRegistration.onDeregistered(null)', '''imsRegistration.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
-            reportRegistrationCapabilities(false)
-            android.util.Log.i("Api30PhhIms","registration=DOWN slot=$slotId")''')
-t=t.replace('imsRegistration.onRegistered(REGISTRATION_TECH_IWLAN)', '''imsRegistration.onRegistered(REGISTRATION_TECH_IWLAN)
-            reportRegistrationCapabilities(true)
-            imsService.armPeriodicRegisterAlarm(slotId)
-            android.util.Log.i("Api30PhhIms","registration=REGISTERED tech=IWLAN slot=$slotId")''')
+t=t.replace('imsRegistration.onDeregistered(null)', 'imsService.publishRegistration(slotId,selectedSubId,this,imsRegistration,RegistrationPhase.DOWN)')
+t=t.replace('imsRegistration.onRegistered(REGISTRATION_TECH_IWLAN)', 'imsService.publishRegistration(slotId,selectedSubId,this,imsRegistration,RegistrationPhase.REGISTERED)')
+t=t.replace('imsRegistration.onRegistering(REGISTRATION_TECH_IWLAN)', 'imsService.publishRegistration(slotId,selectedSubId,this,imsRegistration,RegistrationPhase.REGISTERING)')
 t=t.replace('Rlog.d(TAG, "$slotId onFeatureRemoved")','Rlog.d(TAG, "$slotId onFeatureRemoved")\n        if(this::sipHandler.isInitialized) sipHandler.shutdown()\n        PhhImsService.instance?.releaseFeature(slotId,this)')
 p.write_text(t,encoding='utf-8',newline='\n')
 edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHandler: SipHandler
     private val readinessHandler=android.os.Handler(android.os.Looper.getMainLooper())
     @Volatile private var removed=false
+    private val registrationCallbacks=RegistrationCallbackGate()
+    fun publishActiveRegistration(action:Runnable):Boolean=registrationCallbacks.publish(action)
     private var initialized=false
     private val retryReady=Runnable{if(!removed)onFeatureReady()}
     private var callListener: ImsCallSessionListener? = null
@@ -107,6 +105,7 @@ edit(feature,'        if(this::sipHandler.isInitialized) return','''        if(r
         if(this::sipHandler.isInitialized) return''')
 edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()','''        removed=true
         readinessHandler.removeCallbacksAndMessages(null)
+        registrationCallbacks.close()
         if(this::sipHandler.isInitialized) sipHandler.shutdown()''')
 sms='me/phh/ims/PhhImsSms.kt'
 edit(sms,'            // called when android tries to send a sms?','''            android.util.Log.i("Api30PhhIms","framework-send-sms token=$token format=$format")

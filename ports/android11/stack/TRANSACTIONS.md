@@ -114,6 +114,11 @@ only one active card; do not infer simultaneous registration from those fixtures
    false, producing RADIO_OFF before invoking replacement IMS. Independent
    registration/capability callbacks do not prove dispatcher readiness. An explicit
    idle reload restored real INFO sending and native multipart delivery/notification.
+   In 0.7.1, stale feature callbacks are retired and the actual installed APKs are
+   verified before preparation. The final reboot's first native SMS passed without
+   another manual reload; the tool also observed a real send's three availability
+   flags after its log-reader correction. Multiple boots/long-term observation
+   and confirmation of every older failure's cause remain pending.
 
 Working API30 baselines and published source/artifacts remain preserved while
 these requirements are implemented. Full completion requires all of them.

@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.os.Handler
 import android.os.Looper
 import android.telephony.ims.ImsService
+import android.telephony.ims.ImsReasonInfo
 import android.telephony.ims.feature.ImsFeature
 import android.telephony.ims.feature.MmTelFeature
 import android.telephony.ims.stub.ImsConfigImplBase
@@ -21,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
+enum class RegistrationPhase { REGISTERING, REGISTERED, DOWN }
 
 class PhhImsService : ImsService() {
     companion object { @Volatile var instance: PhhImsService? = null }
@@ -94,13 +97,40 @@ class PhhImsService : ImsService() {
         val previous=subscriptions.put(slotId,subId)
         if(previous!=null&&previous!=subId){
             features.remove(slotId)?.onFeatureRemoved()
-            registrations.remove(slotId);configs.remove(slotId)
+            registrations.remove(slotId)?.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"subscription-ended"))
+            configs.remove(slotId)
             cancelPeriodicRegisterAlarm(slotId)
         }
     }
     @Synchronized
     fun releaseFeature(slotId:Int,feature:PhhMmTelFeature){
-        if(features.remove(slotId,feature))cancelPeriodicRegisterAlarm(slotId)
+        if(features.remove(slotId,feature)){
+            registrations[slotId]?.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"feature-ended"))
+            feature.reportRegistrationCapabilities(false)
+            cancelPeriodicRegisterAlarm(slotId)
+        }
+    }
+    // Preserve the same-subscription framework binder, but retire its old producer.
+    @Synchronized
+    fun publishRegistration(slotId:Int,subId:Int,feature:PhhMmTelFeature,
+                            registration:ImsRegistrationImplBase,phase:RegistrationPhase):Boolean {
+        if(features[slotId]!==feature || subscriptions[slotId]!=subId ||
+           registrations[slotId]!==registration ||
+           StackProfile.authorizedSubscription(this,slotId)?.subscriptionId!=subId){
+            android.util.Log.i("Api30PhhIms","registration-callback=STALE slot=$slotId")
+            return false
+        }
+        return feature.publishActiveRegistration(Runnable {
+            when(phase){
+                RegistrationPhase.REGISTERING -> registration.onRegistering(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN)
+                RegistrationPhase.REGISTERED -> registration.onRegistered(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN)
+                RegistrationPhase.DOWN -> registration.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
+            }
+            feature.reportRegistrationCapabilities(phase==RegistrationPhase.REGISTERED)
+            if(phase==RegistrationPhase.REGISTERED)armPeriodicRegisterAlarm(slotId)
+            android.util.Log.i("Api30PhhIms","registration="+phase.name+
+                (if(phase==RegistrationPhase.REGISTERED)" tech=IWLAN" else "")+" slot=$slotId")
+        })
     }
     override fun readyForFeatureCreation(){instance=this;controllerReady=true;handler.removeCallbacks(updateFeatures);handler.post(updateFeatures)}
     fun armPeriodicRegisterAlarm(slotId:Int){
@@ -122,6 +152,7 @@ class PhhImsService : ImsService() {
             catch(error:Throwable){android.util.Log.w("Api30PhhIms","refresh-error slot=$slotId type="+error.javaClass.simpleName)}
         }
     }
+    @Synchronized
     override fun onDestroy(){
         controllerReady=false
         handler.removeCallbacksAndMessages(null)

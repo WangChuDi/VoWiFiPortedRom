@@ -9,8 +9,40 @@ mkdir -p "$STATE"
 chmod 700 "$STATE"
 LOG="$STATE/boot.log"
 umask 077
+ensure_installed() {
+  PKG=$1
+  APK="$MODDIR/system/priv-app/$2/$2.apk"
+  EXPECTED_HASH=$(sha256sum "$APK" | cut -d ' ' -f 1)
+  [ "${#EXPECTED_HASH}" = 64 ] || return 1
+  # Both Binder output FDs must be pipes; boot.log is root-private.
+  INSTALLED=$(pm path "$PKG" 2>&1) || { echo apk-update=PACKAGE_PATH_UNAVAILABLE; return 1; }
+  # These bundled packages are single-APK services. Refuse an unexpected layout.
+  case "$INSTALLED" in package:*) ;; *) return 1 ;; esac
+  [ "$(printf '%s\n' "$INSTALLED" | wc -l)" = 1 ] || return 1
+  ACTUAL_HASH=$(sha256sum "${INSTALLED#package:}" | cut -d ' ' -f 1)
+  [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ] || return 0
+  # APK replacement kills its service. Require observed idle state on both slots.
+  CALLS=$(timeout 8s dumpsys telephony.registry 2>/dev/null | sed -n 's/^.*mCallState=\([0-9][0-9]*\).*$/\1/p')
+  COUNT=$(printf '%s\n' "$CALLS" | grep -c '^0$')
+  TOTAL=$(printf '%s\n' "$CALLS" | wc -l)
+  [ "$COUNT" -ge 2 ] && [ "$COUNT" = "$TOTAL" ] || { echo apk-update=WAITING_FOR_IDLE; return 1; }
+  SIZE=$(stat -c %s "$APK") || return 1
+  # Stream the known signed APK: system_server may not share the module namespace.
+  OUTPUT=$(cat "$APK" | pm install -r -S "$SIZE" 2>&1)
+  STATUS=$?
+  [ "$STATUS" = 0 ] && [ "$OUTPUT" = Success ] || { echo apk-update=INSTALL_FAILED; return 1; }
+  INSTALLED=$(pm path "$PKG" 2>&1) || { echo apk-update=PACKAGE_PATH_UNAVAILABLE; return 1; }
+  case "$INSTALLED" in package:*) ;; *) return 1 ;; esac
+  [ "$(printf '%s\n' "$INSTALLED" | wc -l)" = 1 ] || return 1
+  ACTUAL_HASH=$(sha256sum "${INSTALLED#package:}" | cut -d ' ' -f 1)
+  [ "$EXPECTED_HASH" = "$ACTUAL_HASH" ] || { echo apk-update=VERIFY_FAILED; return 1; }
+  echo "apk-update=VERIFIED package=$PKG"
+}
 prepare_apps() {
   READY=1
+  ensure_installed dev.codex.vowifi.iwlan Api30Iwlan || return 1
+  ensure_installed dev.codex.vowifi.qns Api30Qns || return 1
+  ensure_installed me.phh.ims Api30PhhIms || return 1
   for PKG in dev.codex.vowifi.iwlan dev.codex.vowifi.qns me.phh.ims; do
     run_cmd pm grant "$PKG" android.permission.READ_PHONE_STATE || READY=0
     run_cmd cmd deviceidle whitelist +"$PKG" || READY=0

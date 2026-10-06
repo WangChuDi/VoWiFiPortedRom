@@ -182,12 +182,35 @@ public final class RootDiagnostics {
         String pid=observation(out,"sms_observation_error",2,"pidof","com.android.phone").trim();
         String last=null;
         if(pid.matches("[0-9]+")){
-            String radio=observation(out,"sms_observation_error",4,"logcat","-b","radio","-d","-v","threadtime","--pid="+pid,"-s","ImsSmsDispatcher ["+slot+"]:D","*:S");
-            Pattern state=Pattern.compile("isAvailable: up=(true|false), reg=\\s*(true|false), cap=\\s*(true|false)");
-            for(String line:radio.split("[\r\n]+")){Matcher m=state.matcher(line);if(m.find())last="up="+m.group(1)+" reg="+m.group(2)+" sms="+m.group(3);}
+            try{last=smsDispatcherObservation(pid,slot);}
+            catch(Throwable t){out.put("sms_observation_error",errorName(t));}
         }
-        out.put("sms_dispatcher",last==null?"本次电话进程尚无发送观测":last);
+        out.put("sms_dispatcher",last==null?"本次电话进程尚无发送观测；注册和 SMS 能力不保证分发器已就绪":"最近发送时的历史判定："+last+"\n不代表当前实时可用性");
         if(!out.has("ike"))out.put("ike","不可见：仅凭接口不能确认所选 SIM 的 IKE/child 状态");
+    }
+    private static String smsDispatcherObservation(String pid,int slot)throws Exception{
+        // Android11 filter specifications tokenize spaces inside OEM tag names.
+        // Stream the current PID instead and retain only matching status fields;
+        // raw phone logs, message text and identities are never buffered/exported.
+        Pattern state=Pattern.compile("^\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s+"+pid+
+            "\\s+\\d+\\s+[VDIWEF]\\s+ImsSmsDispatcher \\["+slot+"\\]:\\s+isAvailable: up=(true|false), reg=\\s*(true|false), cap=\\s*(true|false)");
+        java.lang.Process process=new ProcessBuilder("logcat","-b","all","-d","-v","threadtime","--pid="+pid).redirectErrorStream(true).start();
+        java.util.concurrent.atomic.AtomicReference<String> latest=new java.util.concurrent.atomic.AtomicReference<>();
+        Thread reader=new Thread(()->{
+            try(BufferedReader lines=new BufferedReader(new InputStreamReader(process.getInputStream(),"UTF-8"))){
+                String line;
+                while((line=lines.readLine())!=null){
+                    Matcher match=state.matcher(line);
+                    if(match.find())latest.set("up="+match.group(1)+" reg="+match.group(2)+" sms="+match.group(3));
+                }
+            }catch(IOException ignored){}
+        });
+        reader.setDaemon(true);reader.start();
+        if(!process.waitFor(4,TimeUnit.SECONDS)){process.destroyForcibly();reader.join(500);throw new TimeoutException();}
+        reader.join(500);
+        if(reader.isAlive())throw new TimeoutException();
+        if(process.exitValue()!=0)throw new IOException("logcat-failed");
+        return latest.get();
     }
     /** 1 selected, 0 another subscription, -1 attribution unavailable. */
     private static int networkAttribution(NetworkCapabilities caps,int sub){

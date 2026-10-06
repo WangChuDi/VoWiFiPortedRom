@@ -34,6 +34,13 @@ although independent callbacks reported WLAN registration and SMS capability.
 An explicit idle reload restored dispatch; INFO sending, four reply acknowledgements,
 one native inbox row and its notification then passed. Automatic post-boot dispatcher
 synchronization remains intermittent; the older success above does not resolve it.
+Controller 0.7.1 subsequently retired stale feature registration callbacks and
+verified/upgraded the actual installed APKs before preparing bindings. Its final
+reboot's first INFO test passed without an additional manual reload. A subsequent
+real SMS test also verified the tool's current-phone/selected-slot historical
+dispatcher observation (up/registered/capable all true). This positive run and
+the fixed lifecycle defect do not prove every old failure's cause or long-term
+boot stability.
 Audible speech still needs user confirmation. Registration alone does not prove audio,
 emergency calling, handover, DTMF, supplementary services or every SMS format.
 
@@ -51,6 +58,9 @@ emergency calling, handover, DTMF, supplementary services or every SMS format.
   phhusson snapshot. API30 socket compatibility, WLAN registration/capabilities,
   network-bound SIP, reconnection/renewal and voice lifecycle adaptations.
   Unavailable RNNoise JNI is replaced with PCM passthrough.
+  Registration publication is scoped to the current feature/subscription/binder
+  and serialized with retirement. Retired feature callbacks cannot overwrite the
+  replacement's registration; the same-subscription framework binder is retained.
 * SMS uses ImsSmsImplBase. Android handles storage, multipart assembly and
   notifications. RP replies use the saved network RP reference, which differs
   from TP messageRef; rejected delivery produces RP-ERROR.
@@ -129,6 +139,11 @@ Settings/Binder services stop supervision without discarding persistent state.
 Each owner has a token-scoped supervisor. Renewals check the live SIM and private
 identity record before extending its gate; unavailable owners are retried without
 changing the saved transaction or renewing a mismatched card's lease.
+Before preparing services, it verifies PackageManager's actual three APKs against
+the module payload. A stale /data/app update can shadow the newly mounted APK;
+the boot service installs the signed payload through stdin only when both slots
+are observed idle, then verifies the actual installed hash. Unknown/busy call
+states defer updating. Matching APKs are left alone.
 Phone reload invalidates registration listeners. The diagnostic reconnects
 callbacks while waiting for WLAN+SMS readiness. Check capability and SMS
 permissions in the same phone-process lifetime.
