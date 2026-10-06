@@ -103,9 +103,12 @@ only one active card; do not infer simultaneous registration from those fixtures
    behavior. The connected device currently has only one active card.
 4. Complete modern installation/controller profiles and validate actual
    Android12–17 framework, root, permission and IKE behavior. The pinned samples
-   are static evidence, not device tests. Android12's new DataService overload
-   forwards to the old override but drops newer request fields; handover and
-   modern field handling require their own implementation and tests.
+   are static evidence, not device tests. The API30 provider still receives the
+   legacy forwarded setup form. The separate [API31 IWLAN experiment](../../android12/README.md)
+   now handles the full overload explicitly, including address-preserving target
+   handovers and source start/cancel ownership; unsupported N1/slice/URSP requests
+   fail explicitly. Its contract tests do not enable modern installation engines
+   or prove carrier handover, root integration or Android12–17 device behavior.
 5. Extend diagnostics beyond available registration/capability metadata with
    bounded, explicitly requested real traffic tests; do not report unseen stages
    as healthy. Keep message bodies, SIM identity and authentication keys private.

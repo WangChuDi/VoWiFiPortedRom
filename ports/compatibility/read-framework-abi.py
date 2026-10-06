@@ -9,6 +9,8 @@ TYPES = [
     'android.net.ipsec.ike.IkeSessionCallback', 'android.net.ipsec.ike.ChildSessionCallback',
     'android.net.eap.EapSessionConfig$Builder', 'android.telephony.data.DataProfile',
     'android.telephony.data.DataService', 'android.telephony.data.DataService$DataServiceProvider',
+    'android.telephony.data.DataCallResponse', 'android.telephony.data.DataCallResponse$Builder',
+    'android.telephony.data.NetworkSliceInfo', 'android.telephony.data.TrafficDescriptor',
     'android.telephony.data.QualifiedNetworksService',
     'android.telephony.data.QualifiedNetworksService$NetworkAvailabilityProvider',
     'android.telephony.NetworkService', 'android.telephony.NetworkService$NetworkServiceProvider',

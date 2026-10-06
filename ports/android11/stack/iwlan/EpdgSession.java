@@ -24,6 +24,7 @@ public final class EpdgSession {
     private final int slot;
     private final int expectedSub;
     private final Listener listener;
+    private final EpdgAddressRequest addressRequest;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final ScheduledExecutorService timer=Executors.newSingleThreadScheduledExecutor();
     private final AtomicBoolean stopping=new AtomicBoolean(),notified=new AtomicBoolean(),cleaned=new AtomicBoolean();
@@ -38,7 +39,11 @@ public final class EpdgSession {
         this(context,slot,-1,listener);
     }
     public EpdgSession(Context context,int slot,int expectedSub,Listener listener) {
+        this(context,slot,expectedSub,EpdgAddressRequest.LEGACY,listener);
+    }
+    public EpdgSession(Context context,int slot,int expectedSub,EpdgAddressRequest addressRequest,Listener listener) {
         this.context=context; this.slot=slot; this.expectedSub=expectedSub; this.listener=listener;
+        this.addressRequest=Objects.requireNonNull(addressRequest);
     }
     private static Class<?> type(String name)throws Exception{return Class.forName(name);}
     private static Object call(Object o,String method,Class<?>[] types,Object...args)throws Exception {
@@ -101,12 +106,11 @@ public final class EpdgSession {
         IkeApiCompat.addIkeProposal(ib,proposal(false),type(IKE+"IkeSaProposal"));
         integer(ib,"addIkeOption",type(IKE+"IkeSessionParams").getField("IKE_OPTION_EAP_ONLY_AUTH").getInt(null));
         integer(ib,"addIkeOption",type(IKE+"IkeSessionParams").getField("IKE_OPTION_ACCEPT_ANY_REMOTE_ID").getInt(null));
-        integer(ib,"addPcscfServerRequest",OsConstants.AF_INET);
+        addressRequest.configurePcscf(ib,OsConstants.AF_INET,OsConstants.AF_INET6);
         call(ib,"setRetransmissionTimeoutsMillis",new Class<?>[]{int[].class},(Object)new int[]{1000,2000,4000,8000});
         Object cb=make(IKE+"TunnelModeChildSessionParams$Builder");
         call(cb,"addSaProposal",new Class<?>[]{type(IKE+"ChildSaProposal")},proposal(true));
-        integer(cb,"addInternalAddressRequest",OsConstants.AF_INET);
-        integer(cb,"addInternalDnsServerRequest",OsConstants.AF_INET);
+        addressRequest.configureChild(cb,OsConstants.AF_INET,OsConstants.AF_INET6);
         IpSecManager ipsec=context.getSystemService(IpSecManager.class);
         stage="tunnel-interface";
         synchronized(resourceLock){
@@ -143,6 +147,17 @@ public final class EpdgSession {
                         List<LinkAddress> addresses=new ArrayList<>((List<LinkAddress>)get(a[0],"getInternalAddresses"));
                         List<InetAddress> dns=new ArrayList<>((List<InetAddress>)get(a[0],"getInternalDnsServers"));
                         if(addresses.isEmpty()||pcscf.isEmpty())throw new IllegalStateException("missing-network-parameters");
+                        if(addressRequest!=EpdgAddressRequest.LEGACY){
+                            List<LinkAddress> preserved=new ArrayList<>();
+                            for(LinkAddress la:addresses){
+                                InetAddress address=addressRequest.preserveIpv6(la.getAddress(),la.getPrefixLength());
+                                preserved.add(address.equals(la.getAddress())?la:new LinkAddress(address,la.getPrefixLength()));
+                            }
+                            addresses=preserved;
+                        }
+                        List<InetAddress> assigned=new ArrayList<>();
+                        for(LinkAddress la:addresses)assigned.add(la.getAddress());
+                        if(addressRequest!=EpdgAddressRequest.LEGACY)addressRequest.verifyAssigned(assigned);
                         for(LinkAddress la:addresses)tunnel.addAddress(la.getAddress(),la.getPrefixLength());
                         opened=true;listener.opened(tunnel.getInterfaceName(),addresses,dns,new ArrayList<>(pcscf));break;
                     case "onClosedExceptionally":

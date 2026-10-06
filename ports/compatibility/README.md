@@ -108,6 +108,25 @@ obligation; returning to the declaring package also preserves final override
 restrictions. These boundaries were checked with the existing Java compiler and
 the [Java language specification](https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.4.8.1).
 
+## Separate modern IWLAN variant
+
+The [API31 experiment](../android12/README.md) implements the full modern setup
+overload instead of losing new fields through the legacy default forwarding.
+Its EPC backend accepts normal IMS/PDU0 requests and explicitly rejects unsupported
+N1, slice and URSP requests. Incoming handovers pass source addresses to IKE;
+source start/cancel operations retain their tunnel until completion. Sixty
+production-contract assertions run with controlled boundaries, including provider
+retirement concurrent with publication. They are not device or Binder tests.
+
+`check-iwlan-variants.py` compiles API30 IWLAN into an isolated output directory
+and verifies that no API31-only types enter it; it also verifies the modern full
+overload, APK DEX and min/target SDK31. The inventory now includes DataCallResponse,
+its Builder, NetworkSliceInfo and TrafficDescriptor. Modern linkage/lifecycle
+reports cover only the modern compiled variant across the seven pinned API31+
+samples and stay separate from the earlier Android11 stack reports. The actual
+Android11 installed APK hashes remain those of the preserved 0.5.1 milestone.
+No Android12–17 replacement engine is enabled by these static results.
+
 ## Sources
 
 * [Maven Central android-all artifacts](https://repo.maven.apache.org/maven2/org/robolectric/android-all/)
