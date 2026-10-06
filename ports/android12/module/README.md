@@ -102,7 +102,11 @@ helper upgrade refusal, atomic generation handoff, inventory refusal, expiration
 retention, disabled module recovery and original policy repeat checks. Evidence
 and failure history are in
 [the supervision report](../runtime/reports/20261006-selection-supervisor/README.md).
-This does not execute the production resident loop or the actual boot hooks.
+Those 33-stage reports invoke ticks directly. The later
+[resident-process batch](../runtime/reports/20261006-resident-process/README.md)
+also runs the shared production resident loop: 39 stages pass on each guest,
+including real-time renewal, duplicate refusal, owned fixture SIGKILL/restart and
+disable recovery. It still does not execute actual Magisk boot hooks or OS reboot.
 
 The earlier installation-only evidence below retains its original scope.
 

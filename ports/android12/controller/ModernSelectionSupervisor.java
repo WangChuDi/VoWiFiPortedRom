@@ -87,38 +87,58 @@ public final class ModernSelectionSupervisor {
         }
         return output;
     }
+    boolean alive()throws Exception {
+        File path=new File(coordination,"supervisor.lock");ModernStateFiles.canonical(path);if(!path.exists())return false;
+        if(!path.isFile())throw new IOException("supervisor-lock-path-refused");
+        try(RandomAccessFile file=new RandomAccessFile(path,"rw");FileLock probe=file.getChannel().tryLock()) {
+            if(probe!=null||recoveryHelper==null||file.length()!=65)return false;
+            byte[] contents=new byte[65];file.readFully(contents);return (recoveryHelper.getParentFile().getName()+"\n").equals(new String(contents,"UTF-8"));
+        }
+    }
+    static String processStartTicks(int pid)throws Exception {
+        if(pid<=1)throw new IOException("fixture-resident-process-owner-refused");
+        File path=new File("/proc/"+pid+"/stat");
+        byte[] bytes=java.nio.file.Files.readAllBytes(path.toPath());
+        if(bytes.length>4096)throw new IOException("fixture-resident-process-owner-refused");
+        String value=new String(bytes,"UTF-8");int end=value.lastIndexOf(')');
+        if(!value.startsWith(pid+" (")||end<0)throw new IOException("fixture-resident-process-owner-refused");
+        String[] fields=value.substring(end+1).trim().split("\\s+");
+        // The first suffix field is Linux stat field 3; starttime is field 22.
+        if(fields.length<20||!fields[19].matches("[0-9]{1,20}"))throw new IOException("fixture-resident-process-owner-refused");
+        return fields[19];
+    }
+    JSONObject runResident()throws Exception {
+        String classpath=System.getenv("CLASSPATH");boolean matching=recoveryHelper!=null&&recoveryHelper.getPath().equals(classpath);
+        if(test&&"/data/local/tmp/codex-modern-runtime-check.zip".equals(classpath)&&recoveryHelper!=null)matching=ModernInstallationTransaction.digest(new File(classpath)).equals(generation);
+        if(generation==null||!matching||!generation.equals(ModernInstallationTransaction.digest(recoveryHelper)))throw new IOException("published-supervisor-helper-required");
+        ModernStateFiles state=new ModernStateFiles(coordination);
+        try(RandomAccessFile file=new RandomAccessFile(state.file("supervisor.lock"),"rw")) {
+            android.system.Os.chmod(state.file("supervisor.lock").getPath(),0600);FileLock acquired=null;long deadline=SystemClock.elapsedRealtime()+60000;
+            while(acquired==null&&SystemClock.elapsedRealtime()<deadline){acquired=file.getChannel().tryLock();if(acquired==null)Thread.sleep(250);}
+            try(FileLock lock=acquired) {
+                if(lock==null)throw new IOException("supervisor-already-running");
+                file.setLength(0);file.write((recoveryHelper.getParentFile().getName()+"\n").getBytes("UTF-8"));file.getFD().sync();
+                Properties identity=new Properties();identity.setProperty("schema","1");identity.setProperty("build",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);identity.setProperty("generation",recoveryHelper.getParentFile().getName());identity.setProperty("pid",Integer.toString(android.os.Process.myPid()));identity.setProperty("start_ticks",processStartTicks(android.os.Process.myPid()));identity.setProperty("boot",Integer.toString(ModernPhoneRefresh.boot(context)));state.write("resident.properties",identity);
+                String previous="";
+                for(;;) {
+                    JSONObject output;try{output=tick(false);}catch(Exception error){output=new JSONObject().put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("error",error.getClass().getSimpleName());}
+                    String current=output.toString();if(!current.equals(previous)){System.out.println(current);System.out.flush();previous=current;}
+                    if(output.optBoolean("stop_supervisor"))return output;Thread.sleep(15000);
+                }
+            }
+        }
+    }
     public static void main(String[] args) {
         JSONObject output=new JSONObject();boolean success=false;
         try {
             if(args.length!=1||!Arrays.asList("tick","restore-all","run","alive").contains(args[0]))throw new SecurityException("fixed-supervisor-command-required");
             Context context=ModernSelectionController.context();ModernSelectionSupervisor supervisor=new ModernSelectionSupervisor(context,ModernSelectionController.MODULE,ModernSelectionController.INSTALLATION,ModernSelectionController.COORDINATION,false);
             if("alive".equals(args[0])) {
-                File path=new File(ModernSelectionController.COORDINATION,"supervisor.lock");ModernStateFiles.canonical(path);boolean alive=false;
-                if(path.exists()) {
-                    if(!path.isFile())throw new IOException("supervisor-lock-path-refused");
-                    try(RandomAccessFile file=new RandomAccessFile(path,"rw");FileLock probe=file.getChannel().tryLock()) {
-                        if(probe==null&&supervisor.recoveryHelper!=null&&file.length()==65){byte[] contents=new byte[65];file.readFully(contents);alive=(supervisor.recoveryHelper.getParentFile().getName()+"\n").equals(new String(contents,"UTF-8"));}
-                    }
-                }
-                output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("supervisor_alive",alive);success=true;
+                output.put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("supervisor_alive",supervisor.alive());success=true;
             }
             else if(!"run".equals(args[0])){output=supervisor.tick("restore-all".equals(args[0]));success=output.getInt("pending")==0;}
             else {
-                if(supervisor.generation==null||!supervisor.recoveryHelper.getPath().equals(System.getenv("CLASSPATH"))||!supervisor.generation.equals(ModernInstallationTransaction.digest(supervisor.recoveryHelper)))throw new IOException("published-supervisor-helper-required");
-                ModernStateFiles state=new ModernStateFiles(ModernSelectionController.COORDINATION);
-                try(RandomAccessFile file=new RandomAccessFile(state.file("supervisor.lock"),"rw")) {
-                    android.system.Os.chmod(state.file("supervisor.lock").getPath(),0600);
-                    FileLock acquired=null;long deadline=SystemClock.elapsedRealtime()+60000;
-                    while(acquired==null&&SystemClock.elapsedRealtime()<deadline){acquired=file.getChannel().tryLock();if(acquired==null)Thread.sleep(250);}
-                    try(FileLock lock=acquired) {
-                        if(lock==null)throw new IOException("supervisor-already-running");file.setLength(0);file.write((supervisor.recoveryHelper.getParentFile().getName()+"\n").getBytes("UTF-8"));file.getFD().sync();String previous="";
-                        for(;;) {
-                            try{output=supervisor.tick(false);}catch(Exception error){output=new JSONObject().put("schema",1).put("sdk",Build.VERSION.SDK_INT).put("error",error.getClass().getSimpleName());}
-                            String current=output.toString();if(!current.equals(previous)){System.out.println(current);System.out.flush();previous=current;}
-                            if(output.optBoolean("stop_supervisor")){success=true;break;}Thread.sleep(15000);
-                        }
-                    }
-                }
+                output=supervisor.runResident();success=true;
             }
             output.put("carrier_call_sms_verified",false).put("dual_active_sim_verified",false).put("modern_device_lifecycle_verified",false);
         }catch(Throwable error){try{output.put("error",error.getClass().getSimpleName());}catch(Exception ignored){}}

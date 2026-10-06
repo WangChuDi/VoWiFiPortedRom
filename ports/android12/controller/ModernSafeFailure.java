@@ -18,7 +18,9 @@ final class ModernSafeFailure {
         "original-slot-lease-changed-before-archive","enabled-selection-module-required",
         "selected-providers-unconfirmed","selected-providers-changed",
         "selection-archive-carrier-unavailable","selection-archive-phase-refused",
-        "original-carrier-required-before-archive","untracked-carrier-state-recovery-required"));
+        "original-carrier-required-before-archive","untracked-carrier-state-recovery-required",
+        "supervisor-already-running","fixture-resident-process-owner-refused","fixture-resident-lease-unconfirmed",
+        "shared-mode-legacy-observation-required","shared-mode-manager-unobserved","shared-mode-cache-changed"));
     static String reason(Throwable error){String value=error.getMessage();return REASONS.contains(value)?value:"unclassified";}
     static String origin(Throwable error) {
         for(StackTraceElement frame:error.getStackTrace())if(frame.getClassName().matches("Modern[A-Za-z0-9]+")&&frame.getMethodName().matches("[A-Za-z0-9_<>]+"))return frame.getClassName()+"."+frame.getMethodName()+":"+frame.getLineNumber();

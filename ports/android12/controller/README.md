@@ -1,7 +1,8 @@
 # Modern selected-subscription carrier transaction
 
-This is the carrier-configuration layer for a future modern controller, not a
-complete installer, boot supervisor or enabled diagnostic-app replacement engine.
+This is the carrier-configuration layer used by the experimental modern owner
+controller and installation/supervision module. Diagnostic-app modern replacement
+buttons remain disabled pending their integration and device/dual-SIM evidence.
 The Android11 controller/profile and its working installed APKs remain separate.
 The modern research APK bundle still does not contain an installer/controller.
 
@@ -114,12 +115,15 @@ slot ringing/offhook, missing/duplicate states, unknown values and incomplete
 phone inventory. It requires an observed state for every active modem, including
 empty slots; unknown observations refuse a reload rather than defaulting to idle.
 
-Actual OS reboot/externally killed helper recovery remains untested.
+Actual OS reboot and abrupt interruption of the core provider transaction remain
+untested. The later resident batch below verifies an actual supervisor SIGKILL,
+which is a different interruption boundary.
 Ordinary exceptions attempt recovery; a forced timeout/kill is a failed
 disposable test and cannot guarantee cleanup. Private phase evidence is retained.
 It does not prove real carrier authentication, IMS registration, call/SMS/native
-delivery, simultaneous active SIMs or a production installer/lease/watchdog/UI.
-All those remain separate work; modern buttons in the diagnostic app stay disabled.
+delivery, simultaneous active SIMs or real Magisk lifecycle behavior. The modern
+installer/lease/watchdog backend is implemented below; application integration
+remains separate and modern buttons in the diagnostic app stay disabled.
 
 ## Production command backend
 
@@ -149,7 +153,8 @@ false. The completed API33/API36 guard suite checks actual nonroot, non-VOXI and
 invalid-mask refusals with transaction-inventory presence unchanged. It does not
 prove a successful production VOXI command on a real modern phone. This backend
 does not own APK installation, IWLAN operation mode, companion conflicts, leases,
-boot recovery or lifecycle archival; the future coordinator must supply those.
+boot recovery or lifecycle archival; `ModernSelectionTransaction` and the
+[module coordinator](../module/README.md) supply those experimental lifecycle paths.
 
 Build and run the parser/report contracts:
 
@@ -167,8 +172,8 @@ license remain under the Android11 port and are not replaced by this carrier lay
 
 `ModernSelectionTransaction` now coordinates the carrier transaction, prepared
 installation, per-slot component lease and shared IWLAN resource under the same
-device-wide lock. This backend is not yet connected to a production command,
-boot watchdog or application selector. Its production owner remains a ready23415
+device-wide lock. It is connected to fixed production commands and a resident
+supervisor; the application selector remains pending. Its owner remains a ready23415
 SIM; disposable non-VOXI fixtures have separate paths and QEMU/AVD guards.
 
 Each private schema3 owner record keeps its original slot lease settings,
@@ -212,6 +217,38 @@ changes are refused. These AppOps participate in the stable full-role comparison
 The earlier prototype owner schemas are not silently rebaselined or migrated.
 
 An incomplete core PREPARING snapshot is preserved rather than reused. Modern
-watchdog/disable/remove/boot recovery and UI integration remain pending. See the
+UI integration, shared multi-SIM role-permission ownership and real Magisk lifecycle
+remain pending. Watchdog/disable/remove/boot recovery is now implemented by
+`ModernSelectionSupervisor` and independently published recovery generations. See the
 [owner-selection batch reports](../runtime/reports/20261006-owner-selection/README.md)
 for actual per-version evidence and failed intermediate attempts.
+
+## Actual resident process lifecycle
+
+The production supervisor now exposes the same `runResident()` implementation
+used by the separately guarded named-QEMU fixture. It holds its generation-bound
+resident lock, records a private PID/boot/build/generation/start-time identity,
+then runs the ordinary inventory tick every 15 seconds. A second worker waits
+up to 60 seconds for the lock before refusing. The process journal does not
+replace the held-lock and generation checks used for readiness.
+
+The final [resident batch](../runtime/reports/20261006-resident-process/README.md)
+passed 39 stages on each API33/API36 guest concurrently. It waits 105 real seconds
+and proves renewal beyond the initial 90-second lease, refuses a second resident,
+actually kills only the journal-matched nonce fixture, starts a new process over
+the existing retained owner, then disables the fixture and verifies original
+owner/installation policy before exit. Cleanup verifies every tracked host handle
+is terminal before changing outer policy. The kill guard also compares Linux
+process start time, UID and exact nonce command name; no host-provided PID is used.
+
+Read-only audit contention retries only the exact validated
+`modern-controller-busy` failure within bounded attempts/time. API31–33 shared-mode
+observation retries a missing direct legacy field using fresh dumps, but still
+refuses if it remains unknown. Conflicting/malformed fields are never converted
+to success. The missing-field failure is retained in the report history; its
+underlying cause was not established.
+
+This proves a supervised process lifecycle on two single-fake-SIM emulators.
+It does not prove phone-process kill/cache reconstruction, core PREPARING recovery,
+OS reboot, real Magisk boot hooks, modem/USIM authentication, carrier call/SMS,
+simultaneous dual SIMs or complete SDK31–37 runtime coverage.

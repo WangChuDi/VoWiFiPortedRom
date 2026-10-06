@@ -52,10 +52,21 @@ final class ModernSharedIwlan {
         if(pid<=1||boot<0)throw new IOException("shared-mode-refresh-marker-required");
         return ModernPhoneRefresh.refresh(context,pid,boot,Integer.parseInt(value.getProperty("slot")),expected);
     }
+    private static ModernIwlanObservation.Result observe(int slot)throws Exception {
+        ModernIwlanObservation.Result result=null;
+        // A successful dumpsys exit can still omit a later direct-state field.
+        // Retry fresh read-only observations; never infer legacy=false from absence.
+        for(int attempt=0;attempt<3;attempt++) {
+            result=ModernIwlanObservation.read(ModernSystemObservation.telephonyDebug(),slot);
+            if(result.legacy!=null||Build.VERSION.SDK_INT>33)return result;
+            if(attempt<2)Thread.sleep(200);
+        }
+        return result;
+    }
     boolean acquire(int slot)throws Exception {
         held.requireHeld(lockRoot);
         if(!files.file("iwlan-mode.properties").exists()) {
-            ModernIwlanObservation.Result observation=ModernIwlanObservation.read(ModernSystemObservation.telephonyDebug(),slot);
+            ModernIwlanObservation.Result observation=observe(slot);
             if(observation.legacy==null&&Build.VERSION.SDK_INT<=33)throw new IOException("shared-mode-legacy-observation-required");
             Properties before=property(),value=new Properties();value.setProperty("schema","2");value.setProperty("build",Build.VERSION.SDK_INT+":"+Build.FINGERPRINT);
             value.setProperty("before.present",before.getProperty("present"));value.setProperty("before.value",before.getProperty("value"));
@@ -68,13 +79,13 @@ final class ModernSharedIwlan {
                 if(!original(value)||Integer.toString(ModernPhoneRefresh.boot(context)).equals(value.getProperty("ap.boot")))throw new IOException("external-shared-mode-change-refused");
                 pending(value,"CHANGING");phase="CHANGING";
             } else {
-                ModernIwlanObservation.Result mode=ModernIwlanObservation.read(ModernSystemObservation.telephonyDebug(),slot);
+                ModernIwlanObservation.Result mode=observe(slot);
                 if(Boolean.TRUE.equals(mode.legacy)||Boolean.FALSE.equals(mode.cachedWlan))throw new IOException("shared-mode-cache-changed");return false;
             }
         }
         if("ORIGINAL".equals(phase)) {
             if(!original(value))throw new IOException("external-shared-mode-change-refused");
-            ModernIwlanObservation.Result mode=ModernIwlanObservation.read(ModernSystemObservation.telephonyDebug(),slot);
+            ModernIwlanObservation.Result mode=observe(slot);
             if(mode.legacy==null&&Build.VERSION.SDK_INT<=33)throw new IOException("shared-mode-legacy-observation-required");
             if(Boolean.TRUE.equals(mode.legacy))pending(value,"CHANGING");
             else if(Boolean.FALSE.equals(mode.cachedWlan))pending(value,"REFRESH_AP");

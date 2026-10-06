@@ -350,3 +350,48 @@ cleanup do not establish USIM authentication, ePDG tunnelling, IMS/MMTEL carrier
 registration, voice/SMS acceptance, Magisk mounting or real dual-SIM behavior.
 The [batch record](reports/20261006-owner-selection/README.md) distinguishes failed
 attempts from the latest complete evidence. Modern app selectors remain disabled.
+
+## Resident loop, actual SIGKILL and automatic disable recovery
+
+`--resident` appends six real-process lifecycle stages to the existing 33-stage
+installation/selection/supervision suite. Both API33/API36 guests passed all 39
+stages concurrently with the final helper/module. The same production
+`runResident()` and its 15-second tick interval are used. A nonce-scoped fixture
+sets an exact process name and allows SIGKILL only after verifying its private
+PID, Linux start time, root UID, boot, build, current helper generation and name.
+Neither a physical-device serial nor a host-selected PID can be used.
+
+```sh
+python check-installation-emulator.py --adb /path/to/adb \
+  --guest 33:emulator-5574 --guest 36:emulator-5580 \
+  --module ../out/modern-services-installation-stage.zip --resident \
+  --output /path/to/fresh-resident-report.json
+```
+
+`--resident-only` requires `--resident` and limits an investigation to five
+prerequisite stages, the six new stages and three final cleanup stages. It is
+explicitly reported and is not a full regression result. Each invocation uses
+a fresh nonce and report, including after failures.
+
+The new stages prove a live resident over 105 real seconds, renewal past the
+initial 90-second lease, duplicate lock refusal, process death and lock release,
+new-process retention, and disable-driven original owner/installation restoration
+before normal exit. Finally disables the fixture, waits for all tracked processes,
+and can kill only the same identity-checked fixture if waiting fails. Policy cleanup
+is deferred and the report fails when any tracked handle remains live. Read-only
+audit lock contention has bounded retries only for the exact fixed busy reason;
+mutation failures and failed assertions are not retried.
+
+The [report history](reports/20261006-resident-process/README.md) retains the
+initial resident failures, confirmed busy-audit failures and a separate missing API33 legacy-field observation,
+and the final successful batch. Production shared-mode acquisition now rereads a
+temporarily missing legacy field before refusing it; unknown, malformed and
+contradictory state never establishes readiness. The 21 existing parser contracts
+are now included in `../controller/test-baseline.py` alongside baseline/idle tests.
+
+`actual_resident_forced_kill_verified` describes this supervisor-process boundary;
+`os_reboot_verified` remains false. Earlier stages retain their own simulated
+handoff scope. This is not a kill at every carrier phase, real Magisk mount/boot,
+phone-cache reconstruction, carrier call/SMS or dual-active-SIM proof. The three
+signed service APKs were retained and the API30 phone received no configuration
+change, call or SMS in this batch.

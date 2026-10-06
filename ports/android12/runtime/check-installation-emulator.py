@@ -2,7 +2,7 @@
 """Concurrent, disposable fake-SIM permission recovery trials, not real phone installs."""
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import argparse,hashlib,json,re,stat,subprocess,uuid,zipfile
+import argparse,hashlib,json,re,stat,subprocess,time,uuid,zipfile
 B=Path(__file__).resolve().parent
 STAGES={
     'coordination':('borrowed_carrier_close_keeps_global_lock','borrowed_installation_close_keeps_global_lock',
@@ -42,7 +42,7 @@ STAGES={
     'cleanup':('entire_outer_permission_observation_restored',),
 }
 
-def trial(adb,sdk,serial,module_zip):
+def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False):
     record=dict(schema=1,sdk=sdk,status='started',stages={})
     remote='/data/local/tmp/codex-modern-runtime-check.zip';nonce=uuid.uuid4().hex
     root='/data/local/tmp/codex-modern-installation-tests/'+nonce
@@ -63,6 +63,74 @@ def trial(adb,sdk,serial,module_zip):
         if (reply.returncode or observation.get('error') or observation.get('schema')!=1 or observation.get('sdk')!=sdk or
             observation.get('stage')!=name or not all(observation.get(key) is True for key in STAGES[name])):
             raise ValueError('fixture-stage-unconfirmed')
+    resident_children=[]
+    def resident_command(action):
+        deadline=time.monotonic()+25;retries=0
+        while True:
+            guard();reply=command('shell','CLASSPATH='+remote+' timeout 45s app_process /system/bin ModernResidentEmulatorTrial '+action+' '+nonce,check=False,timeout=55)
+            lines=[line for line in reply.stdout.splitlines() if line.startswith('{') and line.endswith('}')]
+            value=json.loads(lines[0]) if len(lines)==1 else {}
+            # The resident holds the same lock during each tick. Retry only this
+            # precise read-only contention; no mutation or failed assertion retries.
+            if (action=='audit' and reply.returncode==1 and value.get('schema')==1 and
+                value.get('sdk')==sdk and value.get('stage')=='resident-audit' and
+                value.get('error')=='IOException' and value.get('reason')=='modern-controller-busy' and
+                time.monotonic()<deadline and retries<25):
+                retries+=1;time.sleep(1);continue
+            if reply.returncode or len(lines)!=1:
+                record['resident_command_failure']=dict(action=action,exit=reply.returncode,json_count=len(lines),busy_retries=retries)
+                record['resident_command_failure'].update({key:value[key] for key in ('error','reason','origin') if key in value})
+                raise ValueError('resident-fixture-json-unavailable')
+            if value.get('error') or value.get('schema')!=1 or value.get('sdk')!=sdk or value.get('stage')!='resident-'+action:raise ValueError('resident-fixture-command-unconfirmed')
+            if retries:record['resident_audit_busy_retries']=record.get('resident_audit_busy_retries',0)+retries
+            return value
+    def start_resident():
+        guard();child=subprocess.Popen([adb,'-s',serial,'shell','CLASSPATH='+remote+' app_process /system/bin ModernResidentEmulatorTrial run '+nonce],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        resident_children.append(child);return child
+    def await_alive(child):
+        deadline=time.monotonic()+30
+        while time.monotonic()<deadline:
+            if child.poll() is not None:
+                text,_=child.communicate();lines=[line for line in text.splitlines() if line.startswith('{') and line.endswith('}')]
+                if lines:
+                    value=json.loads(lines[-1]);record['resident_start_failure']={key:value[key] for key in ('error','reason','origin') if key in value}
+                raise ValueError('resident-exited-before-ready')
+            if resident_command('alive').get('supervisor_alive') is True:return
+            time.sleep(1)
+        raise ValueError('resident-ready-timeout')
+    def resident_cycle():
+        prepared=resident_command('prepare')
+        if prepared.get('retained_owner_ready_for_real_resident') is not True:raise ValueError('resident-owner-not-prepared')
+        record['stages']['resident-prepare']=prepared
+        first=start_resident();await_alive(first);initial=resident_command('audit');initial_until=initial['lease_until'];began=time.monotonic()
+        duplicate=start_resident();duplicate_text,_=duplicate.communicate(timeout=75)
+        replies=[json.loads(line) for line in duplicate_text.splitlines() if line.startswith('{') and line.endswith('}')]
+        if duplicate.returncode!=1 or len(replies)!=1 or replies[0].get('reason')!='supervisor-already-running' or first.poll() is not None:raise ValueError('duplicate-resident-not-refused')
+        record['stages']['resident-duplicate']=dict(schema=1,sdk=sdk,stage='resident-duplicate',second_resident_waits_then_refuses=True,original_resident_still_running=True)
+        # Run beyond the real ninety-second lease, with the production 15s interval.
+        while time.monotonic()-began<105:
+            if first.poll() is not None:raise ValueError('resident-exited-during-renewal')
+            time.sleep(min(2,105-(time.monotonic()-began)))
+        renewed=resident_command('audit')
+        if renewed.get('supervisor_alive') is not True or renewed['elapsed']<=initial_until or renewed['lease_until']<=initial_until:raise ValueError('resident-did-not-renew-real-lease')
+        record['stages']['resident-renew']=dict(schema=1,sdk=sdk,stage='resident-renew',real_lease_interval_exceeded=True,retained_selection_verified=True,lease_extended_by_background_loop=True)
+        killed=resident_command('kill')
+        if killed.get('owned_fixture_resident_sigkill_sent') is not True or killed.get('resident_start_time_identity_verified') is not True:raise ValueError('resident-kill-not-confirmed')
+        first.communicate(timeout=15)
+        if first.returncode==0 or resident_command('alive').get('supervisor_alive') is not False:raise ValueError('resident-kill-not-terminal')
+        record['stages']['resident-kill']=dict(schema=1,sdk=sdk,stage='resident-kill',actual_owned_resident_sigkill_verified=True,resident_start_time_identity_verified=True,resident_lock_released_after_process_death=True)
+        successor=start_resident();await_alive(successor);resumed=resident_command('audit')
+        if resumed.get('retained_selection_verified') is not True:raise ValueError('resident-restart-owner-not-resumed')
+        record['stages']['resident-restart']=dict(schema=1,sdk=sdk,stage='resident-restart',new_process_resumes_existing_retained_owner=True)
+        disabled=resident_command('disable')
+        if disabled.get('fixture_disable_published') is not True:raise ValueError('resident-disable-not-published')
+        final_text,_=successor.communicate(timeout=60)
+        final_replies=[json.loads(line) for line in final_text.splitlines() if line.startswith('{') and line.endswith('}')]
+        if successor.returncode or not final_replies or final_replies[-1].get('resident_exit_confirmed') is not True or final_replies[-1].get('installation_policy_restored') is not True:raise ValueError('resident-disabled-recovery-not-terminal')
+        recovered=resident_command('recovered')
+        if recovered.get('resident_restored_owner_and_installation_before_exit') is not True:raise ValueError('resident-disabled-policy-not-original')
+        record['stages']['resident-disable']=recovered
+        record['actual_resident_forced_kill_verified']=True
     failure=None;started=False
     try:
         guard();helper=B.parent/'out/runtime/runtime-check.zip'
@@ -112,8 +180,11 @@ def trial(adb,sdk,serial,module_zip):
         phone=shell('pidof com.android.phone')
         if not re.fullmatch(r'[0-9]+',phone):raise ValueError('single-phone-process-required')
         started=True
-        for name in STAGES:
+        prerequisites=('coordination','seed','supervisor-publish','prepare','restore') if resident_only else STAGES
+        record['resident_prerequisites_only']=resident_only
+        for name in prerequisites:
             if name not in ('supervisor-cleanup','selection-cleanup','cleanup'):stage(name)
+        if resident:resident_cycle()
     except Exception as error:
         failure=type(error).__name__
         if started:
@@ -124,12 +195,39 @@ def trial(adb,sdk,serial,module_zip):
             except Exception:record['pre_cleanup_policy_audit_unavailable']=True
     finally:
         if started:
-            try:stage('supervisor-cleanup')
-            except Exception as error:record['supervisor_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
-            try:stage('selection-cleanup')
-            except Exception as error:record['selection_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
-            try:stage('cleanup')
-            except Exception as error:record['cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+            resident_stopped=True
+            if resident_children:
+                # Disable only the nonce-scoped fixture. Waiting duplicate loops
+                # acquire/recover/exit too; do not abandon a remote app_process.
+                try:resident_command('disable')
+                except Exception as error:record['resident_disable_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+                for child in resident_children:
+                    try:child.communicate(timeout=75)
+                    except subprocess.TimeoutExpired:
+                        # A live but unrecoverable tick must not race cleanup.
+                        # Kill only the journal-bound nonce fixture, never an adb
+                        # client or a PID chosen by the host. A waiter may acquire
+                        # the released lock; verify each tracked handle is terminal.
+                        for attempt in range(3):
+                            if child.poll() is not None:break
+                            try:
+                                if resident_command('alive').get('supervisor_alive') is True:resident_command('kill')
+                                child.communicate(timeout=15)
+                            except subprocess.TimeoutExpired:continue
+                            except Exception as error:record['resident_kill_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__;break
+                        if child.poll() is None:resident_stopped=False
+                    except Exception as error:record['resident_process_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__;resident_stopped=False
+                resident_stopped=resident_stopped and all(child.poll() is not None for child in resident_children)
+                record['resident_processes_terminal_before_policy_cleanup']=resident_stopped
+                if not resident_stopped:failure=failure or 'ResidentCleanupNotTerminal'
+            if resident_stopped:
+                try:stage('supervisor-cleanup')
+                except Exception as error:record['supervisor_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+                try:stage('selection-cleanup')
+                except Exception as error:record['selection_cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+                try:stage('cleanup')
+                except Exception as error:record['cleanup_error']=type(error).__name__;failure=failure or type(error).__name__
+            else:record['policy_cleanup_deferred_until_residents_stop']=True
             try:
                 record['phone_process_unchanged']=shell('pidof com.android.phone')==phone
                 if not record['phone_process_unchanged']:failure=failure or 'PhoneProcessRestarted'
@@ -144,7 +242,8 @@ def trial(adb,sdk,serial,module_zip):
             record['iwlan_mode_observation']=mode
         except Exception as error:failure=type(error).__name__
     record.update(status='failed' if failure else 'passed',magisk_mount_verified=False,
-                  carrier_call_sms_verified=False,dual_active_sim_verified=False,actual_os_reboot_or_forced_kill_test=False)
+                  carrier_call_sms_verified=False,dual_active_sim_verified=False,os_reboot_verified=False,
+                  actual_os_reboot_or_forced_kill_test=bool(record.get('actual_resident_forced_kill_verified')))
     if failure:record['error']=failure
     return record
 
@@ -152,7 +251,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--adb',required=True);parser.add_argument('--guest',required=True,action='append')
     parser.add_argument('--module',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
+    parser.add_argument('--resident',action='store_true',help='also run real background renewal, duplicate refusal, SIGKILL/restart and disable recovery')
+    parser.add_argument('--resident-only',action='store_true',help='run only new resident prerequisites and lifecycle; does not repeat the full selection suite')
     args=parser.parse_args();guests=[]
+    if args.resident_only and not args.resident:parser.error('resident-only-requires-resident')
     for guest in args.guest:
         match=re.fullmatch(r'(3[1-7]):(emulator-[0-9]+)',guest)
         if not match:parser.error('explicit-emulator-profile-required')
@@ -182,7 +284,7 @@ def main():
     record=dict(schema=1,status='started',concurrent_device_workers=len(guests),versions=[])
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8')
     with ThreadPoolExecutor(max_workers=len(guests)) as pool:
-        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module),guests))
+        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module,args.resident,args.resident_only),guests))
     record['status']='passed' if all(v['status']=='passed' for v in record['versions']) else 'failed'
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps(record))
     return 0 if record['status']=='passed' else 1

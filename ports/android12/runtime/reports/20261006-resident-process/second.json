@@ -1,0 +1,310 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "concurrent_device_workers": 2,
+  "versions": [
+    {
+      "schema": 1,
+      "sdk": 33,
+      "status": "failed",
+      "stages": {
+        "coordination": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "coordination",
+          "closed_carrier_handle_refused": true,
+          "borrowed_carrier_close_keeps_global_lock": true,
+          "closed_installation_handle_refused": true,
+          "borrowed_installation_close_keeps_global_lock": true,
+          "cross_thread_lock_use_refused": true,
+          "shared_mode_no_reset_cycle_preserves_presence_and_value": true,
+          "other_owner_flag_contract_only": true,
+          "carrier_selection_verified": false,
+          "phone_cache_refresh_verified": false,
+          "dual_active_sim_verified": false,
+          "carrier_call_sms_verified": false
+        },
+        "seed": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "supervisor-publish": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "supervisor-publish",
+          "independent_helper_script_and_hook_published": true,
+          "arbitrary_failure_messages_not_exported": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "actual_os_reboot_or_forced_kill_test": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "restore": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "restore",
+          "original_seeded_policy_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resident-prepare": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "resident-prepare",
+          "retained_owner_ready_for_real_resident": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "os_reboot_verified": false
+        },
+        "supervisor-cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "supervisor-cleanup",
+          "supervisor_fixture_cleanup_completed": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "actual_os_reboot_or_forced_kill_test": false
+        },
+        "selection-cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "selection-cleanup",
+          "selection_outer_cleanup_completed": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 33,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "a46203d98f212cc0b80b80ea2387cac38625dbf5a687c8c1de6d1808dfd7cdf5",
+      "module_sha256": "1bade2e255dd08ef0ce83ebe00f77aeb8a9275bd32ae920bd1c4c00b555b65f5",
+      "nonroot_installation_refused": true,
+      "missing_module_installation_refused": true,
+      "refused_installation_state_presence_unchanged": true,
+      "nonroot_selection_refused": true,
+      "invalid_selection_mask_refused": true,
+      "non_voxi_selection_refused": true,
+      "supervisor_probe_does_not_create_state": true,
+      "module_shell_syntax_checked": true,
+      "resident_prerequisites_only": true,
+      "resident_command_failure": {
+        "action": "audit",
+        "exit": 1,
+        "json_count": 1,
+        "error": "IOException",
+        "reason": "modern-controller-busy",
+        "origin": "ModernControllerLock.<init>:22"
+      },
+      "pre_cleanup_policy_audit": {
+        "schema": 1,
+        "sdk": 33,
+        "stage": "audit",
+        "fixed_policy_changes": [
+          {
+            "field": "flags.0.READ_PHONE_STATE",
+            "before": "256",
+            "after": "304"
+          }
+        ],
+        "permission_profile_ready": true,
+        "installation_phase": "PREPARED",
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      },
+      "resident_processes_terminal_before_policy_cleanup": true,
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "error": "ValueError"
+    },
+    {
+      "schema": 1,
+      "sdk": 36,
+      "status": "failed",
+      "stages": {
+        "coordination": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "coordination",
+          "closed_carrier_handle_refused": true,
+          "borrowed_carrier_close_keeps_global_lock": true,
+          "closed_installation_handle_refused": true,
+          "borrowed_installation_close_keeps_global_lock": true,
+          "cross_thread_lock_use_refused": true,
+          "shared_mode_no_reset_cycle_preserves_presence_and_value": true,
+          "other_owner_flag_contract_only": true,
+          "carrier_selection_verified": false,
+          "phone_cache_refresh_verified": false,
+          "dual_active_sim_verified": false,
+          "carrier_call_sms_verified": false
+        },
+        "seed": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "seed",
+          "missing_runtime_grant_and_exemption_seeded": true,
+          "denied_ipsec_seeded": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "supervisor-publish": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "supervisor-publish",
+          "independent_helper_script_and_hook_published": true,
+          "arbitrary_failure_messages_not_exported": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "actual_os_reboot_or_forced_kill_test": false
+        },
+        "prepare": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "prepare",
+          "installed_permissions_prepared": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "restore": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "restore",
+          "original_seeded_policy_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        },
+        "resident-prepare": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "resident-prepare",
+          "retained_owner_ready_for_real_resident": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "os_reboot_verified": false
+        },
+        "supervisor-cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "supervisor-cleanup",
+          "supervisor_fixture_cleanup_completed": true,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "actual_os_reboot_or_forced_kill_test": false
+        },
+        "selection-cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "selection-cleanup",
+          "selection_outer_cleanup_completed": true,
+          "carrier_registration_verified": false,
+          "call_sms_verified": false,
+          "dual_active_sim_verified": false,
+          "phone_cache_refresh_verified": false
+        },
+        "cleanup": {
+          "schema": 1,
+          "sdk": 36,
+          "stage": "cleanup",
+          "entire_outer_permission_observation_restored": true,
+          "actual_os_reboot_or_forced_kill_test": false,
+          "magisk_mount_verified": false,
+          "carrier_call_sms_verified": false,
+          "dual_active_sim_verified": false
+        }
+      },
+      "helper_sha256": "a46203d98f212cc0b80b80ea2387cac38625dbf5a687c8c1de6d1808dfd7cdf5",
+      "module_sha256": "1bade2e255dd08ef0ce83ebe00f77aeb8a9275bd32ae920bd1c4c00b555b65f5",
+      "nonroot_installation_refused": true,
+      "missing_module_installation_refused": true,
+      "refused_installation_state_presence_unchanged": true,
+      "nonroot_selection_refused": true,
+      "invalid_selection_mask_refused": true,
+      "non_voxi_selection_refused": true,
+      "supervisor_probe_does_not_create_state": true,
+      "module_shell_syntax_checked": true,
+      "resident_prerequisites_only": true,
+      "resident_command_failure": {
+        "action": "audit",
+        "exit": 1,
+        "json_count": 1,
+        "error": "IOException",
+        "reason": "modern-controller-busy",
+        "origin": "ModernControllerLock.<init>:22"
+      },
+      "pre_cleanup_policy_audit": {
+        "schema": 1,
+        "sdk": 36,
+        "stage": "audit",
+        "fixed_policy_changes": [
+          {
+            "field": "flags.0.READ_PHONE_STATE",
+            "before": "256",
+            "after": "304"
+          },
+          {
+            "field": "ipsec.mode",
+            "before": "2",
+            "after": "0"
+          }
+        ],
+        "permission_profile_ready": true,
+        "installation_phase": "PREPARED",
+        "actual_os_reboot_or_forced_kill_test": false,
+        "magisk_mount_verified": false,
+        "carrier_call_sms_verified": false,
+        "dual_active_sim_verified": false
+      },
+      "resident_processes_terminal_before_policy_cleanup": true,
+      "phone_process_unchanged": true,
+      "magisk_mount_verified": false,
+      "carrier_call_sms_verified": false,
+      "dual_active_sim_verified": false,
+      "actual_os_reboot_or_forced_kill_test": false,
+      "error": "ValueError"
+    }
+  ]
+}
