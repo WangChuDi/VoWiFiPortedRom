@@ -189,8 +189,7 @@ public final class CarrierTrial {
         System.exit(0);
     }
     private static PersistableBundle config(Class<?> api,Object loader)throws Exception{
-        try{return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class).invoke(loader,selectedSub,"android");}
-        catch(NoSuchMethodException missing){return (PersistableBundle)api.getMethod("getConfigForSubId",int.class,String.class,String.class).invoke(loader,selectedSub,"android",null);}
+        return (PersistableBundle)CarrierConfigReadCompat.read(api,loader,selectedSub,"android");
     }
     private static PersistableBundle baseline()throws IOException{
         if(!BASELINE.isFile()||BASELINE.length()>32768)throw new IOException("provider-snapshot-unavailable");

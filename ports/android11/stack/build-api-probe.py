@@ -9,7 +9,7 @@ out.mkdir(exist_ok=True)
 classes = out / 'probe-classes'
 subprocess.run([JAVA, '-jar', str(TOOLS/'ecj.jar'), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
     '-proc:none', '-classpath', str(TOOLS/'android-all-11.jar'), '-d', str(classes),
-    str(B/'StackApiProbe.java'), str(B/'IndependentEpdgProbe.java'), str(B/'CarrierTrial.java'), str(B/'CarrierOverrideFiles.java'), str(B/'OverrideFileStore.java'), str(B/'SmsTestPolicy.java'), str(B/'EndTestCall.java')], check=True)
+    str(B/'StackApiProbe.java'), str(B/'IndependentEpdgProbe.java'), str(B/'CarrierTrial.java'), str(B/'CarrierConfigReadCompat.java'), str(B/'CarrierOverrideFiles.java'), str(B/'OverrideFileStore.java'), str(B/'SmsTestPolicy.java'), str(B/'EndTestCall.java')], check=True)
 jar = out / 'api-probe-classes.jar'
 with zipfile.ZipFile(jar, 'w') as z:
     for p in sorted(classes.rglob('*.class')):

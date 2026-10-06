@@ -125,7 +125,7 @@ its Builder, NetworkSliceInfo and TrafficDescriptor. Modern linkage/lifecycle
 reports cover only the modern compiled variant across the seven pinned API31+
 samples and stay separate from the earlier Android11 stack reports. The actual
 Android11 0.5.1 APKs remain preserved separately; the connected device now runs
-the 0.6.0/0.8.0 metadata-status milestone, with freshly verified installed hashes.
+the 0.7.0/0.9.0 optional-persistence milestone, with freshly verified installed hashes.
 No Android12–17 replacement engine is enabled by these static results.
 
 The shared root-only status provider raises the modern variant's current counts
@@ -134,6 +134,21 @@ without lifecycle findings in the same seven pinned samples. Production registry
 and parser tests add 37 ownership/schema assertions; root/shell access and actual
 SMS/media counters were additionally verified on the API30 device. These tests
 do not establish modern Binder permissions or dual-active-SIM behavior.
+
+The separate modern three-service build now compiles QNS and attributed IMS
+against API31 in addition to modern IWLAN. Its251 Android references and21
+Android-derived classes pass the same seven samples; results are separate
+`modern-services-linkage.json` and `modern-services-lifecycle.json` reports.
+`check-modern-services.py` checks actual APK roles/min/targetSDK31, explicit
+subscription-aware IMS entries, archive hashes and original license notices.
+The research bundle contains no installer and does not open modern engines.
+
+`test-carrier-config-read.py` covers the production resolver's two-argument,
+feature-aware and prior OEM signatures, argument forwarding, preferred-method
+selection and propagation of invocation failure/denial/null without fallback.
+It has15 controlled assertions, not a modern Binder permission test. A separately
+compiled helper's actual API30 read was checked without replacing the phone's
+installed helper or changing its configuration.
 
 ## Sources
 

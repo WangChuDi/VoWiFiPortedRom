@@ -1,9 +1,10 @@
-# Android12+ IWLAN adaptation experiment
+# Android12+ service adaptation experiment
 
-This is a separate, unsigned API31 IWLAN build. It is **not** a complete modern
-IWLAN/QNS/IMS installation profile and is not included in the Android11 module
-or diagnostic app. Android12–17 replacement engines remain disabled. The connected
-MIUI Android11 phone continues using the published tool0.5.1/controller0.7.1 APKs;
+This directory builds separate unsigned API31 IWLAN, QNS and IMS applications.
+It is **not** a complete modern installation profile and is not included in the
+Android11 module or diagnostic app. Android12–17 replacement engines remain
+disabled. The connected MIUI Android11 phone continues using the published
+tool0.7.0/controller0.9.0 APKs;
 no experimental modern APK has been installed on it.
 
 ## Boundary and implementation
@@ -81,6 +82,55 @@ Reports stay under `../compatibility/out/modern-iwlan-*`. A Robolectric Android1
 artifact is not evidence of release status or support for any Android17 ROM.
 Missing runtime hidden API, root permission, SELinux or system integration
 requirements can still prevent binding/connection on those versions.
+
+## Independent three-service build
+
+Using the same toolchain, run:
+
+```sh
+python build-services.py
+python ../compatibility/check-modern-services.py
+python ../compatibility/test-carrier-config-read.py
+```
+
+The build checks the pinned API31 framework, reuses the modern IWLAN provider,
+compiles the shared QNS and separately generates the attributed phhusson IMS
+port with `prepare-ims-source.py --variant api31`. All modern source/classes/APKs
+stay under this directory's `out`. The source generator rejects output aliases;
+the default variant still writes to the legacy location. The full API30 output
+and preserved upstream source are hashed before and after, including on failure.
+A failed rebuild removes the prior research manifest/bundle rather than leaving
+an old success advertised as current.
+
+QNS and IMS use dedicated min/targetSDK31 manifests, explicit service exports,
+binding permissions and root-only status providers. Compiled artifacts retain
+the same package identities for framework integration. They are not installed
+over the API30 applications. The existing IMS subscription-aware entry points
+are verified in the actual compiled class, alongside APK role classes and SDKs.
+
+Output `out/modern-services-unsigned.zip` includes three unsigned APKs, exact
+payload hashes/framework provenance, upstream license and third-party notices.
+It contains no installer, boot scripts or controller. `installer_included=false`
+and `device_validated=false` are deliberate evidence boundaries. The artifact
+checker validates the exact archive, compiled manifest service/action/binding
+permissions/exports, status-provider guard, required IKE library and DEX roles; it does
+not prove permission grants, binding or carrier behavior.
+
+The full modern stack has251 Android/internal-framework references and21
+Android-derived classes. The existing linkage/lifecycle checkers passed all
+seven pinned12–17 samples without missing references, findings or unresolved
+Android ancestors. Reports are `../compatibility/out/modern-services-linkage.json`
+and `modern-services-lifecycle.json`, distinct from IWLAN-only reports. Reflective
+calls and Binder/permission/SELinux/network behavior are excluded.
+
+CarrierConfig read resolution now recognizes the framework's
+`getConfigForSubIdWithFeature(int,String,String)` name when the two-argument
+method is absent, retaining the prior OEM spelling as a final absent-method
+fallback. Invocation errors and null results are never retried through another
+method. Fifteen controlled contract assertions passed; an isolated new helper
+also read the existing API30 configuration without changing the module. This
+does not remove the controller's API30 device/profile gates or establish modern
+Binder permissions. The source change has not replaced the installed API30 helper.
 
 ## Remaining modern work
 

@@ -1,9 +1,16 @@
 """Generate experimental sources from the preserved, attributed API30 snapshot."""
 from pathlib import Path
-import shutil, difflib
+import argparse, shutil, difflib
 B=Path(__file__).resolve().parent
 src=B.parent/'vendor/phhusson-ims/app/src/main/java'
-dest=B/'out/ims-src'
+arguments=argparse.ArgumentParser(description=__doc__)
+arguments.add_argument('--variant',choices=('api30','api31'),default='api30')
+variant=arguments.parse_args().variant
+dest=(B/'out/ims-src') if variant=='api30' else (B.parent.parent/'android12/out/ims-src')
+# Fixed variant destinations keep modern generation outside the API30 build.
+# Refuse directory aliases before the recursive generated-source replacement.
+if dest.resolve()!=dest.absolute():raise RuntimeError('IMS-generated-output-alias-refused')
+dest.parent.mkdir(parents=True,exist_ok=True)
 if dest.exists(): shutil.rmtree(dest)
 shutil.copytree(src,dest)
 for p in dest.rglob('*'):
