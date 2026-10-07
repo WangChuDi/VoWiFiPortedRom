@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_calls_or_sms": false,
+  "real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "diagnostic_app_own_uid_controls_verified": false,
+  "modern_automatic_recovery_verified": false,
+  "package_help_exit": 0,
+  "command_failures": [
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pm",
+      "exit": 20,
+      "permission_denial": false,
+      "security_exception": false
+    }
+  ],
+  "error": "ValueError",
+  "reason": "loaded-fake-sim-required",
+  "error_line": 10,
+  "original_102_records_byte_identical": true,
+  "original_three_helpers_preserved": true,
+  "final_state_error": "ValueError"
+}

@@ -20,7 +20,7 @@ for p in dest.rglob('*'):
     if p.suffix=='.java':t=t.replace('Rlog.','PortLog.')
     t=t.replace('android.util.Log.e(', 'me.phh.ims.PortLog.e(')
     p.write_text(t,encoding='utf-8',newline='\n')
-for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java','VoiceResponseObservation.java','AkaResponseCodec.java','VoiceDialogState.java','SdpSessionVersion.java','SmsActivityTracker.java','NativeSmsRecoveryGate.java','NativeSmsStatusReader.java'):
+for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java','VoiceResponseObservation.java','AkaResponseCodec.java','VoiceDialogState.java','SdpSessionVersion.java','SmsActivityTracker.java','NativeSmsRecoveryGate.java','NativeSmsStatusReader.java','NativeSmsDiagnostics.java'):
     shutil.copyfile(B/'ims'/name,dest/'me/phh/ims'/name)
 shutil.copyfile(B/'ims/Api30SipTcpServer.kt',dest/'me/phh/sip/Api30SipTcpServer.kt')
 shutil.copyfile(B/'ims/RpDeliveryError.kt',dest/'me/phh/sip/RpDeliveryError.kt')

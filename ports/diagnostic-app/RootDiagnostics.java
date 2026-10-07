@@ -189,6 +189,8 @@ public final class RootDiagnostics {
         Map<String,Future<JSONObject>> statuses=new LinkedHashMap<>();
         long statusDeadline=SystemClock.elapsedRealtime()+9500;
         try{
+        final int querySub=sub;
+        statuses.put("ims_native_sms",statusWorkers.submit(()->RootNativeSmsQuery.observe(context,slot,querySub)));
         if(provider!=null&&provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub){
             String[] channels={"iwlan","qns","ims"};String[] packages={"dev.codex.vowifi.iwlan","dev.codex.vowifi.qns","me.phh.ims"};
             String[] keys={"carrier_data_service_wlan_package_override_string","carrier_qualified_networks_service_package_override_string","config_ims_mmtel_package_override_string"};
@@ -295,7 +297,7 @@ public final class RootDiagnostics {
         if(!pid.equals(command(2,"pidof",pkg).trim()))throw new IOException("status-process-changed");
         return clean;
     }
-    private static void requireSmsOwner(Context context,int slot,int sub)throws Exception{
+    static void requireSmsOwner(Context context,int slot,int sub)throws Exception{
         List<SubscriptionInfo> current=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
         int matched=0;if(current!=null)for(SubscriptionInfo candidate:current)if(candidate.getSimSlotIndex()==slot){if(candidate.getSubscriptionId()!=sub)throw new IllegalStateException("sms-owner-changed");matched++;}
         if(matched!=1)throw new IllegalStateException("sms-owner-changed");

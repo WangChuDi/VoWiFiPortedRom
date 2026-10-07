@@ -26,6 +26,17 @@ public final class NativeSmsStatusReader {
     }
     public static Boolean observe(int subscription){
         if(subscription<0||!ownUid()||!profileEligible())return null;
+        return read(subscription);
+    }
+    /** Modern observation is read-only and never establishes recovery eligibility. */
+    public static boolean diagnosticProfileEligible(){
+        return Build.VERSION.SDK_INT>=31&&Build.VERSION.SDK_INT<=37 || Build.VERSION.SDK_INT==30&&profileEligible();
+    }
+    public static Boolean observeForDiagnostics(int subscription){
+        if(subscription<0||!ownUid()||!diagnosticProfileEligible())return null;
+        return read(subscription);
+    }
+    private static Boolean read(int subscription){
         try{
             IBinder binder=ServiceManager.getService("isms");if(binder==null||!binder.isBinderAlive())return null;
             Class<?> type=Class.forName("com.android.internal.telephony.ISms");

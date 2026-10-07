@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "unavailable",
+  "read_only": true,
+  "raw_log_exported": false,
+  "physical_phone_modified": false,
+  "error": "TimeoutExpired"
+}

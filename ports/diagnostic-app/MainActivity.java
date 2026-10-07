@@ -152,6 +152,14 @@ public final class MainActivity extends Activity {
         String nativeSms=data.has("native_sms_ims_supported")?(data.optBoolean("native_sms_ims_supported")?"系统短信服务报告支持 IMS 短信。":"系统短信服务暂未报告支持 IMS 短信。"):("未能观测 · "+data.optString("native_sms_error","未知"));
         if(Boolean.FALSE.equals(data.opt("native_sms_ims_supported"))&&data.optBoolean("cap_observed")&&data.optBoolean("sms"))nativeSms+="\n与 MMTEL 的 SMS 上报不一致；空闲时重新拉起后再检查。";
         card("系统短信发送检查",nativeSms+"\n这是所选 SIM 的一次状态查询，实际收发和通知仍需分别验证。");
+        JSONObject ownSms=data.optJSONObject("ims_native_sms_status");
+        if(ownSms!=null){
+            String value=ownSms.optString("result","UNKNOWN");long checked=ownSms.optLong("query_elapsed"),age=checked>0?SystemClock.elapsedRealtime()-checked:-1;
+            String detail="OBSERVED".equals(ownSms.optString("status"))&&age>=0&&age<=15000?
+                ("TRUE".equals(value)?"系统报告支持 IMS 短信":"系统暂未报告支持 IMS 短信"):
+                "未取得当前有效结果 · "+ownSms.optString("status","UNAVAILABLE");
+            card("SIM"+(data.optInt("slot")+1)+" 的 IMS 应用短信查询",detail+"\n由 IMS 应用自身权限读取；可能包含旧式基带 IMS 支持，不能据此确认 Wi-Fi 短信分发器就绪或实际收发成功。");
+        }else card("IMS 应用短信查询","未能观测 · "+data.optString("ims_native_sms_status_error","配套 IMS 程序未运行或尚未提供此查询"));
         JSONObject dispatcher=data.optJSONObject("sms_dispatcher_window");
         if(dispatcher!=null){
             boolean observed="observed".equals(dispatcher.optString("status"));

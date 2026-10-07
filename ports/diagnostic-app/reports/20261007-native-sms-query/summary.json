@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "scoped-verification-passed",
+  "api30_service_uid_query_verified": true,
+  "api30_module_reboot_verified": true,
+  "api30_diagnostic_app_uid_ui_verified": true,
+  "api37_actual_service_uid_query_verified": true,
+  "api37_nonroot_refusal_verified": true,
+  "api37_original_ims_uid_permissions_helpers_navigation_restored_observed": true,
+  "api37_all_original_apks_finally_reverified": false,
+  "api37_driver_final_read_failure_retained": true,
+  "api37_resource_monitor_stopped_owned_processes": true,
+  "api31_to_37_host_stub_diagnostic_contracts": true,
+  "modern_real_carrier_verified": false,
+  "modern_diagnostic_app_uid_positive_controls_verified": false,
+  "dual_active_sim_verified": false,
+  "automatic_client_rebind_device_verified": false,
+  "new_carrier_voice_sms_traffic": false,
+  "full_goal_complete": false
+}

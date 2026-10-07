@@ -44,6 +44,7 @@ public final class ImsClientSnapshotContract {
         }
         Map<String,Object> unknown=watch();unknown.put("native_watch_status","UNKNOWN");unknown.put("native_watch_native","UNKNOWN");unknown.put("native_watch_self_uid",false);check(validate(unknown,false).containsKey("native_watch_schema"));
         Map<String,Object> mismatch=watch();mismatch.put("native_watch_status","MISMATCH");mismatch.put("native_watch_native","FALSE");check(validate(mismatch,false).get("native_watch_native").equals("FALSE"));
+        NativeSmsQueryContract.run();
         System.out.println("ims-client-snapshot-contracts="+checks);
     }
 }

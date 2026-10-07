@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contract_checks": 63,
+  "native_query_contract_checks": 46,
+  "production_validator_used": true,
+  "own_uid_query_validator_used": true,
+  "cross_slot_or_sub_query_refused": true,
+  "combined_ims_or_radio_scope_preserved": true,
+  "unknown_callback_count_preserved": true,
+  "wrong_owner_nonce_pid_boot_and_stale_rejected": true,
+  "modern_rebind_profile_refused": true,
+  "private_fields_rejected": true,
+  "fixture_only": true,
+  "device_validated": false
+}

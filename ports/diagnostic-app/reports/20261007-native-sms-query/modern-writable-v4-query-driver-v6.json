@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_calls_or_sms": false,
+  "real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "diagnostic_app_own_uid_controls_verified": false,
+  "modern_automatic_recovery_verified": false,
+  "package_help_exit": 0,
+  "three_stable_startup_samples": true,
+  "original_record_count": 102,
+  "original_three_helpers_match": true,
+  "system_ims_backup_digest_verified": true,
+  "error": "ValueError",
+  "reason": "single-installed-path-required",
+  "error_line": 10,
+  "command_failures": [
+    {
+      "family": "cmd",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pm",
+      "exit": 20,
+      "permission_denial": false,
+      "security_exception": false
+    }
+  ],
+  "restore_error": "ValueError",
+  "restore_error_line": 17,
+  "navigation_restored": true,
+  "original_102_records_byte_identical": true,
+  "original_three_helpers_preserved": true,
+  "final_state_error": "ValueError"
+}

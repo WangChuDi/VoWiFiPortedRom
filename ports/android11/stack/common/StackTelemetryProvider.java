@@ -16,7 +16,8 @@ public final class StackTelemetryProvider extends ContentProvider {
     @Override public Bundle call(String method,String arg,Bundle extras){
         if(Binder.getCallingUid()!=0)throw new SecurityException("status-root-required");
         boolean clients="capabilities".equals(method)||"client-rebind".equals(method);
-        if((!"status".equals(method)&&!clients)||arg==null||arg.length()>96)throw new IllegalArgumentException("status-request");
+        boolean nativeSms="native-sms".equals(method);
+        if((!"status".equals(method)&&!clients&&!nativeSms)||arg==null||arg.length()>96)throw new IllegalArgumentException("status-request");
         String[] parts=arg.split(":",-1);
         if(parts.length!=4||!parts[1].matches("[0-7]")||!parts[2].matches("[0-9]{1,10}")||!parts[3].matches("[0-9a-f]{16}"))
             throw new IllegalArgumentException("status-selection");
@@ -24,6 +25,17 @@ public final class StackTelemetryProvider extends ContentProvider {
         if(!pkg.equals(channel.equals("ims")?"me.phh.ims":"dev.codex.vowifi."+channel)||
            !(channel.equals("iwlan")||channel.equals("qns")||channel.equals("ims")))throw new IllegalArgumentException("status-channel");
         int slot=Integer.parseInt(parts[1]),sub=Integer.parseInt(parts[2]);
+        if(nativeSms){
+            if(!"ims".equals(channel)||!"me.phh.ims".equals(pkg))throw new IllegalArgumentException("native-query-channel");
+            try{
+                Object observed=Class.forName("me.phh.ims.NativeSmsDiagnostics").getMethod("query",Context.class,int.class,int.class).invoke(null,getContext(),slot,sub);
+                JSONObject value=new JSONObject((Map)observed);
+                value.put("schema",1).put("channel","ims-native-sms").put("slot",slot).put("sub",sub).put("nonce",parts[3]);
+                value.put("pid",android.os.Process.myPid()).put("boot",Settings.Global.getInt(getContext().getContentResolver(),Settings.Global.BOOT_COUNT,-1));
+                value.put("sample_elapsed",SystemClock.elapsedRealtime());
+                Bundle result=new Bundle();result.putString("snapshot",value.toString());return result;
+            }catch(Exception unavailable){throw new IllegalStateException("native-query-unavailable");}
+        }
         if(clients){
             if(!"ims".equals(channel)||!"me.phh.ims".equals(pkg))throw new IllegalArgumentException("capability-channel");
             try{

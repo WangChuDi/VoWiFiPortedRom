@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_calls_or_sms": false,
+  "real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "diagnostic_app_own_uid_controls_verified": false,
+  "modern_automatic_recovery_verified": false,
+  "package_help_exit": 224,
+  "error": "ValueError",
+  "reason": "explicit-rollback-command-required",
+  "error_line": 10
+}

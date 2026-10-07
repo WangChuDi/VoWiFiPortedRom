@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "new_calls_or_sms": false,
+  "previous_driver_failure_retained": true,
+  "phone_identity_across_prior_update_proven": false,
+  "real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "observation_errors": [
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError",
+    "AssertionError"
+  ],
+  "error": "AssertionError"
+}

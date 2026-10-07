@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.codex.vowifi.querytest" android:versionCode="1" android:versionName="0.9.14-query-ui-trial">
+  <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
+  <application android:label="VoWiFi query own-UID trial" android:allowBackup="false" />
+  <instrumentation android:name="dev.codex.vowifi.querytest.OwnUidNativeQueryTrial" android:targetPackage="dev.codex.vowifi.tool" android:label="Exact 0.9.14 read-only query UI trial" />
+</manifest>

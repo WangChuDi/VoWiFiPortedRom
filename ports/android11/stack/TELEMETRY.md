@@ -131,3 +131,25 @@ failure tests are host contracts, not device UID/permission proof. Actual servic
 queries, native software dispatcher state, and real SMS delivery/notification
 must be checked independently. Modern IMS builds include an unsupported watch
 snapshot; the API30 calibrated recovery is not advertised as an API31–37 fix.
+
+## Independent native SMS query, tool0.9.14 / IMS0.4.8 and modern0.2.4
+
+The IMS provider accepts `native-sms` with the same root-only request tuple
+`ims:slot:subscriptionId:16-hex-nonce`. Its separate response channel is
+`ims-native-sms`. This does not require an active replacement lease or registered
+feature. API31–37 allow read-only observation; API30 retains the exact calibrated
+profile. No registration, SIM authentication, traffic or rebinding is requested.
+
+The fixed fourteen-field schema contains schema/channel, slot/sub, nonce/PID/boot,
+sample/query monotonic timestamps, result, status, self_uid, read_only and scope.
+Result is TRUE/FALSE/UNKNOWN. Status is OBSERVED/UNAVAILABLE/TIMEOUT/BUSY/UNSUPPORTED;
+only OBSERVED can carry a known result, and it requires the IMS own UID. Scope is
+always IMS_OR_RADIO because the native interface can include legacy radio support.
+The tool must not interpret it as replacement software-dispatcher readiness.
+
+One daemon worker checks the unique ready slot/sub before and after the ISms call.
+The 2.5-second deadline discards late results; a stuck call keeps the worker BUSY
+instead of spawning more threads. The consumer checks current ownership, nonce,
+boot, sample window and stable IMS process identity. Its read-only result remains
+independent of the older `native_watch_*` recovery group and dispatcher window.
+See [build, device evidence and limits](../../diagnostic-app/NATIVE-SMS-QUERY-20261007.md).

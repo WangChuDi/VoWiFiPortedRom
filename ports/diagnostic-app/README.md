@@ -134,7 +134,7 @@ performed. See [engine build, validation and recovery](../android11/stack/README
 | Android14 | 34 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android15 | 35 | Tool0.9.2 compiled root diagnosis/refusal verified on owned emulator; fake-SIM IMS callbacks absent | Experimental controls; bindings, QNS restoration and 49 helper lifecycle stages passed; positive app/carrier trial pending |
 | Android16 | 36 | Root checks/refusal paths verified on named emulator; carrier callbacks unavailable in that fake-SIM run | Experimental controls; lifecycle helper verified, positive application/carrier trial pending |
-| Android17 | 37 | Tool0.9.2 compiled root read-only/refusal checks passed on owned official emulator; positive app-UID UI actions pending | Runtime bindings/QNS restoration passed; full helper lifecycle failed at selection-reopen and cleanup unconfirmed; no carrier proof |
+| Android17 | 37 | Compiled root read-only/refusal checks passed on owned official emulator; positive app-UID UI actions pending | Original failed lifecycle retained; subsequent full47-stage lifecycle and resident recovery passed with isolated helper; no real-carrier or dual-SIM proof |
 
 Minimum SDK30 means the APK can be considered for Android11 and later; it is
 not a claim of tested compatibility. OEM hidden-API/service/permission changes
@@ -361,3 +361,20 @@ Two physical API30 off/on cycles automatically restored WLAN/native SMS without
 Phone reload or client rebind. A subsequent191/native INFO/inbox/notification test
 and one actual module reboot passed. Modern carrier and dual-active-SIM validation
 remain incomplete. See [implementation, identities and retained failures](SIP-RECONNECT-20261007.md).
+
+## Version0.9.14 independent IMS application UID SMS query
+
+VersionCode26 adds a separate selected-SIM ISms support observation inside the
+installed IMS application's own UID. It is available for read-only diagnosis on
+API31–37 and the calibrated API30 profile, including before registration. It
+retains explicit unavailable/timeout/BUSY results and verifies ownership and
+current process provenance. The UI distinguishes this combined IMS-or-radio
+support result from software-dispatcher readiness and actual SMS delivery.
+
+The consolidated API30/API31 build, production worker and consumer contracts,
+physical module reboot, and retained modern test attempts are documented in
+[the query evidence](NATIVE-SMS-QUERY-20261007.md). Modern carrier service,
+application own-UID positive controls and simultaneous real dual SIMs remain
+unverified. The older API30 automatic-recovery calibration is unchanged.
+The later API37 full lifecycle/resident evidence is
+[recorded separately](../android12/runtime/reports/20261007-api37-isolated-resident/README.md).

@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_calls_or_sms": false,
+  "real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "diagnostic_app_own_uid_controls_verified": false,
+  "modern_automatic_recovery_verified": false,
+  "package_help_exit": 0,
+  "prior_update_restored_before_query_baseline": true,
+  "command_failures": [
+    {
+      "family": "pidof",
+      "exit": 1,
+      "permission_denial": false,
+      "security_exception": false
+    },
+    {
+      "family": "pm",
+      "exit": 20,
+      "permission_denial": false,
+      "security_exception": false
+    }
+  ],
+  "three_stable_startup_samples": true,
+  "original_record_count": 102,
+  "original_three_helpers_match": true,
+  "system_ims_backup_digest_verified": true,
+  "ims_updated_exact": true,
+  "ims_app_uid_preserved": true,
+  "samples": [
+    {
+      "result": "FALSE",
+      "status": "OBSERVED",
+      "self_uid": true,
+      "query_elapsed": 133371,
+      "read_only": true,
+      "scope": "IMS_OR_RADIO"
+    },
+    {
+      "result": "FALSE",
+      "status": "OBSERVED",
+      "self_uid": true,
+      "query_elapsed": 140455,
+      "read_only": true,
+      "scope": "IMS_OR_RADIO"
+    },
+    {
+      "result": "FALSE",
+      "status": "OBSERVED",
+      "self_uid": true,
+      "query_elapsed": 146592,
+      "read_only": true,
+      "scope": "IMS_OR_RADIO"
+    }
+  ],
+  "three_consecutive_actual_service_uid_queries_verified": true,
+  "nonroot_provider_request_refused": true,
+  "original_ims_restored_exact": true,
+  "original_app_uid_preserved": true,
+  "original_permission_inventory_restored": true,
+  "navigation_restored": true,
+  "original_102_records_byte_identical": true,
+  "original_three_helpers_preserved": true,
+  "final_state_error": "ValueError"
+}
