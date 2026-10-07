@@ -63,4 +63,5 @@ def apply(source):
     once('while (parseMessage(reader, writer))','while (parseMessage(reader, writer,attempt))')
     once('        android.util.Log.i("Api30PhhIms","sip-register=200")',
          '        telemetry?.sipStage(attempt.generation,dev.codex.vowifi.common.StackTelemetry.SipStage.REGISTERED)\n        android.util.Log.i("Api30PhhIms","sip-register=200")')
-    return source
+    from sip_receive_source import apply as apply_receive
+    return apply_receive(source)

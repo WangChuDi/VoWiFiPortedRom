@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "new_calls_or_sms": false,
+  "phone_rebooted": false,
+  "phone_reloaded": false,
+  "manual_client_rebind_requested": false,
+  "module_staged": true,
+  "installed": {
+    "dev.codex.vowifi.tool": "updated-exact",
+    "dev.codex.vowifi.iwlan": "updated-exact",
+    "dev.codex.vowifi.qns": "updated-exact",
+    "me.phh.ims": "updated-exact"
+  },
+  "samples": [],
+  "previous_installed_apks_backed_up_exact": true,
+  "original_transaction_unchanged": true,
+  "boot_unchanged": true,
+  "all_calls_idle_after": true,
+  "global_hidden_api_settings_unchanged": true,
+  "manual_reload_skipped_pending_planned_reboot": true
+}

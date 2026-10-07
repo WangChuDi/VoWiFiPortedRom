@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_calls_or_sms": false,
+  "raw_logs_retained": false,
+  "events": [
+    {
+      "kind": "FRAMEWORK_SUBMIT",
+      "token": 1,
+      "format": "3gpp",
+      "since_test_ms": 417
+    },
+    {
+      "kind": "SIP_RESPONSE",
+      "status": 202,
+      "since_test_ms": 845
+    },
+    {
+      "kind": "IMS_COMPLETION",
+      "result": "FAILED",
+      "token": 1,
+      "since_test_ms": 120496
+    },
+    {
+      "kind": "FRAMEWORK_SENT_INTENT",
+      "result": 1,
+      "network_error": 0,
+      "since_test_ms": 120651
+    }
+  ],
+  "post_cleanup_snapshot": true,
+  "same_ims_process_at_observation": true,
+  "ims_submission_to_completion_ms": 120079
+}

@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "checks": 23,
+  "production_helper_used": true,
+  "host_socket_test": true,
+  "android_socket_fault_injection": false,
+  "carrier_test": false
+}

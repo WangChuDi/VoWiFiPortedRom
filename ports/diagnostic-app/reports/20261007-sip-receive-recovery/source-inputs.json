@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "scope": "11 changed built inputs; unrelated preserved snapshots not asserted compiled",
+  "sha256": {
+    "ports/android11/stack/common/SipReceiveLoops.java": "c4ca1962cfe7c8f797499278f19063edf861ef39f0ac7fb88ef4562f61d761f9",
+    "ports/android11/stack/sip_receive_source.py": "fed23ceb80fd1b44c6ab11a16760e94ab43732edacac44613bc4a1d5b29ec0e2",
+    "ports/android11/stack/sip_reconnect_source.py": "464224e3e7962cbd8cfc40c63d321c883a743ecc4c567888d1f9c087f56b7658",
+    "ports/android11/stack/ims/Api30SipTcpServer.kt": "e8c70883ab6c765bac004fde744f8981d545b3bcd694975abde1ae1af2527703",
+    "ports/android11/stack/ims/AndroidManifest.xml": "73d543841e6c73de7215b22e30d26d35936d4207c5b8daad2ca12d7af56788bb",
+    "ports/android11/stack/module/module.prop": "5051b0e142b46df145ab594458aa2352e32d026cc234e6589ae978d5643d0c7f",
+    "ports/android12/ims/AndroidManifest.xml": "30b40bed8636068d3fac4c4340b69d4432e62ccee8b2a2fa32888cadcfa52e03",
+    "ports/android12/module/module.prop": "3b72ffe3711c619d984817008136b0e91abbaf5e6a59c3897f9eb03a7a00a53d",
+    "ports/diagnostic-app/AndroidManifest.xml": "cc5132bae30ed4fdc87af000be075f7359321fb2b392633aeb5b5825d6c3ec67",
+    "ports/compatibility/test-telemetry.py": "02a2eed756abb2cfa9cae41a336a4d88d2ccff1d34e2917c590315b2f835774a",
+    "ports/compatibility/tests/SipReceiveLoopsTest.java": "507a745211fd97981d77b3ab243519beb5fbe7fc57d30b10d8f41d062171b30e"
+  }
+}

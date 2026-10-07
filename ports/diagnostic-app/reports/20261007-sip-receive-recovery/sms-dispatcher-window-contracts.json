@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contract_checks": 31,
+  "production_parser_used": true,
+  "wrong_pid_slot_time_rejected": true,
+  "conflicting_state_not_reported_available": true,
+  "process_change_not_reported_available": true,
+  "sample_overflow_not_reported_available": true,
+  "raw_content_and_process_identity_not_exported": true,
+  "fixture_only": true,
+  "device_validated": false
+}
