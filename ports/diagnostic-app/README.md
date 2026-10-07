@@ -378,3 +378,19 @@ application own-UID positive controls and simultaneous real dual SIMs remain
 unverified. The older API30 automatic-recovery calibration is unchanged.
 The later API37 full lifecycle/resident evidence is
 [recorded separately](../android12/runtime/reports/20261007-api37-isolated-resident/README.md).
+
+## Version0.9.15 SMS submission stages
+
+The selected IMS now reports the last real SMS submission's SIP status, RP
+acceptance/cause and typed failure separately from advertised MMTEL capability
+and accumulated send counters. The app displays the selected instance's
+historical observation, including SIP acceptance followed by RP timeout. It
+does not send a test message or retry merely by opening diagnostics.
+
+This extends both API30 and modern IMS builds. It does not establish modern
+carrier service or real dual-active-SIM compatibility. A retained0.9.14 actual191
+call passed, but the following native INFO timed out after SIP202 with no observed
+RP response. A separate INFO control after cleanup reload passed sending, four
+received/acknowledged segments, one native inbox row and notification. The control
+does not prove that a preceding call caused the earlier failure or that the new
+metadata repairs it. See [source, artifact and live evidence](SMS-SEND-STAGES-20261007.md).

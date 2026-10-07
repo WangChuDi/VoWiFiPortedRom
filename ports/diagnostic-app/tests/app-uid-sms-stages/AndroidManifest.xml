@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.codex.vowifi.smsstagetest" android:versionCode="1" android:versionName="0.9.15-sms-stage-ui-trial">
+  <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
+  <application android:label="VoWiFi SMS stage own-UID trial" android:allowBackup="false" />
+  <instrumentation android:name="dev.codex.vowifi.smsstagetest.OwnUidSmsStagesTrial" android:targetPackage="dev.codex.vowifi.tool" android:label="Exact 0.9.15 read-only SMS stage UI trial" />
+</manifest>

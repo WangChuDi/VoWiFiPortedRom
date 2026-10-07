@@ -182,14 +182,19 @@ edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()',
 sms='me/phh/ims/PhhImsSms.kt'
 edit(sms,'    lateinit var sipHandler: SipHandler','    lateinit var sipHandler: SipHandler\n    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null\n    var onReadyCallback:(()->Unit)?=null')
 edit(sms,'        try {','''        val recorded=java.util.concurrent.atomic.AtomicBoolean(false)
+        val smsObservation=telemetry?.beginSms()
         fun recordOutcome(success:Boolean) {
-            if(recorded.compareAndSet(false,true))telemetry?.add(if(success)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_FAILED,1)
+            if(recorded.compareAndSet(false,true)){
+                smsObservation?.finish(success)
+                telemetry?.add(if(success)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_FAILED,1)
+            }
         }
         telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX,1)
         try {''')
-edit(sms,'            if (format != "3gpp") {','            if (format != "3gpp") {\n                recordOutcome(false)')
-edit(sms,'            if (::sipHandler.isInitialized == false) {','            if (::sipHandler.isInitialized == false) {\n                recordOutcome(false)')
-edit(sms,'        } catch(t: Throwable) {','        } catch(t: Throwable) {\n            recordOutcome(false)')
+edit(sms,'            if (format != "3gpp") {','            if (format != "3gpp") {\n                smsObservation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.FORMAT_UNSUPPORTED)\n                recordOutcome(false)')
+edit(sms,'            if (::sipHandler.isInitialized == false) {','            if (::sipHandler.isInitialized == false) {\n                smsObservation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.NOT_READY)\n                recordOutcome(false)')
+edit(sms,'        } catch(t: Throwable) {','        } catch(t: Throwable) {\n            smsObservation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.FRAMEWORK_ERROR)\n            recordOutcome(false)')
+edit(sms,'                    )\n                }\n            )','                    )\n                },\n                smsObservation\n            )')
 edit(sms,'            // called when android tries to send a sms?','''            android.util.Log.i("Api30PhhIms","framework-send-sms token=$token format=$format")
             // called when android tries to send a sms?''')
 edit(sms,'                    // success cb','''                    android.util.Log.i("Api30PhhIms","framework-send-sms=SUCCESS token=$token")
@@ -307,7 +312,25 @@ edit(sip,'        setResponseCallback(msg.headers["call-id"]!![0], { true })',''
             response.statusCode>=200
         })''')
 edit(sip,'                completeSms(rpRef, pending, pending.state.onSip(resp.statusCode))','''                android.util.Log.i("Api30PhhIms","sms-send-sip="+resp.statusCode)
+                pending.observation?.onSip(resp.statusCode)
                 completeSms(rpRef, pending, pending.state.onSip(resp.statusCode))''')
+edit(sip,'private class PendingSms(val callId: String, val success: () -> Unit, val failure: () -> Unit)',
+    'private class PendingSms(val callId: String, val success: () -> Unit, val failure: () -> Unit, val observation:dev.codex.vowifi.common.SmsSendObservation?)')
+edit(sip,'        failCb: (() -> Unit)\n    ) {','        failCb: (() -> Unit),\n        observation:dev.codex.vowifi.common.SmsSendObservation? = null\n    ) {')
+edit(sip,'            Rlog.w(TAG, "Missing usable SMSC for VOXI; refusing malformed RP-DATA")',
+    '            observation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.NO_SMSC)\n            Rlog.w(TAG, "Missing usable SMSC for VOXI; refusing malformed RP-DATA")')
+edit(sip,'val pending = PendingSms(msg.headers["call-id"]!![0], successCb, failCb)',
+    'val pending = PendingSms(msg.headers["call-id"]!![0], successCb, failCb, observation)')
+edit(sip,'        if (!reserved) { failCb(); return }',
+    '        if (!reserved) { observation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.REF_IN_USE); failCb(); return }\n        observation?.submitted()')
+edit(sip,'        val timeout = Runnable { completeSms(rpRef, pending, pending.state.expire()) }',
+    '        val timeout = Runnable { pending.observation?.timeout(); completeSms(rpRef, pending, pending.state.expire()) }')
+edit(sip,'            completeSms(rpRef, pending, pending.state.expire())',
+    '            pending.observation?.fail(dev.codex.vowifi.common.SmsSendObservation.Failure.TRANSPORT_IO)\n            completeSms(rpRef, pending, pending.state.expire())')
+edit(sip,'                if (pending != null) completeSms(ref, pending, pending.state.onRp(true))',
+    '                if (pending != null) { pending.observation?.onRp(true,-1); completeSms(ref, pending, pending.state.onRp(true)) }')
+edit(sip,'                if (pending != null) completeSms(ref, pending, pending.state.onRp(false))',
+    '                if (pending != null) { pending.observation?.onRp(false,sms.cause ?: -1); completeSms(ref, pending, pending.state.onRp(false)) }')
 # Cover construction, callback completion and ACK writes as well as pending maps.
 # Only these four fully inspected methods are wrapped; nested callbacks keep their
 # own scope and no SMS lock is held across framework callbacks or socket writes.

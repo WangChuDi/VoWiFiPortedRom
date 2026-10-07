@@ -1,6 +1,6 @@
 id=codex_vowifi_stack_api30
 name=Android 11 application-side IWLAN QNS IMS experiment
-version=0.9.7-trial
-versionCode=18
+version=0.9.8-trial
+versionCode=19
 author=WangChuDi; phhusson/ims and Suiying6023 references
 description=API30 raphael VOXI replacement services with bounded AKA resynchronization, SMS capability replay and SIP dialog routing/SDP version handling. Explicit selected-SIM transactions retain original providers and companion baseline.

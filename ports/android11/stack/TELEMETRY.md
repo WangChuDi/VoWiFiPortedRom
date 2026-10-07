@@ -153,3 +153,37 @@ instead of spawning more threads. The consumer checks current ownership, nonce,
 boot, sample window and stable IMS process identity. Its read-only result remains
 independent of the older `native_watch_*` recovery group and dispatcher window.
 See [build, device evidence and limits](../../diagnostic-app/NATIVE-SMS-QUERY-20261007.md).
+
+## Last SMS submission, tool0.9.15 / IMS0.4.9 and modern0.2.5
+
+IMS `status` now has an optional all-or-nothing nine-field `sms_send_*` group:
+schema1, process-local attempt, started/updated monotonic timestamps, state,
+failure, SIP status, RP state and RP cause. State is UNOBSERVED, PREPARING,
+WAITING_NETWORK_ACK, ACCEPTED or FAILED. RP state is UNOBSERVED, ACCEPTED or
+REJECTED; cause is -1 when absent, otherwise a protocol cause0–255. All values
+are fixed enums/numbers. There is no address, SMS reference/token, body, PDU,
+SMSC/PSI, SIP header or authentication data in this extension.
+
+One observation is attached to each real `PhhImsSms.sendSms` invocation and its
+pending SIP/RP transaction. Only the latest invocation for the selected current
+feature is exported. An older concurrent completion cannot overwrite it; the
+other SIM and a replacement feature keep their independent observations. Late
+responses do not change a finished observation. A fresh provider response does
+not make a historical send outcome a new test result.
+
+The existing delivery state machine,120-second timeout and framework callbacks
+remain authoritative. This extension records their transitions without retrying
+or changing the wire request. SIP200/202 alone is not submission success: RP
+acceptance is also required. Timeout after SIP acceptance without RP acceptance
+is RP_TIMEOUT; missing final SIP acceptance is SIP_TIMEOUT. SIP/RP rejection,
+socket write failure, unsupported format, unavailable sender, missing SMSC,
+occupied reference and preparation/framework errors have separate classifications.
+Network submission acceptance is not recipient delivery or notification proof.
+
+Update the consumer before the producer because older closed-schema tools reject
+new fields. The new consumer also accepts an older producer without this entire
+group, and validates the selected process/owner plus extension completeness,
+timeline, enums, codes and acceptance consistency. Production Java contracts
+cover reversed SIP/RP arrival, timeout, terminal late results, two simulated
+owners, retired producers, malformed extensions and legacy producer compatibility.
+These checks do not establish real simultaneous dual-active-SIM behavior.

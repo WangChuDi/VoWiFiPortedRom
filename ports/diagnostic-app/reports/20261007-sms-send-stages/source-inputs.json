@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "scope": "13 changed built inputs plus2 separately built UI test inputs",
+  "sha256": {
+    "ports/android11/stack/common/SmsSendObservation.java": "6c64c0aa0854b5181b890f3b2ed9805b3bcd0f26407ecb3c0280a56646cf36c1",
+    "ports/android11/stack/common/StackTelemetry.java": "cf2ca32fdb9e560c84fdfe86a3864516a8e40e2070ad703c7429c5a989b9645a",
+    "ports/android11/stack/prepare-ims-source.py": "0c90fa3e58d67e2cb8210df4d8ccb1d2702859b48ab495c6157353933e9eb723",
+    "ports/android11/stack/ims/AndroidManifest.xml": "7f331ea6a724dafd25473f3aa3655d7be973e2e7324a2240f57fcb1be5d531a4",
+    "ports/android11/stack/module/module.prop": "95d4d5cdbe6de360613433243b9ae92a46e7f9181e37eda0b86d1f9c6fd450a6",
+    "ports/android12/ims/AndroidManifest.xml": "4cb0673de8e422214e863c75d92d14220270330752ead79685da60ee77c5d694",
+    "ports/android12/module/module.prop": "4804b1bac75ea654efedfb13e7fae558160f898492152016144f0a133864d27e",
+    "ports/diagnostic-app/TelemetrySnapshot.java": "5e7edaf4b609da69ad3677449b2852ec1b3f87e0ce9e88abae0d8d115a24bb9a",
+    "ports/diagnostic-app/SmsSendStatus.java": "5410700ddcf79159c26cf6b02541684ab812454d0368df0fcc1dc8d052d76a2f",
+    "ports/diagnostic-app/MainActivity.java": "1fac1b1cb635f523742672ab389f8abace957c14decfc242b6ae5d7b3dc7e9fe",
+    "ports/diagnostic-app/AndroidManifest.xml": "3e17994b27ac3969fee8bf683d4f276636d5f0373c189eea4ddb3b44700e9214",
+    "ports/compatibility/test-telemetry.py": "c764c5e989e2d7c52a90426b4f5f55f605c88fa5dd19fcc2f3aa5e922244204f",
+    "ports/compatibility/tests/SmsSendObservationTest.java": "6f48cd784e15e645839f25f28b4b63c7c32faf016b8151790b527f0cfdd03da5",
+    "ports/diagnostic-app/tests/app-uid-sms-stages/OwnUidSmsStagesTrial.java": "39bf675b3bd7a82d753d61d866dedc61f5ea57b3b8170ab8ea911ceff9c54405",
+    "ports/diagnostic-app/tests/app-uid-sms-stages/AndroidManifest.xml": "993d8e4429820e344bdf3093c95d4d2e21579b26f7e7273cf2f4a4b06f9d8c33"
+  }
+}

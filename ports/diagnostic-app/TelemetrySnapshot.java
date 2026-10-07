@@ -14,6 +14,9 @@ public final class TelemetrySnapshot {
     private static final Set<String> SIP_KEYS=new HashSet<>(Arrays.asList("sip_connect_schema","sip_attempt","sip_attempt_started_elapsed","sip_stage","sip_stage_elapsed","sip_transport","sip_failure","sip_failure_stage","sip_failure_elapsed","sip_response_elapsed","sip_retry_due_elapsed"));
     private static final Set<String> SIP_STAGES=new HashSet<>(Arrays.asList("UNOBSERVED","WAITING_NETWORK","PLAIN_CONNECT","INITIAL_REGISTER","AKA","IPSEC_PARAMETERS","SECURE_CONNECT","AUTH_REGISTER","REGISTERED","DOWN","RETRY_WAIT","STOPPED"));
     private static final Set<String> SIP_FAILURES=new HashSet<>(Arrays.asList("NONE","TIMEOUT","NETWORK_IO","SIP_REJECTED","INVALID_RESPONSE","AKA_ERROR","PARAMETER_ERROR","UNAVAILABLE","CANCELED","OTHER"));
+    private static final Set<String> SMS_KEYS=new HashSet<>(Arrays.asList("sms_send_schema","sms_send_attempt","sms_send_started_elapsed","sms_send_updated_elapsed","sms_send_state","sms_send_failure","sms_send_sip_status","sms_send_rp_state","sms_send_rp_cause"));
+    private static final Set<String> SMS_STATES=new HashSet<>(Arrays.asList("UNOBSERVED","PREPARING","WAITING_NETWORK_ACK","ACCEPTED","FAILED"));
+    private static final Set<String> SMS_FAILURES=new HashSet<>(Arrays.asList("NONE","FORMAT_UNSUPPORTED","NOT_READY","NO_SMSC","REF_IN_USE","SIP_REJECTED","RP_REJECTED","TRANSPORT_IO","SIP_TIMEOUT","RP_TIMEOUT","FRAMEWORK_ERROR","OTHER"));
     private static long number(JSONObject value,String key)throws Exception{
         Object n=value.get(key);if(!(n instanceof Number))throw new IllegalArgumentException("status-number");
         long result=((Number)n).longValue();if(((Number)n).doubleValue()!=result)throw new IllegalArgumentException("status-integer");return result;
@@ -27,7 +30,7 @@ public final class TelemetrySnapshot {
         long sample=number(value,"sample_elapsed");if(sample<began||sample>now||now-sample>5000)throw new IllegalArgumentException("status-stale");
         boolean observed=flag(value,"observed"),authorized=flag(value,"authorized");
         if(observed&&!authorized)throw new IllegalArgumentException("status-unauthorized");
-        for(Iterator<String> i=value.keys();i.hasNext();){String key=i.next();if(!BASE.contains(key)&&!TEXT.contains(key)&&!FLAGS.contains(key)&&!NUMBERS.contains(key)&&!SIP_KEYS.contains(key))throw new IllegalArgumentException("status-schema");}
+        for(Iterator<String> i=value.keys();i.hasNext();){String key=i.next();if(!BASE.contains(key)&&!TEXT.contains(key)&&!FLAGS.contains(key)&&!NUMBERS.contains(key)&&!SIP_KEYS.contains(key)&&!SMS_KEYS.contains(key))throw new IllegalArgumentException("status-schema");}
         JSONObject clean=new JSONObject();for(String key:BASE)clean.put(key,value.get(key));
         if(!observed)return clean;
         for(String key:FLAGS)clean.put(key,flag(value,key));
@@ -54,6 +57,20 @@ public final class TelemetrySnapshot {
             if(due!=0&&(!"RETRY_WAIT".equals(stage)||due<at||due-at>60000))throw new IllegalArgumentException("status-sip-retry");
             if("RETRY_WAIT".equals(stage)&&due==0)throw new IllegalArgumentException("status-sip-retry");
             for(String key:SIP_KEYS)clean.put(key,value.get(key));
+        }
+        boolean sms=false;for(String key:SMS_KEYS)if(value.has(key)){sms=true;break;}
+        if(sms){
+            if(!"ims".equals(channel)||number(value,"sms_send_schema")!=1)throw new IllegalArgumentException("status-sms-schema");
+            for(String key:SMS_KEYS)if(!value.has(key))throw new IllegalArgumentException("status-sms-incomplete");
+            String state=value.getString("sms_send_state"),failure=value.getString("sms_send_failure"),rp=value.getString("sms_send_rp_state");
+            if(!SMS_STATES.contains(state)||!SMS_FAILURES.contains(failure)||!Arrays.asList("UNOBSERVED","ACCEPTED","REJECTED").contains(rp))throw new IllegalArgumentException("status-sms-text");
+            long attempt=number(value,"sms_send_attempt"),start=number(value,"sms_send_started_elapsed"),at=number(value,"sms_send_updated_elapsed"),code=number(value,"sms_send_sip_status"),cause=number(value,"sms_send_rp_cause");
+            if(attempt<0||start<0||at<start||at>sample||code!=0&&(code<100||code>699)||cause< -1||cause>255||!"REJECTED".equals(rp)&&cause!=-1)throw new IllegalArgumentException("status-sms-range");
+            if(attempt==0){if(start!=0||at!=0||code!=0||!"UNOBSERVED".equals(state)||!"NONE".equals(failure)||!"UNOBSERVED".equals(rp)||cause!=-1)throw new IllegalArgumentException("status-sms-unobserved");}
+            else if(start<number(value,"started_elapsed")||"UNOBSERVED".equals(state))throw new IllegalArgumentException("status-sms-attempt");
+            if("ACCEPTED".equals(state)&&(!"NONE".equals(failure)||!"ACCEPTED".equals(rp)||(code!=200&&code!=202)))throw new IllegalArgumentException("status-sms-acceptance");
+            if("FAILED".equals(state)&&"NONE".equals(failure))throw new IllegalArgumentException("status-sms-failure");
+            for(String key:SMS_KEYS)clean.put(key,value.get(key));
         }
         return clean;
     }

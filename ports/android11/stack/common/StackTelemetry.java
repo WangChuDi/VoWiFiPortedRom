@@ -42,12 +42,18 @@ public final class StackTelemetry {
         private SipFailure sipFailure=SipFailure.NONE;
         private SipTransport sipTransport=SipTransport.UNOBSERVED;
         private final EnumMap<Counter,Long> counts=new EnumMap<>(Counter.class);
+        private long smsSequence;
+        private SmsSendObservation smsSend;
         private Owner(String key,String channel,int slot,int sub,long generation,LongSupplier clock){
             this.key=key;this.channel=channel;this.slot=slot;this.sub=sub;this.generation=generation;this.clock=clock;
             started=updated=sipStageElapsed=clock.getAsLong();for(Counter c:Counter.values())counts.put(c,0L);
         }
         private boolean live(){return !retired&&owners.get(key)==this;}
         public long generation(){return generation;}
+        public SmsSendObservation beginSms(){synchronized(StackTelemetry.class){
+            if(!live()||!"ims".equals(channel))return null;
+            smsSend=new SmsSendObservation(++smsSequence,clock);touched();return smsSend;
+        }}
         private void touched(){updated=clock.getAsLong();}
         public void phase(Phase value){
             if(value==null||value==Phase.CLOSED||value==Phase.FAILED)throw new IllegalArgumentException("status-phase");
@@ -95,6 +101,7 @@ public final class StackTelemetry {
             data.put("sip_status",sipStatus);
             data.put("epdg_dns_count",epdgDns);
             if("ims".equals(channel)){
+                data.putAll(smsSend==null?SmsSendObservation.unobserved():smsSend.snapshot());
                 data.put("sip_connect_schema",1);data.put("sip_attempt",sipAttempt);data.put("sip_attempt_started_elapsed",sipStarted);
                 data.put("sip_stage",sipStage.name());data.put("sip_stage_elapsed",sipStageElapsed);data.put("sip_transport",sipTransport.name());
                 data.put("sip_failure",sipFailure.name());data.put("sip_failure_stage",sipFailureStage.name());data.put("sip_failure_elapsed",sipFailureElapsed);
