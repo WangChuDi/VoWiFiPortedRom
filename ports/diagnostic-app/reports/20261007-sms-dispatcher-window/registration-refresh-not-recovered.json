@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "status": "not-recovered",
+  "phone_reloaded": false,
+  "engine_changed": false,
+  "new_call_or_sms_sent": false,
+  "refresh_attempt_count": 1,
+  "before_dispatcher": {
+    "schema": 1,
+    "status": "observed",
+    "native_sms_ims_supported": false,
+    "query_epoch_begin_ms": 1791336057163,
+    "query_epoch_end_ms": 1791336057163,
+    "query_duration_ms": 0,
+    "phone_identity_stable": true,
+    "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+    "matching_window_samples": 1,
+    "query_window_samples": [
+      {
+        "epoch_ms": 1791336057163,
+        "up": true,
+        "registered": true,
+        "sms_capable": false
+      }
+    ],
+    "software_dispatcher_available": false,
+    "read_only": true,
+    "new_call_sms_sent": false,
+    "phone_reloaded": false,
+    "software_dispatcher_up": true,
+    "software_dispatcher_registered": true,
+    "software_dispatcher_sms_capable": false
+  },
+  "broadcast_completed": true,
+  "dispatcher_observations": [
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336062225,
+      "query_epoch_end_ms": 1791336062225,
+      "query_duration_ms": 0,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336062225,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    },
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336067008,
+      "query_epoch_end_ms": 1791336067009,
+      "query_duration_ms": 0,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336067009,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    },
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336071939,
+      "query_epoch_end_ms": 1791336071939,
+      "query_duration_ms": 0,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336071939,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    },
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336076769,
+      "query_epoch_end_ms": 1791336076770,
+      "query_duration_ms": 0,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336076769,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    },
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336081679,
+      "query_epoch_end_ms": 1791336081679,
+      "query_duration_ms": 1,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336081679,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    },
+    {
+      "schema": 1,
+      "status": "observed",
+      "native_sms_ims_supported": false,
+      "query_epoch_begin_ms": 1791336086511,
+      "query_epoch_end_ms": 1791336086511,
+      "query_duration_ms": 1,
+      "phone_identity_stable": true,
+      "framework_sha256": "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74",
+      "matching_window_samples": 1,
+      "query_window_samples": [
+        {
+          "epoch_ms": 1791336086511,
+          "up": true,
+          "registered": true,
+          "sms_capable": false
+        }
+      ],
+      "software_dispatcher_available": false,
+      "read_only": true,
+      "new_call_sms_sent": false,
+      "phone_reloaded": false,
+      "software_dispatcher_up": true,
+      "software_dispatcher_registered": true,
+      "software_dispatcher_sms_capable": false
+    }
+  ],
+  "register_tx_delta": 1,
+  "same_ims_generation": true,
+  "phone_identity_preserved": true,
+  "no_sms_traffic": true,
+  "after_ims_registered": true,
+  "after_sip_status": 200,
+  "software_sms_recovered": false
+}

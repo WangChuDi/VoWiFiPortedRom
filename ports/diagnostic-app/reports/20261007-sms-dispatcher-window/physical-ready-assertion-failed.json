@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "call_sms_sent": false,
+  "module_engine_modified": false,
+  "tool_version": "0.9.10-diagnostic",
+  "tool_sha256": "51b76628e08ab61955c951ac05ced48e2ddfc78f8a21632e5cc7f6091529c926",
+  "install_exit": 0,
+  "install_success_reported": true,
+  "error": "AssertionError"
+}

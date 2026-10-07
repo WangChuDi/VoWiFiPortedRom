@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_version": "0.9.10-diagnostic",
+  "engine_code_changed": false,
+  "phone_modified": false,
+  "api30_ims_sha256": "46ad6ee4cf09edc40880bdc1a9cbc9d77bb648d18771104aae86185de3b0702f",
+  "retained_tested_engine_sha256": {
+    "api30": "bedcea439f95223d4463cbfb770bc55fe2833b7dab0e2745f650cb7edd1f9cdd",
+    "modern": "ffb9551e50a8ae11c0da4ad562646e2e181aa95ff0ec6c79cfcb4933d854705a"
+  },
+  "tool_sha256": "51b76628e08ab61955c951ac05ced48e2ddfc78f8a21632e5cc7f6091529c926",
+  "signature_verified": true,
+  "embedded_engines_exact": true,
+  "source_freshness_verified": true,
+  "frozen_original_artifacts_unchanged": true,
+  "tested_099_engines_unchanged": true
+}

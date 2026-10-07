@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_calls_or_sms": false,
+  "installed_tool_sha256": "51b76628e08ab61955c951ac05ced48e2ddfc78f8a21632e5cc7f6091529c926",
+  "slots": [
+    {
+      "slot": 0,
+      "engine_supported": false,
+      "diagnostic_complete": true,
+      "diagnostic_stage": "finished",
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      }
+    },
+    {
+      "slot": 1,
+      "sub_id": 1,
+      "sim_state": 5,
+      "engine_supported": true,
+      "diagnostic_complete": true,
+      "diagnostic_stage": "finished",
+      "native_sms_ims_supported": false,
+      "sms_dispatcher_window": {
+        "schema": 1,
+        "status": "observed",
+        "query_duration_ms": 2,
+        "sample_count": 1,
+        "phone_identity_stable": true,
+        "reason": "none",
+        "service_up": true,
+        "registered": true,
+        "sms_capable": false,
+        "available": false
+      },
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "iwlan_interface_matches": true
+    }
+  ]
+}

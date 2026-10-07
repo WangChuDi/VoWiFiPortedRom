@@ -124,20 +124,28 @@ public final class RootDiagnostics {
         if(info==null)return;
         progress.checkpoint(out,"native_sms");
         try{
+            boolean pinned=Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE)&&pinnedSmsFramework();
+            PlatformHealth.Sample phone=pinned?PlatformHealth.readProcess("com.android.phone"):PlatformHealth.Sample.unknown();
             Class<?> type=Class.forName("com.android.internal.telephony.ISms");
             IBinder binder=ServiceManager.getService("isms");
             if(binder==null||!binder.isBinderAlive())throw new IllegalStateException("sms-service-unavailable");
             Object service=Class.forName(type.getName()+"$Stub").getMethod("asInterface",IBinder.class).invoke(null,binder);
+            long elapsedBegin=SystemClock.elapsedRealtime(),wallBegin=System.currentTimeMillis();
             Object supported=type.getMethod("isImsSmsSupportedForSubscriber",int.class).invoke(service,sub);
+            long wallEnd=System.currentTimeMillis(),elapsedEnd=SystemClock.elapsedRealtime();
             if(!(supported instanceof Boolean))throw new IllegalStateException("sms-status-type-unavailable");
             // Never attach a previous subscription's result to a newly inserted SIM.
             // The per-slot convenience method dereferences a default telephony
             // context on tested MIUI app_process. Use the working list API again.
-            List<SubscriptionInfo> current=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
-            int matched=0;if(current!=null)for(SubscriptionInfo candidate:current)if(candidate.getSimSlotIndex()==slot){if(candidate.getSubscriptionId()!=sub)throw new IllegalStateException("sms-owner-changed");matched++;}
-            if(matched!=1)throw new IllegalStateException("sms-owner-changed");
+            requireSmsOwner(context,slot,sub);
             out.put("native_sms_ims_supported",supported);
-        }catch(Throwable failure){out.put("native_sms_error",errorName(failure));}
+            progress.checkpoint(out,"sms_dispatcher");
+            if(pinned&&Boolean.TRUE.equals(phone.present)&&phone.identity!=null){
+                try{out.put("sms_dispatcher_window",smsDispatcherWindow(phone,slot,wallBegin,wallEnd,elapsedEnd-elapsedBegin));}
+                catch(Throwable failure){out.put("sms_dispatcher_window",new JSONObject().put("status","unknown").put("reason","observation-unavailable"));}
+            }else out.put("sms_dispatcher_window",new JSONObject().put("status","unknown").put("reason",pinned?"phone-unavailable":"rom-not-calibrated"));
+            requireSmsOwner(context,slot,sub);
+        }catch(Throwable failure){out.remove("native_sms_ims_supported");out.remove("sms_dispatcher_window");out.put("native_sms_error",errorName(failure));}
         progress.checkpoint(out,"apn");
         // Display only APN/type, never APN username/password or subscriber identifiers.
         try(Cursor c=context.getContentResolver().query(Uri.parse("content://telephony/carriers/preferapn/subId/"+sub),new String[]{"apn","type"},null,null,null)){
@@ -262,7 +270,7 @@ public final class RootDiagnostics {
             try{last=smsDispatcherObservation(pid,slot);}
             catch(Throwable t){out.put("sms_observation_error",errorName(t));}
         }
-        out.put("sms_dispatcher",last==null?"本次电话进程尚无发送观测；注册和 SMS 能力不保证分发器已就绪":"最近发送时的历史判定："+last+"\n不代表当前实时可用性");
+        out.put("sms_dispatcher",last==null?"本次电话进程尚无状态日志；注册和 SMS 能力不保证分发器已就绪":"最近状态日志："+last+"\n可能来自支持查询或发送；不代表当前实时可用性");
         if(!out.has("ike"))out.put("ike","不可见：仅凭接口不能确认所选 SIM 的 IKE/child 状态");
         }finally{statusWorkers.shutdownNow();}
     }
@@ -284,6 +292,38 @@ public final class RootDiagnostics {
         JSONObject clean=TelemetrySnapshot.validate(new JSONObject(snapshot.group(1)),channel,slot,sub,nonce,Integer.parseInt(pid),boot,began,SystemClock.elapsedRealtime());
         if(!pid.equals(command(2,"pidof",pkg).trim()))throw new IOException("status-process-changed");
         return clean;
+    }
+    private static void requireSmsOwner(Context context,int slot,int sub)throws Exception{
+        List<SubscriptionInfo> current=context.getSystemService(SubscriptionManager.class).getActiveSubscriptionInfoList();
+        int matched=0;if(current!=null)for(SubscriptionInfo candidate:current)if(candidate.getSimSlotIndex()==slot){if(candidate.getSubscriptionId()!=sub)throw new IllegalStateException("sms-owner-changed");matched++;}
+        if(matched!=1)throw new IllegalStateException("sms-owner-changed");
+    }
+    private static boolean pinnedSmsFramework(){
+        try(InputStream input=new FileInputStream("/system/framework/telephony-common.jar")){
+            java.security.MessageDigest digest=java.security.MessageDigest.getInstance("SHA-256");byte[] block=new byte[16384];int n;
+            while((n=input.read(block))!=-1)digest.update(block,0,n);
+            StringBuilder hex=new StringBuilder();for(byte b:digest.digest())hex.append(String.format(Locale.US,"%02x",b&255));
+            return "6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74".contentEquals(hex);
+        }catch(Exception ignored){return false;}
+    }
+    private static JSONObject smsDispatcherWindow(PlatformHealth.Sample before,int slot,long begin,long end,long duration)throws Exception{
+        String pid=before.identity.substring(0,before.identity.indexOf(':'));
+        SmsDispatcherWindow window=new SmsDispatcherWindow(pid,slot,begin,end,duration);
+        java.lang.Process child=new ProcessBuilder("logcat","-b","all","-d","-v","epoch","--pid="+pid).redirectErrorStream(true).start();
+        java.util.concurrent.atomic.AtomicBoolean consumed=new java.util.concurrent.atomic.AtomicBoolean();
+        Thread reader=new Thread(()->{
+            try(BufferedReader lines=new BufferedReader(new InputStreamReader(child.getInputStream(),"UTF-8"))){
+                String line;while((line=lines.readLine())!=null)window.accept(line);
+                consumed.set(true);
+            }catch(IOException ignored){}
+        });
+        reader.setDaemon(true);reader.start();
+        if(!child.waitFor(4,TimeUnit.SECONDS)){child.destroyForcibly();reader.join(500);throw new TimeoutException();}
+        reader.join(500);if(reader.isAlive())throw new TimeoutException();
+        if(child.exitValue()!=0||!consumed.get())throw new IOException("logcat-failed");
+        PlatformHealth.Sample after=PlatformHealth.readProcess("com.android.phone");
+        boolean same=Boolean.TRUE.equals(after.present)&&before.identity.equals(after.identity);
+        return new JSONObject(window.finish(same));
     }
     private static String smsDispatcherObservation(String pid,int slot)throws Exception{
         // Android11 filter specifications tokenize spaces inside OEM tag names.

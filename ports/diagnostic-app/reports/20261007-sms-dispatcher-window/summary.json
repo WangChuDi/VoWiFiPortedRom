@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "status": "partial",
+  "goal_complete": false,
+  "tool_version": "0.9.10-diagnostic",
+  "tool_sha256": "51b76628e08ab61955c951ac05ced48e2ddfc78f8a21632e5cc7f6091529c926",
+  "two_tested_engine_bytes_retained": {
+    "api30": "bedcea439f95223d4463cbfb770bc55fe2833b7dab0e2745f650cb7edd1f9cdd",
+    "modern": "ffb9551e50a8ae11c0da4ad562646e2e181aa95ff0ec6c79cfcb4933d854705a"
+  },
+  "one_call_then_native_sms_without_reload_proven": true,
+  "original_sampler_failure_retained": true,
+  "readonly_supplement_corrected_sampler_suffix": true,
+  "diagnostic_captured_mmtel_sms_true_software_dispatcher_sms_false": true,
+  "physical_native_sms_ready_assertion_passed": false,
+  "registration_refresh_recovered_software_sms": false,
+  "api33_api36_readonly_refusal_smoke_passed": true,
+  "owned_modern_guests_terminal": true,
+  "intermittent_103_root_cause_proven": false,
+  "sms_stability_proven": false,
+  "human_voice_audio_confirmed": false,
+  "modern_actual_carrier_traffic_proven": false,
+  "dual_active_sim_proven": false,
+  "android17_original_fixture_recovery_proven": false,
+  "raw_logs_oem_disassembly_sms_content_exported": false
+}

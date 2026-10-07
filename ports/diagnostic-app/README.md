@@ -24,8 +24,10 @@ The root helper reports only selected-subscription metadata:
   locally held IKE/child/transforms and counts; IMS reports registration and
   per-generation REGISTER/SMS/ACK/media counters. Older services retain a clearly
   historical log fallback. See [status protocol](../android11/stack/TELEMETRY.md).
-* Latest SMS-dispatch capability observation from the current phone process,
-  separated from advertised IMS capability. The check does not send an SMS.
+* SMS dispatcher metadata from the current phone process, separated from advertised
+  IMS capability. Version0.9.10 adds a query-window sample on the exact calibrated
+  MIUI framework; other ROMs remain unknown. Historical logs may come from a support
+  query or a send and are labelled accordingly. The check does not send an SMS.
 * Version0.9.3 compares phone/system-server process identities at the beginning
   and end of the check. Unknown observations remain unknown; identical samples
   do not prove that Binder, IMS or the carrier is healthy. A32-second watchdog
@@ -312,3 +314,17 @@ call received UPDATE488. These distinct observations remain preserved. The
 failed before replacement IMS transmission; a separate retry after the cleanup
 phone reload passed native delivery/notification. The first combined result
 remains failed. See [exact changes and evidence limits](AKA-SMS-DIALOG-20261007.md).
+
+## Version0.9.10 query-window SMS dispatcher observation
+
+VersionCode22 retains both0.9.9 engine ZIPs exactly and adds a calibrated, bounded
+phone-dispatcher snapshot during the native SMS support query. Missing calibration,
+changed process/subscription, conflicting samples and unavailable logs remain unknown.
+The release validator now derives its recorded version from the source manifest.
+
+One unchanged-engine call-then-SMS test passed without an intervening phone reload,
+including native inbox and notification. Its sampler failure and read-only correction
+remain separate. After policy-cleanup reload, the new tool captured a live discrepancy:
+independent MMTEL SMS=true but phone dispatcher SMS=false and native support=false.
+An actual REGISTER refresh200 did not recover it. API33/API36 read-only/refusal
+checks passed; actual SMS stability remains unresolved. See [full evidence and limits](SMS-DISPATCHER-WINDOW-20261007.md).

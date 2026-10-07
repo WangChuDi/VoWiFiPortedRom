@@ -51,7 +51,7 @@ final class PlatformHealth {
         if(fields.length<=19||!fields[19].matches("[0-9]{1,20}"))return Sample.unknown();
         return new Sample(true,pid+":"+fields[19]);
     }
-    private static Sample readProcess(String name){
+    static Sample readProcess(String name){
         java.lang.Process child=null;
         try{
             child=new ProcessBuilder("pidof",name).redirectErrorStream(true).start();

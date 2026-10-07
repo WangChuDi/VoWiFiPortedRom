@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "supplement_only": true,
+  "original_failed_report_retained": true,
+  "original_report_sha256": "66f32d211d4f897dc71f7e9a90350ad7272db779f0e4962865ab0b603dc33b3a",
+  "original_evidence_path": "sms099-call-boundary-fresh-20261007/report.json",
+  "sampler_error": "fixed-slot-sub-suffix-omitted",
+  "new_call_sms_sent": false,
+  "historical_query_window_begin_ms": 1791335026176,
+  "historical_query_window_end_ms": 1791335161598,
+  "send_result_observations": [
+    {
+      "epoch_ms": 1791335032275,
+      "result": -1,
+      "network_error": 0,
+      "slot": 1,
+      "sub": 1
+    }
+  ],
+  "call_then_sms_without_reload_proven_for_this_one_test": true,
+  "intermittent_103_root_cause_proven": false,
+  "automatic_sms_stability_proven": false,
+  "cleanup_reload_occurred_after_all_traffic_observations": true
+}

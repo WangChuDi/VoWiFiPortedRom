@@ -57,6 +57,10 @@ def check(guest):
         result['diagnostic_fields_observed']={key:key in value for key in ('runtime_abi','sim_state','dns','selected_policy','ims_transport','cap_observed','native_sms_ims_supported','native_sms_error')}
         if 'native_sms_ims_supported'not in value and 'native_sms_error'not in value:raise ValueError('native-sms-observation-missing')
         if 'native_sms_ims_supported'in value and not isinstance(value['native_sms_ims_supported'],bool):raise ValueError('native-sms-observation-type')
+        if 'native_sms_ims_supported'in value:
+            window=value.get('sms_dispatcher_window')
+            if window!={'status':'unknown','reason':'rom-not-calibrated'}:raise ValueError('uncalibrated-sms-window-not-unknown')
+            result['uncalibrated_software_sms_dispatcher_reported_unknown']=True
         rc,value=entry('RootDiagnostics','0',True)
         if rc or value.get('error')!='SecurityException' or 'sdk' in value:raise ValueError('nonroot-diagnostic-not-refused')
         result['nonroot_diagnostic_refused']=True

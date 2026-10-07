@@ -151,6 +151,14 @@ public final class MainActivity extends Activity {
         String nativeSms=data.has("native_sms_ims_supported")?(data.optBoolean("native_sms_ims_supported")?"系统短信服务报告支持 IMS 短信。":"系统短信服务暂未报告支持 IMS 短信。"):("未能观测 · "+data.optString("native_sms_error","未知"));
         if(Boolean.FALSE.equals(data.opt("native_sms_ims_supported"))&&data.optBoolean("cap_observed")&&data.optBoolean("sms"))nativeSms+="\n与 MMTEL 的 SMS 上报不一致；空闲时重新拉起后再检查。";
         card("系统短信发送检查",nativeSms+"\n这是所选 SIM 的一次状态查询，实际收发和通知仍需分别验证。");
+        JSONObject dispatcher=data.optJSONObject("sms_dispatcher_window");
+        if(dispatcher!=null){
+            boolean observed="observed".equals(dispatcher.optString("status"));
+            String detail=observed?"服务连接 "+dispatcher.optBoolean("service_up")+" · IMS 注册 "+dispatcher.optBoolean("registered")+" · SMS 能力 "+dispatcher.optBoolean("sms_capable")+
+                "\n软件 IMS 短信分发器就绪 "+dispatcher.optBoolean("available"):
+                "未能取得有效采样"+("rom-not-calibrated".equals(dispatcher.optString("reason"))?"；当前 ROM 的状态日志尚未校准":"；电话进程或状态发生变化，或未找到本次查询的日志");
+            card("查询时的短信分发器",detail+"\n只采集本次支持查询时间窗内的状态；不会发送短信，也不保证下一条短信成功。");
+        }
         JSONObject service=data.optJSONObject("ims_status");
         if(service!=null&&service.optBoolean("observed")){
             card("检查时的 IMS 实例","会话代次 "+service.optLong("generation")+" · "+phaseName(service.optString("phase"))+"\n本代 REGISTER 发送 "+service.optInt("register_tx")+" · 最近响应 "+service.optInt("sip_status"));
@@ -158,7 +166,7 @@ public final class MainActivity extends Activity {
             card("本代语音媒体观测","已发送 RTP 帧 "+service.optInt("voice_tx_frames")+" · 已交给音频播放的帧 "+service.optInt("voice_played_frames")+"\n累计观测；需要实际通话验证听感");
         }
         else if(service!=null)card("检查时的 IMS 实例","未观测到所选 SIM 的有效实例");
-        card("最近一次系统短信分发",data.optString("sms_dispatcher","未观测"));
+        card("最近短信分发器状态日志",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
         card("替换控制器"+(ownerSlot>=0?"（管理 SIM"+(ownerSlot+1)+"）":""),providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));

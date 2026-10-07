@@ -5,6 +5,7 @@ No device installation, root request, network traffic or module rebuild.
 """
 from pathlib import Path
 import argparse, hashlib, json, os, subprocess, sys, zipfile
+import xml.etree.ElementTree as ET
 
 B = Path(__file__).resolve().parent
 sys.path.insert(0, str(B.parent / 'android11'))
@@ -22,11 +23,15 @@ def main():
         subprocess.run([sys.executable, str(B.parent / 'compatibility/test-runtime-abi-probe.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-diagnostic-progress.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-modern-action-policy.py')], check=True)
+        subprocess.run([sys.executable, str(B / 'test-sms-dispatcher-window.py')], check=True)
     apk = B / ('out/vowifi-tool-unsigned.apk'if args.unsigned else 'out/vowifi-tool.apk')
     engines = [B.parent / 'android11/stack/out/vowifi-stack-api30-services.zip',B.parent/'android12/out/modern-services-installation-stage.zip']
     aapt = TOOLS / 'android-build-tools' / ('aapt2.exe' if os.name == 'nt' else 'aapt2')
     badging = subprocess.check_output([str(aapt), 'dump', 'badging', str(apk)], text=True)
-    required = ["name='dev.codex.vowifi.tool'", "versionCode='21'", "versionName='0.9.9-diagnostic'", "sdkVersion:'30'", "targetSdkVersion:'30'"]
+    manifest=ET.parse(B/'AndroidManifest.xml').getroot();namespace='{http://schemas.android.com/apk/res/android}'
+    version=manifest.attrib[namespace+'versionName'];code=manifest.attrib[namespace+'versionCode']
+    if not code.isdigit()or not version.endswith('-diagnostic'):raise SystemExit('source version metadata invalid')
+    required = ["name='dev.codex.vowifi.tool'", "versionCode='"+code+"'", "versionName='"+version+"'", "sdkVersion:'30'", "targetSdkVersion:'30'"]
     for value in required:
         if value not in badging:
             raise SystemExit('compiled APK metadata mismatch: ' + value)
@@ -41,7 +46,7 @@ def main():
         if 'classes.dex' not in package.namelist():
             raise SystemExit('tool DEX missing')
     digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
-    result = dict(schema=1, tool_version='0.9.8', tool_sha256=digest(apk),
+    result = dict(schema=1, tool_version=version.removesuffix('-diagnostic'), tool_sha256=digest(apk),
                   engine_sha256={engine.name:digest(engine)for engine in engines}, embedded_engines_exact=True,
                   signature_verified=not args.unsigned,
                   build_run_in_this_batch=args.build,
