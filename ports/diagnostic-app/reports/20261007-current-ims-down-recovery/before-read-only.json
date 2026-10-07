@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "sdk": 30,
+  "status": "not-ready",
+  "read_only": true,
+  "new_calls_or_sms": false,
+  "phone_reloaded": false,
+  "repair_requested": false,
+  "samples": [
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "clients": {
+        "registered": false
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "clients": {
+        "registered": false
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "clients": {
+        "registered": false
+      }
+    }
+  ],
+  "tool_sha256": "de22787f736555d5efe9260fab3559f04d5f03ffaec3728c0b06564cc0205c3c",
+  "phone_identity_stable": true,
+  "ims_full_identity_stable": true,
+  "system_full_identity_stable": true,
+  "all_calls_idle": true
+}

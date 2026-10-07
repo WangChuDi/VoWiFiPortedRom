@@ -10,10 +10,31 @@ import java.util.*;
 import org.json.*;
 /** Original recorded API37 fixture recovery; no new snapshots or journal migration. */
 public final class Api37OriginalFixtureRecovery {
+    static JSONObject outerChildObservation;
     static void stage(String s)throws Exception{System.out.println(new JSONObject().put("schema",1).put("sdk",37).put("checkpoint",s));System.out.flush();}
     static void canonical(File f)throws Exception{if(!f.getAbsoluteFile().equals(f.getCanonicalFile())||Files.isSymbolicLink(f.toPath()))throw new IOException("alias-refused");}
     static Properties read(File f)throws Exception{canonical(f);if(!f.isFile()||f.length()>16384)throw new IOException("record-unavailable");Properties p=new Properties();try(InputStream in=new FileInputStream(f)){p.load(in);}return p;}
     static String phase(Properties p){String s=p.getProperty("phase","");return Arrays.asList("PREPARING","PREPARED","SELECTING","ACTIVE","RESTORING","RESTORED","ARCHIVING").contains(s)?s:"UNKNOWN";}
+    static JSONObject originalOuter(String action,String fixture)throws Exception{
+        // The retained main prepares its own main Looper. Calling it inside this
+        // already-initialized process would prepare the main Looper twice.
+        ProcessBuilder command=new ProcessBuilder("/system/bin/app_process","/system/bin","ModernInstallationEmulatorTrial","outer".equals(action)?"cleanup":"audit",fixture);
+        command.environment().put("CLASSPATH","/data/local/tmp/codex-modern-runtime-check.zip");command.redirectErrorStream(true);
+        java.lang.Process child=command.start();ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+        java.util.concurrent.atomic.AtomicBoolean overflow=new java.util.concurrent.atomic.AtomicBoolean(),readFailed=new java.util.concurrent.atomic.AtomicBoolean();
+        Thread reader=new Thread(()->{try(InputStream in=child.getInputStream()){byte[] buffer=new byte[2048];int n;while((n=in.read(buffer))!=-1){if(bytes.size()+n<=32768&&!overflow.get())bytes.write(buffer,0,n);else overflow.set(true);}}catch(IOException ignored){readFailed.set(true);}},"original-outer-output");reader.setDaemon(true);reader.start();
+        if(!child.waitFor(25,java.util.concurrent.TimeUnit.SECONDS)){child.destroyForcibly();if(!child.waitFor(3,java.util.concurrent.TimeUnit.SECONDS))throw new IOException("outer-child-termination-unconfirmed");throw new IOException("outer-child-deadline");}
+        reader.join(1000);if(reader.isAlive())throw new IOException("outer-child-output-unconfirmed");
+        if(overflow.get()||readFailed.get())throw new IOException("outer-child-output-incomplete");
+        outerChildObservation=new JSONObject().put("separate_child_process",true).put("child_exit",child.exitValue());
+        JSONObject result=null;for(String line:bytes.toString("UTF-8").split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}")){if(result!=null)throw new IOException("outer-child-multiple-results");result=new JSONObject(line);}
+        if(result!=null){String error=result.optString("error"),origin=result.optString("origin");if(error.matches("[A-Za-z]+(?:Exception|Error)"))outerChildObservation.put("child_error",error);if(origin.matches("Modern[A-Za-z]+\\.[A-Za-z0-9_$<>]+:[0-9]{1,6}|external"))outerChildObservation.put("child_origin",origin);}
+        if(result==null||result.optInt("sdk",-1)!=37||!("outer".equals(action)?"cleanup":"audit").equals(result.optString("stage")))throw new IOException("outer-child-result-unconfirmed");
+        if(child.exitValue()!=0||result.has("error"))throw new IOException("outer-child-operation-failed");
+        if("outer".equals(action)){if(!result.optBoolean("entire_outer_permission_observation_restored"))throw new IOException("outer-policy-unconfirmed");}
+        else {JSONArray changes=result.optJSONArray("fixed_policy_changes");if(changes==null||changes.length()!=0)throw new IOException("outer-original-policy-audit-unconfirmed");}
+        return new JSONObject().put("separate_child_process",true).put("child_exit",child.exitValue()).put("original_outer_policy_confirmed",true);
+    }
     public static void main(String[] args){JSONObject out=new JSONObject();boolean ok=false;
         try{
             if(args.length!=2||!Arrays.asList("inventory","selection","installation","outer","audit").contains(args[0])||!args[1].matches("[0-9]{1,2}")||android.os.Process.myUid()!=0||Build.VERSION.SDK_INT!=37||!"1".equals(SystemProperties.get("ro.kernel.qemu"))||!"CodexVoWiFiApi37".equals(SystemProperties.get("ro.boot.qemu.avd_name")))throw new SecurityException("owned-api37-required");
@@ -54,10 +75,10 @@ public final class Api37OriginalFixtureRecovery {
                 }else{
                     if(!"RESTORED".equals(selection.getProperty("phase"))||!"false".equals(selection.getProperty("mode_owned")))throw new IOException("selection-recovery-required-first");
                     if("installation".equals(args[0])){stage("installation-restore");try(ModernInstallationTransaction tx=new ModernInstallationTransaction(context,new File(root,"module"),new File(root,"state"),true)){tx.restore();tx.restore();if(!"RESTORED".equals(tx.phase()))throw new IOException("original-installation-restore-unconfirmed");}out.put("original_installation_restored",true);}
-                    else{if(!"RESTORED".equals(read(new File(root,"state/baseline.properties")).getProperty("phase")))throw new IOException("installation-recovery-required-first");stage("original-outer-entry");ModernInstallationEmulatorTrial.main(new String[]{"outer".equals(args[0])?"cleanup":"audit",root.getName()});throw new IOException("outer-entry-returned-unexpectedly");}
+                    else{if(!"RESTORED".equals(read(new File(root,"state/baseline.properties")).getProperty("phase")))throw new IOException("installation-recovery-required-first");stage("original-outer-entry");out.put("outer",originalOuter(args[0],root.getName()));}
                 }ok=true;
             }
-        }catch(Throwable e){try{out.put("error",e.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(e)).put("origin",ModernSafeFailure.origin(e));}catch(Exception ignored){}}
+        }catch(Throwable e){try{out.put("error",e.getClass().getSimpleName()).put("reason",ModernSafeFailure.reason(e)).put("origin",ModernSafeFailure.origin(e));if(outerChildObservation!=null)out.put("outer_child_observation",outerChildObservation);}catch(Exception ignored){}}
         try{out.put("status",ok?"passed":"failed");}catch(Exception ignored){}System.out.println(out);System.out.flush();System.exit(ok?0:1);
     }
 }

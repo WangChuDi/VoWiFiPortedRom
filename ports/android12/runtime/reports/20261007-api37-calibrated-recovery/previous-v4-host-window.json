@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "requested-window-finish",
+  "gpu_backend": "swiftshader",
+  "vulkan_disabled": true,
+  "quickboot_file_backed_requested": false,
+  "window_seconds": 600,
+  "system_writable_requested": true,
+  "userdata_writable": true,
+  "configured_guest_memory_mib": 4096,
+  "original_avd_preserved": true,
+  "wipe_requested": false,
+  "snapshot_load_save_requested": false,
+  "physical_phone_modified": false,
+  "payload_staging_requested": false,
+  "samples": [
+    {
+      "seconds": 1,
+      "private_bytes": 42455040,
+      "disk_free_bytes": 10245922816,
+      "free_physical_bytes": 16567631872
+    },
+    {
+      "seconds": 6,
+      "private_bytes": 4521562112,
+      "disk_free_bytes": 10245914624,
+      "free_physical_bytes": 16272805888
+    },
+    {
+      "seconds": 11,
+      "private_bytes": 4523905024,
+      "disk_free_bytes": 10242535424,
+      "free_physical_bytes": 15981961216
+    },
+    {
+      "seconds": 16,
+      "private_bytes": 4614201344,
+      "disk_free_bytes": 10242404352,
+      "free_physical_bytes": 15492354048
+    },
+    {
+      "seconds": 22,
+      "private_bytes": 4796395520,
+      "disk_free_bytes": 10242371584,
+      "free_physical_bytes": 15112863744
+    },
+    {
+      "seconds": 27,
+      "private_bytes": 4873469952,
+      "disk_free_bytes": 10242371584,
+      "free_physical_bytes": 14889865216
+    },
+    {
+      "seconds": 33,
+      "private_bytes": 5320990720,
+      "disk_free_bytes": 10242228224,
+      "free_physical_bytes": 14131707904
+    },
+    {
+      "seconds": 38,
+      "private_bytes": 5418205184,
+      "disk_free_bytes": 10242461696,
+      "free_physical_bytes": 13901955072
+    },
+    {
+      "seconds": 44,
+      "private_bytes": 5491511296,
+      "disk_free_bytes": 10242461696,
+      "free_physical_bytes": 13825826816
+    },
+    {
+      "seconds": 49,
+      "private_bytes": 5735243776,
+      "disk_free_bytes": 10242441216,
+      "free_physical_bytes": 13557116928
+    },
+    {
+      "seconds": 55,
+      "private_bytes": 5911027712,
+      "disk_free_bytes": 10242301952,
+      "free_physical_bytes": 13208932352
+    },
+    {
+      "seconds": 61,
+      "private_bytes": 6007881728,
+      "disk_free_bytes": 10242060288,
+      "free_physical_bytes": 13097750528
+    }
+  ],
+  "owned_processes_terminal": true,
+  "boot_observed": true
+}

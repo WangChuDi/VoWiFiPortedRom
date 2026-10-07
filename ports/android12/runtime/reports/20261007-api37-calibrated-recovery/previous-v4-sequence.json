@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "original_journals_deleted": false,
+  "actions": [
+    {
+      "action": "inventory",
+      "report": "inventory-0.json",
+      "status": "failed"
+    }
+  ],
+  "error": "ValueError",
+  "original_fixture_cleanup_confirmed": false
+}

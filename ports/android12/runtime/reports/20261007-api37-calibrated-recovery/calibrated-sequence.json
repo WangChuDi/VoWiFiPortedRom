@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "original_journals_deleted": false,
+  "actions": [
+    {
+      "action": "inventory",
+      "report": "inventory-0.json",
+      "status": "passed"
+    },
+    {
+      "action": "selection",
+      "report": "selection.json",
+      "status": "failed"
+    }
+  ],
+  "package_samples": [
+    {
+      "command_exit": 0,
+      "known_platform_packages_present": true,
+      "all_retained_packages_present": true
+    },
+    {
+      "command_exit": 224,
+      "known_platform_packages_present": false,
+      "all_retained_packages_present": false
+    },
+    {
+      "command_exit": 20,
+      "known_platform_packages_present": false,
+      "all_retained_packages_present": false
+    },
+    {
+      "command_exit": 0,
+      "known_platform_packages_present": true,
+      "all_retained_packages_present": true
+    },
+    {
+      "command_exit": 0,
+      "known_platform_packages_present": true,
+      "all_retained_packages_present": true
+    }
+  ],
+  "retained_file_observations": [
+    {
+      "component": "Api31Iwlan",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    },
+    {
+      "component": "Api31Qns",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    },
+    {
+      "component": "Api31Ims",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    }
+  ],
+  "error": "AssertionError",
+  "reason": "unclassified",
+  "original_fixture_cleanup_confirmed": false
+}

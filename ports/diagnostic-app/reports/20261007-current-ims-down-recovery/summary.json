@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "status": "actual-down-recovered-and-business-passed",
+  "automatic_down_recovery_fixed": false,
+  "periodic_refresh_restored_registration": false,
+  "idle_phone_reload_restored_registration": true,
+  "actual_voice_and_native_sms_tested": true,
+  "native_sms_inbox_and_notification_verified": true,
+  "final_read_only_ready": true,
+  "full_modern_carrier_compatibility_verified": false,
+  "dual_active_sim_verified": false,
+  "human_audible_speech_confirmed": false,
+  "production_apk_or_module_changed": false,
+  "private_logs_or_sms_bodies_exported": false
+}

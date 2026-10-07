@@ -1,0 +1,510 @@
+{
+  "schema": 1,
+  "sdk": 30,
+  "status": "not-recovered",
+  "phone_reload_requested": false,
+  "new_call_sms_sent": false,
+  "refresh_broadcast_requested": true,
+  "observations": [
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "generation": 1,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 3,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "ims": {
+        "observed": true,
+        "phase": "DOWN",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "generation": 2,
+        "register_tx": 11,
+        "sip_status": 200
+      }
+    }
+  ],
+  "before": {
+    "diagnostic_complete": true,
+    "ims_transport": -3,
+    "voice": false,
+    "sms": false,
+    "native_sms_ims_supported": false,
+    "dispatcher_available": false,
+    "iwlan": {
+      "observed": true,
+      "phase": "CHILD_OPENED",
+      "ike_open": true,
+      "child_open": true,
+      "registered": false,
+      "generation": 1,
+      "register_tx": 0,
+      "sip_status": 0
+    },
+    "qns": {
+      "observed": true,
+      "phase": "IWLAN_SELECTED",
+      "ike_open": false,
+      "child_open": false,
+      "registered": false,
+      "generation": 3,
+      "register_tx": 0,
+      "sip_status": 0
+    },
+    "ims": {
+      "observed": true,
+      "phase": "DOWN",
+      "ike_open": false,
+      "child_open": false,
+      "registered": false,
+      "generation": 2,
+      "register_tx": 11,
+      "sip_status": 200
+    }
+  },
+  "all_calls_idle_before": true,
+  "broadcast_completion_observed": true,
+  "phone_full_identity_stable": true,
+  "ims_full_identity_stable": true,
+  "registration_restored": false,
+  "native_sms_clients_ready": false
+}

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "status": "selection-recovery-failed",
+  "original_fixture_cleanup_confirmed": false,
+  "full_api37_lifecycle_verified": false,
+  "original_journals_deleted": false,
+  "new_baseline_created": false,
+  "physical_phone_modified": false,
+  "current_original_installation_phase_observed": "PREPARED",
+  "current_original_owner_phase_observed": "RESTORING",
+  "current_original_mode_owned_observed": true,
+  "package_manager_exit_codes_observed": [
+    0,
+    224,
+    20
+  ],
+  "original_apk_bytes_verified": true,
+  "actual_privileged_paths_verified": true,
+  "failed_origin": "ModernRootSettings.command:19",
+  "outer_audit_reached": false,
+  "outer_audit_runtime_validated": false,
+  "production_engines_rebuilt": false,
+  "host_contract_cases_passed": 10,
+  "raw_output_exported": false
+}

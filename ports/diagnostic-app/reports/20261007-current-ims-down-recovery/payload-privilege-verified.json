@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "sdk": 30,
+  "status": "passed",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "apk_observations": [
+    {
+      "component": "Iwlan",
+      "actual_bytes_match_module_payload": true,
+      "mounted_bytes_match_module_payload": true,
+      "actual_path_equals_module_mount": false,
+      "system_package_flag_observed": true,
+      "privileged_package_flag_observed": true,
+      "updated_system_package_flag_observed": true
+    },
+    {
+      "component": "Qns",
+      "actual_bytes_match_module_payload": true,
+      "mounted_bytes_match_module_payload": true,
+      "actual_path_equals_module_mount": false,
+      "system_package_flag_observed": true,
+      "privileged_package_flag_observed": true,
+      "updated_system_package_flag_observed": true
+    },
+    {
+      "component": "Ims",
+      "actual_bytes_match_module_payload": true,
+      "mounted_bytes_match_module_payload": true,
+      "actual_path_equals_module_mount": false,
+      "system_package_flag_observed": true,
+      "privileged_package_flag_observed": true,
+      "updated_system_package_flag_observed": true
+    }
+  ],
+  "module_metadata_matches_archive": true,
+  "module_archive_sha256": "07084b8d05ee174319369858160d3feb7cc17e4822e8cf9ae659aa03e61a7d7d"
+}

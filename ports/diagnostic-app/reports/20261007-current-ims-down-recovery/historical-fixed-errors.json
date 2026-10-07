@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "sdk": 30,
+  "status": "observed",
+  "read_only": true,
+  "raw_logs_exported": false,
+  "errors": [
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    },
+    {
+      "error_class": "SocketTimeoutException",
+      "source_class": "me.phh.sip.SipConnectionTcp",
+      "line": 77
+    }
+  ],
+  "history_is_current_state": false,
+  "ims_full_identity_stable": true
+}
