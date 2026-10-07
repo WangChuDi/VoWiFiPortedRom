@@ -18,7 +18,7 @@ public final class ModernRolePermissionBroker {
         if(android.os.Process.myUid()!=0||index<0||index>2||uid<10000||uid>=100000||!apk.matches("[0-9a-f]{64}"))throw new SecurityException("fixed-root-role-delegation-required");
         String classpath=System.getenv("CLASSPATH");
         boolean production="/data/adb/modules/codex_vowifi_stack_modern/controller.zip".equals(classpath)||"/data/adb/codex_vowifi_stack_modern/installation/recovery/controller.zip".equals(classpath)||(classpath!=null&&classpath.matches("/data/adb/codex_vowifi_stack_modern/installation/recovery/generations/[0-9a-f]{64}/controller.zip")&&new File(classpath).equals(ModernRecoveryPublication.current(ModernSelectionController.INSTALLATION)));
-        boolean fixture="1".equals(SystemProperties.get("ro.kernel.qemu"))&&("CodexVoWiFiApi"+Build.VERSION.SDK_INT).equals(SystemProperties.get("ro.boot.qemu.avd_name"))&&Arrays.asList("/data/local/tmp/codex-modern-runtime-check.zip","/data/local/tmp/codex-modern-owner-audit.zip").contains(classpath);
+        boolean fixture="1".equals(SystemProperties.get("ro.kernel.qemu"))&&("CodexVoWiFiApi"+Build.VERSION.SDK_INT).equals(SystemProperties.get("ro.boot.qemu.avd_name"))&&ModernFixtureHelperPaths.contains(classpath);
         if(!production&&!fixture)throw new SecurityException("fixed-role-helper-required");
         File source=new File(classpath);ModernStateFiles.canonical(source);String hash=ModernInstallationTransaction.digest(source);
         File directory=new File("/data/local/tmp/codex-modern-role-brokers");ModernStateFiles.canonical(directory);

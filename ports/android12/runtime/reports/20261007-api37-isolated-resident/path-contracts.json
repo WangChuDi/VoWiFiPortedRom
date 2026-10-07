@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contracts": 33,
+  "production_java_policy_used": true,
+  "host_runner_paths_checked": true,
+  "production_aliases_refused": true,
+  "device_verified": false,
+  "source_sha256": {
+    "ModernFixtureHelperPaths.java": "14d497ad3a70f2ba70a69960fdd80f1a9a2dae3730d42e8ecbe0517ecf8777e4",
+    "FixtureHelperPathsContract.java": "cac55177f78d128716af82f2ae1f48b836c3d223ef4fcf71128560182f58f3a7"
+  }
+}

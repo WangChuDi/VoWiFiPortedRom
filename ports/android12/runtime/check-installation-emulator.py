@@ -4,6 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import argparse,hashlib,json,re,stat,subprocess,time,uuid,zipfile
 B=Path(__file__).resolve().parent
+HELPER_SLOTS={
+    'runtime':'/data/local/tmp/codex-modern-runtime-check.zip',
+    'audit':'/data/local/tmp/codex-modern-owner-audit.zip',
+    'resident':'/data/local/tmp/codex-modern-resident-check.zip',
+}
 STAGES={
     'coordination':('borrowed_carrier_close_keeps_global_lock','borrowed_installation_close_keeps_global_lock',
         'closed_carrier_handle_refused','closed_installation_handle_refused',
@@ -55,7 +60,9 @@ STAGES={
 
 def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing=False,preparing_only=False,helper=None,helper_slot='runtime'):
     record=dict(schema=1,sdk=sdk,status='started',stages={})
-    remote='/data/local/tmp/codex-modern-'+('owner-audit' if helper_slot=='audit' else 'runtime-check')+'.zip';nonce=uuid.uuid4().hex
+    if helper_slot not in HELPER_SLOTS:raise ValueError('fixed-helper-slot-required')
+    remote=HELPER_SLOTS[helper_slot];nonce=uuid.uuid4().hex
+    record['helper_slot']=helper_slot
     helper=helper or B.parent/'out/runtime/runtime-check.zip'
     root='/data/local/tmp/codex-modern-installation-tests/'+nonce
     def command(*parts,check=True,timeout=35):
@@ -188,15 +195,16 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing
     try:
         guard()
         digest=hashlib.sha256(helper.read_bytes()).hexdigest();record['helper_sha256']=digest
-        # An isolated audit helper never overwrites the original recovery engine
-        # or an unrelated audit helper. Both fixed paths are broker allowlisted.
+        # Isolated slots never overwrite retained bytes. Each is fixed and shares
+        # the Java broker/supervisor allowlist; module equality is checked by main.
         exists=command('shell','test -e '+remote,check=False)
-        if helper_slot=='audit' and exists.returncode==0:
-            if shell('sha256sum '+remote).split()[0]!=digest:raise ValueError('retained-audit-helper-mismatch')
-            record['matching_existing_audit_helper_reused']=True
-        elif helper_slot=='audit' and exists.returncode!=1:raise ValueError('audit-helper-presence-unconfirmed')
+        if helper_slot!='runtime' and exists.returncode==0:
+            if shell('sha256sum '+remote).split()[0]!=digest:raise ValueError('retained-'+helper_slot+'-helper-mismatch')
+            record['matching_existing_'+helper_slot+'_helper_reused']=True
+        elif helper_slot!='runtime' and exists.returncode!=1:raise ValueError(helper_slot+'-helper-presence-unconfirmed')
         else:command('push',str(helper),remote)
-        record['original_runtime_helper_preserved']=helper_slot=='audit'
+        record['original_runtime_helper_preserved']=helper_slot!='runtime'
+        record['original_audit_helper_preserved']=helper_slot=='resident'
         if shell('sha256sum '+remote).split()[0]!=digest:raise ValueError('helper-digest-mismatch')
         # Verify all staged payload bytes before entering the Java fixture. No
         # /system or production Magisk directory is modified by this runner.
@@ -342,7 +350,7 @@ def main():
     parser.add_argument('--adb',required=True);parser.add_argument('--guest',required=True,action='append')
     parser.add_argument('--module',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
     parser.add_argument('--helper',type=Path,help='canonical isolated helper; must exactly match the module controller')
-    parser.add_argument('--helper-slot',choices=('runtime','audit'),default='runtime',help='audit preserves the original runtime helper and refuses replacement of different audit bytes')
+    parser.add_argument('--helper-slot',choices=tuple(HELPER_SLOTS),default='runtime',help='audit/resident preserve retained helpers and refuse different or unconfirmed existing bytes')
     parser.add_argument('--resident',action='store_true',help='also run real background renewal, duplicate refusal, SIGKILL/restart and disable recovery')
     parser.add_argument('--resident-only',action='store_true',help='run only new resident prerequisites and lifecycle; does not repeat the full selection suite')
     parser.add_argument('--preparing',action='store_true',help='actually SIGKILL staged/committed PREPARING snapshots and recover in new processes')

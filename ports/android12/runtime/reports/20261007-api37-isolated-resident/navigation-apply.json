@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "navigation-apply",
+  "status": "applied",
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "raw_output_exported": false,
+  "write_attempted": true,
+  "original_record_count": 58,
+  "before": {
+    "gestural": true,
+    "threebutton": false,
+    "twobutton": false
+  },
+  "original": {
+    "gestural": true,
+    "threebutton": false,
+    "twobutton": false
+  },
+  "target": "threebutton",
+  "change_exit": 0,
+  "after": {
+    "gestural": false,
+    "threebutton": true,
+    "twobutton": false
+  },
+  "original_records_unchanged": true
+}

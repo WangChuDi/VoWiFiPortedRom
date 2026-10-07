@@ -488,8 +488,48 @@ python check-installation-emulator.py --adb /path/to/adb \
 python test-isolated-lifecycle-artifacts.py
 ```
 
-The 19 host contracts cover selected-byte provenance, canonical paths, retained
+The original 19 host contracts covered selected-byte provenance, canonical paths, retained
 outputs, mismatch refusal before workers, the audit/resident boundary, and audit
 helper reuse/refusal/push decisions with mocked ADB. The actual API37 batch
 separately proves matching-helper reuse and preservation on the guest; the host
 contracts do not establish carrier or Magisk behavior.
+
+## Isolated resident helper profile
+
+`--helper-slot resident --resident` uses the additional fixed path
+`/data/local/tmp/codex-modern-resident-check.zip`. It preserves both the runtime
+and audit helpers. An identical resident helper is reused; different existing
+bytes or an unconfirmed presence check refuse before a fixture is created.
+Use this explicit slot when either earlier helper must be retained. The default
+runtime slot retains its historical push behavior; simply adding `--resident`
+does not select the isolated slot. The audit/resident CLI combination remains
+refused to preserve that profile's established behavior.
+
+The role broker and resident supervisor now share `ModernFixtureHelperPaths`.
+The three exact fixture paths are available only under the callers' existing
+named-root-QEMU checks. For a fixture resident, the canonical source helper digest
+must equal the published generation. Production still requires the exact published
+recovery helper path and digest. Owner, process-start-time, generation, lock and
+cleanup checks are unchanged. The runtime builder includes the shared policy.
+
+```sh
+python check-installation-emulator.py --adb /path/to/adb \
+  --guest 37:emulator-5582 --module /path/to/fresh-matching-module.zip \
+  --helper /path/to/fresh-helper.zip --helper-slot resident --resident \
+  --output /path/to/fresh-resident-report.json
+python test-isolated-lifecycle-artifacts.py
+python check-fixture-helper-paths.py --java /path/to/java \
+  --toolchain /path/to/toolchain --output /path/to/fresh-contract-directory
+```
+
+The expanded artifact suite has 27 host tests. The separate 33-contract check
+compiles the production Java path policy and passes it the actual host runner's
+path inventory; it checks production refusal, missing publication and malformed
+aliases without Android stubs. Host tests alone do not establish resident execution
+on a device, carrier traffic, Magisk mounting or dual-active-SIM behavior.
+
+The [API37 full resident record](reports/20261007-api37-isolated-resident/README.md)
+separately records 47 actual fixture stages, background renewal, identity-bound
+SIGKILL/restart and disable recovery. The original 58 records, two earlier helpers
+and three installed APKs were preserved, and Phone PID/start time stayed unchanged.
+It retains the fake-SIM, no-real-Magisk and no-carrier-traffic evidence boundary.

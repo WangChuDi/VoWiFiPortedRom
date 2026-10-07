@@ -1,0 +1,10 @@
+{
+  "ports/android12/controller/ModernFixtureHelperPaths.java": "14d497ad3a70f2ba70a69960fdd80f1a9a2dae3730d42e8ecbe0517ecf8777e4",
+  "ports/android12/controller/ModernSelectionSupervisor.java": "f3260b1f43f5b5c85ade78d4ad1723a1bc11a52e1e822f988560f2ce7e01e252",
+  "ports/android12/controller/ModernRolePermissionBroker.java": "d84590a141e7947d0df6d0947ca1b3cf2cebad9fd4327b782baee7f532084871",
+  "ports/android12/build-runtime.py": "0358f41aa2ad4f6b34b8df32d65ba8f97795f9d2cacda77c78b22b822b1af1b0",
+  "ports/android12/runtime/check-installation-emulator.py": "8ff6d71523a5b6279980a76d121c49a2587968104dae03fea8ac80d072e32d0a",
+  "ports/android12/runtime/test-isolated-lifecycle-artifacts.py": "73d2ab4a8901052cb81fac5dc73869b06c4214ae92066178a39aee2f86c6061f",
+  "ports/android12/runtime/FixtureHelperPathsContract.java": "cac55177f78d128716af82f2ae1f48b836c3d223ef4fcf71128560182f58f3a7",
+  "ports/android12/runtime/check-fixture-helper-paths.py": "13c40b93534bc8fe2a6aef18fa9bd141b9622d2f673ac9a7d468106dd6b41e92"
+}

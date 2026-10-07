@@ -83,8 +83,18 @@ class Artifacts(unittest.TestCase):
  def test_audit_preparing_interruption_allowed(self):
   self.package();code,trial=self.invoke(['--preparing']);self.assertEqual(code,0)
   self.assertTrue(trial.call_args.args[6])
- def audit_branch(self,presence,remote_hash=None):
-  calls=[];remote='/data/local/tmp/codex-modern-owner-audit.zip'
+ def test_resident_slot_full_resident_allowed(self):
+  self.package();code,trial=self.invoke(['--helper-slot','resident','--resident']);self.assertEqual(code,0)
+  self.assertTrue(trial.call_args.args[4]);self.assertFalse(trial.call_args.args[5])
+  self.assertEqual(trial.call_args.args[-1],'resident')
+ def test_resident_scoped_requires_resident(self):
+  self.package()
+  with self.assertRaises(SystemExit):self.invoke(['--helper-slot','resident','--resident-only'])
+ def test_resident_and_preparing_still_separate(self):
+  self.package()
+  with self.assertRaises(SystemExit):self.invoke(['--helper-slot','resident','--resident','--preparing'])
+ def isolated_branch(self,presence,remote_hash=None,slot='audit'):
+  calls=[];remote=runner.HELPER_SLOTS[slot]
   digest=hashlib.sha256(self.helper.read_bytes()).hexdigest()
   def command(args,**kwargs):
    calls.append(args[3:]);parts=args[3:]
@@ -98,26 +108,51 @@ class Artifacts(unittest.TestCase):
    # Deliberately stop before creating a fixture; test only staging decisions.
    raise ValueError('test-stop-before-fixture')
   with mock.patch.object(runner.subprocess,'run',side_effect=command):
-   value=runner.trial('never-executed-adb',37,'emulator-5582',self.output,helper=self.helper,helper_slot='audit')
+   value=runner.trial('never-executed-adb',37,'emulator-5582',self.output,helper=self.helper,helper_slot=slot)
   return value,calls
  def test_matching_audit_helper_reused_without_push(self):
-  value,calls=self.audit_branch(0)
+  value,calls=self.isolated_branch(0)
   self.assertTrue(value['matching_existing_audit_helper_reused'])
   self.assertTrue(value['original_runtime_helper_preserved'])
   self.assertFalse(any(c[0]=='push'for c in calls))
  def test_different_audit_helper_refused_without_push(self):
-  value,calls=self.audit_branch(0,'0'*64)
+  value,calls=self.isolated_branch(0,'0'*64)
   self.assertEqual(value['status'],'failed')
   self.assertFalse(any(c[0]=='push'for c in calls))
   self.assertFalse(any('mkdir' in c[-1]for c in calls))
  def test_missing_audit_helper_pushed_only_to_audit(self):
-  value,calls=self.audit_branch(1)
+  value,calls=self.isolated_branch(1)
   pushed=[c for c in calls if c[0]=='push']
   self.assertEqual(pushed,[['push',str(self.helper),'/data/local/tmp/codex-modern-owner-audit.zip']])
   self.assertTrue(value['original_runtime_helper_preserved'])
  def test_unknown_audit_presence_refused_without_push(self):
-  value,calls=self.audit_branch(20)
+  value,calls=self.isolated_branch(20)
   self.assertEqual(value['status'],'failed')
   self.assertFalse(any(c[0]=='push'for c in calls))
+ def test_matching_resident_helper_reused_without_push(self):
+  value,calls=self.isolated_branch(0,slot='resident')
+  self.assertTrue(value['matching_existing_resident_helper_reused'])
+  self.assertTrue(value['original_runtime_helper_preserved'])
+  self.assertTrue(value['original_audit_helper_preserved'])
+  self.assertFalse(any(c[0]=='push'for c in calls))
+ def test_different_resident_helper_refused_without_push(self):
+  value,calls=self.isolated_branch(0,'0'*64,slot='resident')
+  self.assertEqual(value['status'],'failed')
+  self.assertFalse(any(c[0]=='push'for c in calls))
+  self.assertFalse(any('mkdir' in c[-1]for c in calls))
+ def test_missing_resident_helper_pushed_only_to_resident(self):
+  value,calls=self.isolated_branch(1,slot='resident')
+  self.assertEqual([c for c in calls if c[0]=='push'],[['push',str(self.helper),runner.HELPER_SLOTS['resident']]])
+  self.assertTrue(value['original_runtime_helper_preserved'])
+  self.assertTrue(value['original_audit_helper_preserved'])
+ def test_unknown_resident_presence_refused_without_push(self):
+  value,calls=self.isolated_branch(20,slot='resident')
+  self.assertEqual(value['status'],'failed')
+  self.assertFalse(any(c[0]=='push'for c in calls))
+ def test_unknown_direct_slot_refused_before_adb(self):
+  with mock.patch.object(runner.subprocess,'run')as adb:
+   with self.assertRaisesRegex(ValueError,'fixed-helper-slot-required'):
+    runner.trial('never-executed-adb',37,'emulator-5582',self.output,helper=self.helper,helper_slot='foreign')
+   adb.assert_not_called()
 
 if __name__=='__main__':unittest.main()

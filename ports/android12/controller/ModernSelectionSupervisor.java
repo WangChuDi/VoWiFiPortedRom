@@ -108,8 +108,11 @@ public final class ModernSelectionSupervisor {
         return fields[19];
     }
     JSONObject runResident()throws Exception {
-        String classpath=System.getenv("CLASSPATH");boolean matching=recoveryHelper!=null&&recoveryHelper.getPath().equals(classpath);
-        if(test&&"/data/local/tmp/codex-modern-runtime-check.zip".equals(classpath)&&recoveryHelper!=null)matching=ModernInstallationTransaction.digest(new File(classpath)).equals(generation);
+        String classpath=System.getenv("CLASSPATH");boolean matching=ModernFixtureHelperPaths.residentSourceAllowed(test,classpath,recoveryHelper==null?null:recoveryHelper.getPath());
+        if(matching&&test&&ModernFixtureHelperPaths.contains(classpath)) {
+            File source=new File(classpath);ModernStateFiles.canonical(source);
+            matching=ModernInstallationTransaction.digest(source).equals(generation);
+        }
         if(generation==null||!matching||!generation.equals(ModernInstallationTransaction.digest(recoveryHelper)))throw new IOException("published-supervisor-helper-required");
         ModernStateFiles state=new ModernStateFiles(coordination);
         try(RandomAccessFile file=new RandomAccessFile(state.file("supervisor.lock"),"rw")) {

@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contracts": 27,
+  "adb_mocked": true,
+  "real_device_test": false,
+  "source_sha256": "73d2ab4a8901052cb81fac5dc73869b06c4214ae92066178a39aee2f86c6061f",
+  "execution_record": "initial consolidated host batch: exit 0, Ran 27 tests, OK"
+}

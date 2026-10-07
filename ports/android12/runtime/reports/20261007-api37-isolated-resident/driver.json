@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "passed",
+  "physical_phone_modified": false,
+  "full_carrier_voice_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "original_record_count": 58,
+  "runner_exit": 0,
+  "lifecycle_status": "passed",
+  "completed_stage_count": 47,
+  "actual_resident_forced_kill_verified": true,
+  "resident_processes_terminal_before_policy_cleanup": true,
+  "original_record_bytes_preserved": true,
+  "final_record_count": 102,
+  "original_runtime_and_audit_helpers_preserved": true,
+  "original_installed_apks_preserved": true,
+  "phone_pid_and_start_time_unchanged": true,
+  "navigation_restored": true
+}

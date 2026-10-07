@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "api37_full_resident_fixture_stages": 47,
+  "real_background_lease_renewal_verified": true,
+  "duplicate_resident_refusal_verified": true,
+  "identity_bound_sigkill_and_restart_verified": true,
+  "disable_restores_owner_and_installation_before_exit": true,
+  "original_58_records_and_two_helpers_and_apks_preserved": true,
+  "phone_pid_and_start_ticks_unchanged": true,
+  "os_reboot_verified": false,
+  "real_magisk_verified": false,
+  "modern_carrier_voice_sms_verified": false,
+  "modern_app_own_uid_positive_controls_verified": false,
+  "real_dual_active_sim_verified": false,
+  "api30_automatic_rebind_verified": false,
+  "full_goal_complete": false
+}
