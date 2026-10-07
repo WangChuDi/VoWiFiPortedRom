@@ -16,6 +16,12 @@ public final class ImsClientSnapshotContract {
     }
     private static Map<String,Object> validate(Map<String,Object> v,boolean rebind){return ImsClientSnapshot.validate(v,1,7,"0123456789abcdef",123,9,1000,1300,rebind);}
     private static void rejects(String key,Object value){Map<String,Object> v=sample();v.put(key,value);boolean refused=false;try{validate(v,false);}catch(IllegalArgumentException expected){refused=true;}check(refused);}
+    private static Map<String,Object> watch(){Map<String,Object> v=sample();
+        v.put("native_watch_schema",1);v.put("native_watch_status","HEALTHY");v.put("native_watch_native","TRUE");v.put("native_watch_self_uid",true);
+        v.put("native_watch_checks",2L);v.put("native_watch_requests",1L);v.put("native_watch_checked_elapsed",1100L);
+        v.put("native_watch_mismatch_since_elapsed",0L);v.put("native_watch_last_request_elapsed",1050L);return v;
+    }
+    private static void watchRejects(String key,Object value){Map<String,Object> v=watch();v.put(key,value);boolean refused=false;try{validate(v,false);}catch(IllegalArgumentException expected){refused=true;}check(refused);}
     public static void main(String[] args){
         Map<String,Object> clean=validate(sample(),false);check(!clean.containsKey("pid")&&!clean.containsKey("boot")&&!clean.containsKey("nonce"));check(!clean.containsKey("capability_callback_count"));
         rejects("schema",2);rejects("channel","iwlan");rejects("slot",0);rejects("sub",8);rejects("nonce","fedcba9876543210");rejects("pid",124);rejects("boot",10);
@@ -29,6 +35,15 @@ public final class ImsClientSnapshotContract {
         check(ImsClientSnapshot.profileEligible(30,"raphael",true));check(!ImsClientSnapshot.profileEligible(30,"raphael",false));check(!ImsClientSnapshot.profileEligible(30,"other",true));
         for(int sdk=31;sdk<=37;sdk++)check(!ImsClientSnapshot.profileEligible(sdk,"raphael",true));
         boolean stale=false;try{ImsClientSnapshot.validate(sample(),1,7,"0123456789abcdef",123,9,1000,6201,false);}catch(IllegalArgumentException expected){stale=true;}check(stale);
+        check(Boolean.TRUE.equals(validate(watch(),false).get("native_watch_self_uid")));
+        watchRejects("native_watch_schema",2);watchRejects("native_watch_schema",1.5);watchRejects("native_watch_self_uid","true");watchRejects("native_watch_self_uid",false);
+        watchRejects("native_watch_status","made-up");watchRejects("native_watch_native","made-up");watchRejects("native_watch_native","FALSE");
+        watchRejects("native_watch_checks",-1);watchRejects("native_watch_requests",4);watchRejects("native_watch_checked_elapsed",1301L);watchRejects("native_watch_last_request_elapsed",1101L);watchRejects("native_watch_mismatch_since_elapsed",1101L);
+        for(String key:new ArrayList<>(watch().keySet()))if(key.startsWith("native_watch_")){
+            Map<String,Object> incomplete=watch();incomplete.remove(key);boolean missing=false;try{validate(incomplete,false);}catch(IllegalArgumentException expected){missing=true;}check(missing);
+        }
+        Map<String,Object> unknown=watch();unknown.put("native_watch_status","UNKNOWN");unknown.put("native_watch_native","UNKNOWN");unknown.put("native_watch_self_uid",false);check(validate(unknown,false).containsKey("native_watch_schema"));
+        Map<String,Object> mismatch=watch();mismatch.put("native_watch_status","MISMATCH");mismatch.put("native_watch_native","FALSE");check(validate(mismatch,false).get("native_watch_native").equals("FALSE"));
         System.out.println("ims-client-snapshot-contracts="+checks);
     }
 }

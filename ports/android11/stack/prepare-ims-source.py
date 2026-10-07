@@ -20,7 +20,7 @@ for p in dest.rglob('*'):
     if p.suffix=='.java':t=t.replace('Rlog.','PortLog.')
     t=t.replace('android.util.Log.e(', 'me.phh.ims.PortLog.e(')
     p.write_text(t,encoding='utf-8',newline='\n')
-for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java','VoiceResponseObservation.java','AkaResponseCodec.java','VoiceDialogState.java','SdpSessionVersion.java'):
+for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java','VoiceResponseObservation.java','AkaResponseCodec.java','VoiceDialogState.java','SdpSessionVersion.java','SmsActivityTracker.java','NativeSmsRecoveryGate.java','NativeSmsStatusReader.java'):
     shutil.copyfile(B/'ims'/name,dest/'me/phh/ims'/name)
 shutil.copyfile(B/'ims/Api30SipTcpServer.kt',dest/'me/phh/sip/Api30SipTcpServer.kt')
 shutil.copyfile(B/'ims/RpDeliveryError.kt',dest/'me/phh/sip/RpDeliveryError.kt')
@@ -73,6 +73,11 @@ edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHa
     @Volatile private var rebindPending=false
     private var lastRebindElapsed=-30000L
     @Volatile private var rebindReturns=0L
+    private val nativeRecovery=NativeSmsRecoveryGate(android.os.Build.VERSION.SDK_INT==30&&android.os.Build.DEVICE=="raphael")
+    fun observeNativeSms(now:Long,eligible:Boolean,value:Boolean?):Boolean=nativeRecovery.sample(now,eligible,value)
+    fun recordNativeRebind(now:Long)=nativeRecovery.requested(now)
+    fun recordNativeContext(ownUid:Boolean)=nativeRecovery.contextObserved(ownUid)
+    fun invalidateNativeSms()=nativeRecovery.inactive()
     fun clientCapabilities():MutableMap<String,Any>{
         val values=capabilitySnapshot().toMutableMap()
         values["feature_state"]=getFeatureState()
@@ -80,7 +85,8 @@ edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHa
         values["removed"]=removed
         values["client_rebind_pending"]=rebindPending
         values["client_rebind_returns"]=rebindReturns
-        values["sms_session_idle"]=activeCallState==ImsCallSessionImplBase.State.IDLE || activeCallState==ImsCallSessionImplBase.State.TERMINATED
+        values["sms_session_idle"]=(activeCallState==ImsCallSessionImplBase.State.IDLE || activeCallState==ImsCallSessionImplBase.State.TERMINATED)&&this::sipHandler.isInitialized&&sipHandler.smsIdleForClientRebind()
+        values.putAll(nativeRecovery.snapshot())
         return values
     }
     fun requestClientRebind():Boolean{
@@ -166,6 +172,7 @@ edit(feature,'        if(this::sipHandler.isInitialized) return','''        if(r
     private fun onFeatureReadyInner(){
         if(this::sipHandler.isInitialized) return''')
 edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()','''        removed=true
+        invalidateNativeSms()
         rebindPending=false
         setFeatureState(ImsFeature.STATE_UNAVAILABLE)
         readinessHandler.removeCallbacksAndMessages(null)
@@ -274,6 +281,11 @@ edit(sip,'subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId)',
 edit(sip,'''        telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''','''        require(activeSubscription.subscriptionId==expectedSubId) { "IMS subscription changed" }
         telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''')
 edit(sip,'    private val smsHeadersMap = mutableMapOf<Int, smsHeaders>()','    private val smsHeadersMap = mutableMapOf<Int, Pair<smsHeaders,Byte>>()')
+edit(sip,'    private val smsLock = ReentrantLock()', '''    private val smsLock = ReentrantLock()
+    private val smsActivity=me.phh.ims.SmsActivityTracker(java.util.function.LongSupplier { android.os.SystemClock.elapsedRealtime() })
+    fun smsIdleForClientRebind():Boolean=smsLock.withLock {
+        pendingSms.isEmpty()&&smsHeadersMap.isEmpty()&&smsActivity.quiet(5000)
+    }''')
 edit(sip,'        val sms = request.body.SipSmsDecode()','''        val sms = try { request.body.SipSmsDecode() } catch(_:RuntimeException){null}
         if(sms!=null)android.util.Log.i("Api30PhhIms","sms-rp type=${sms.type} ref=${sms.ref.toInt() and 255} cause=${sms.cause}")''')
 edit(sip,'                smsHeadersMap[token] = smsHeaders(dest, callId, cseq)','                smsLock.withLock { smsHeadersMap[token] = Pair(smsHeaders(dest,callId,cseq),sms.ref) }')
@@ -296,6 +308,15 @@ edit(sip,'        setResponseCallback(msg.headers["call-id"]!![0], { true })',''
         })''')
 edit(sip,'                completeSms(rpRef, pending, pending.state.onSip(resp.statusCode))','''                android.util.Log.i("Api30PhhIms","sms-send-sip="+resp.statusCode)
                 completeSms(rpRef, pending, pending.state.onSip(resp.statusCode))''')
+# Cover construction, callback completion and ACK writes as well as pending maps.
+# Only these four fully inspected methods are wrapped; nested callbacks keep their
+# own scope and no SMS lock is held across framework callbacks or socket writes.
+p=dest/sip;t=p.read_text(encoding='utf-8')
+for signature in ('    private fun completeSms(', '    fun handleSms(', '    fun sendSms(\n', '    fun sendSmsAck('):
+    if t.count(signature)!=1:raise RuntimeError('SMS activity method changed')
+    start=t.index(signature);body=t.index('{',start);end=t.index('\n    }',body)
+    t=t[:body+1]+'\n        val smsWork=smsActivity.begin()\n        try {'+t[body+1:end]+'\n        } finally {smsWork.close()}'+t[end:]
+p.write_text(t,encoding='utf-8',newline='\n')
 edit(sip,'    var onIncomingCall:', '    var onCallConnected: (() -> Unit)? = null\n    var onCallProgressing: (() -> Unit)? = null\n    private val progressReported=AtomicBoolean(false)\n    var onIncomingCall:')
 edit(sip,'    var respInFlight: SipResponse? = null','''    @Volatile private var outgoingInvite:SipRequest?=null
     @Volatile private var dialogHeaders:SipHeadersMap?=null

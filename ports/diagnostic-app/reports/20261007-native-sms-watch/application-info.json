@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "root_package_metadata_only": true,
+  "service_uid_query_proven_by_separate_service_snapshot": true,
+  "phone_service_modified": false,
+  "system_app": true,
+  "updated_system_app": true,
+  "uses_non_sdk_api": true,
+  "hidden_api_policy": 0,
+  "probe_sha256": "9a4e1d65fd140105e9771afd6a2cad36b756ae366eaf80b9f0e1523e690d4611"
+}

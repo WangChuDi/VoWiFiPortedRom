@@ -8,6 +8,7 @@ public final class ImsClientSnapshot {
     private static final Set<String> FLAGS=new HashSet<>(Arrays.asList("registered","callback_count_observed","initialized","removed","client_rebind_pending","sms_session_idle","rebind_requested","rebind_accepted"));
     private static final Set<String> COUNTERS=new HashSet<>(Arrays.asList("notification_returns","sms_ready_events","enable_events","disable_events","client_rebind_returns"));
     private static final Set<String> BASE=new HashSet<>(Arrays.asList("schema","channel","slot","sub","nonce","pid","boot","sample_elapsed","generation","enabled_mask","last_notified_mask","feature_state"));
+    private static final Set<String> WATCH=new HashSet<>(Arrays.asList("native_watch_schema","native_watch_status","native_watch_native","native_watch_checks","native_watch_requests","native_watch_checked_elapsed","native_watch_mismatch_since_elapsed","native_watch_last_request_elapsed","native_watch_self_uid"));
     static long number(Map<String,Object> v,String key){
         Object n=v.get(key);if(!(n instanceof Number))throw new IllegalArgumentException("client-number");
         long i=((Number)n).longValue();if(((Number)n).doubleValue()!=i)throw new IllegalArgumentException("client-integer");return i;
@@ -17,7 +18,18 @@ public final class ImsClientSnapshot {
     public static Map<String,Object> validate(Map<String,Object> v,int slot,int sub,String nonce,int pid,int boot,long begin,long now,boolean requested){
         if(number(v,"schema")!=1||!"ims".equals(v.get("channel"))||number(v,"slot")!=slot||number(v,"sub")!=sub||!nonce.equals(v.get("nonce"))||number(v,"pid")!=pid||number(v,"boot")!=boot||boot<0||pid<=0)throw new IllegalArgumentException("client-provenance");
         long sample=number(v,"sample_elapsed");if(sample<begin||sample>now||now-sample>5000)throw new IllegalArgumentException("client-stale");
-        for(String key:v.keySet())if(!BASE.contains(key)&&!FLAGS.contains(key)&&!COUNTERS.contains(key)&&!key.equals("capability_callback_count"))throw new IllegalArgumentException("client-schema");
+        for(String key:v.keySet())if(!BASE.contains(key)&&!FLAGS.contains(key)&&!COUNTERS.contains(key)&&!WATCH.contains(key)&&!key.equals("capability_callback_count"))throw new IllegalArgumentException("client-schema");
+        if(v.keySet().stream().anyMatch(WATCH::contains)){
+            if(!v.keySet().containsAll(WATCH)||number(v,"native_watch_schema")!=1)throw new IllegalArgumentException("client-watch-schema");
+            flag(v,"native_watch_self_uid");
+            if(!Arrays.asList("UNSUPPORTED","UNKNOWN","WAITING","HEALTHY","MISMATCH","RECOVERING","COOLDOWN","LIMIT","INACTIVE").contains(v.get("native_watch_status"))||!Arrays.asList("UNKNOWN","TRUE","FALSE").contains(v.get("native_watch_native")))throw new IllegalArgumentException("client-watch-state");
+            for(String key:new String[]{"native_watch_checks","native_watch_requests","native_watch_checked_elapsed","native_watch_mismatch_since_elapsed","native_watch_last_request_elapsed"})if(number(v,key)<0)throw new IllegalArgumentException("client-watch-number");
+            long checked=number(v,"native_watch_checked_elapsed"),last=number(v,"native_watch_last_request_elapsed"),mismatch=number(v,"native_watch_mismatch_since_elapsed");
+            if(checked>now||last>checked||mismatch>checked||number(v,"native_watch_requests")>3||
+                !"UNKNOWN".equals(v.get("native_watch_native"))&&!flag(v,"native_watch_self_uid")||
+                "HEALTHY".equals(v.get("native_watch_status"))&&!"TRUE".equals(v.get("native_watch_native"))||
+                Arrays.asList("MISMATCH","COOLDOWN","LIMIT").contains(v.get("native_watch_status"))&&!"FALSE".equals(v.get("native_watch_native")))throw new IllegalArgumentException("client-watch-observation");
+        }
         for(String key:FLAGS)flag(v,key);
         for(String key:COUNTERS)if(number(v,key)<0)throw new IllegalArgumentException("client-counter");
         for(String key:new String[]{"enabled_mask","last_notified_mask"})if(number(v,key)<0||number(v,key)>65535)throw new IllegalArgumentException("client-mask");

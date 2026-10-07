@@ -39,6 +39,79 @@ class PhhImsService : ImsService() {
     private val handler=Handler(Looper.getMainLooper())
     private var controllerReady=false
     private var advertised=""
+    private val nativeProbeWorker=java.util.concurrent.Executors.newSingleThreadExecutor { task ->
+        Thread(task,"ImsNativeSmsStatus").apply{isDaemon=true}
+    }
+    private val nativeProbeBusy=java.util.concurrent.atomic.AtomicBoolean(false)
+    @Volatile private var stopping=false
+    private var nativeProbeEpoch=0L
+    private data class NativeCandidate(val slot:Int,val sub:Int,val feature:PhhMmTelFeature)
+    @Synchronized private fun nativeCandidateCurrent(candidate:NativeCandidate):Boolean =
+        !stopping&&features[candidate.slot]===candidate.feature&&subscriptions[candidate.slot]==candidate.sub&&
+        StackProfile.selectedSubscription(this,candidate.slot)?.subscriptionId==candidate.sub
+    private val checkNativeSms=object:Runnable{
+        override fun run(){
+            if(stopping)return
+            if(controllerReady&&android.os.Build.VERSION.SDK_INT==30&&android.os.Build.DEVICE=="raphael"&&
+               nativeProbeBusy.compareAndSet(false,true)){
+                val candidates=features.entries.mapNotNull{entry -> subscriptions[entry.key]?.let{
+                    NativeCandidate(entry.key,it,entry.value)
+                }}.filter{nativeCandidateCurrent(it)&&it.feature.hasActiveRegistration()}
+                if(candidates.isEmpty())nativeProbeBusy.set(false)
+                else {
+                    val epoch=++nativeProbeEpoch
+                    val began=SystemClock.elapsedRealtime()
+                    // A stuck Binder read stays on this one worker. Timeout reports
+                    // unknown and invalidates late results, without queuing new work.
+                    handler.postDelayed({
+                        if(!stopping&&nativeProbeEpoch==epoch&&nativeProbeBusy.get()){
+                            nativeProbeEpoch++
+                            candidates.filter{nativeCandidateCurrent(it)}.forEach{
+                                it.feature.observeNativeSms(SystemClock.elapsedRealtime(),false,null)
+                            }
+                        }
+                    },2500)
+                    nativeProbeWorker.execute{
+                        try{
+                            val ownUid=NativeSmsStatusReader.ownUid()
+                            val values=candidates.map{it to NativeSmsStatusReader.observe(it.sub)}
+                            handler.post{
+                                if(!stopping&&nativeProbeEpoch==epoch){
+                                    nativeProbeEpoch++
+                                    for((candidate,value)in values){
+                                        if(!nativeCandidateCurrent(candidate))continue
+                                        candidate.feature.recordNativeContext(ownUid)
+                                        val now=SystemClock.elapsedRealtime()
+                                        val current=if(now-began<=2500)value else null
+                                        val eligible=canRebindClients(candidate.slot,candidate.sub,candidate.feature)&&
+                                            candidate.feature.clientCapabilities()["feature_state"]==ImsFeature.STATE_READY&&
+                                            ((candidate.feature.clientCapabilities()["enabled_mask"]as? Int ?:0)and 8)!=0
+                                        if(candidate.feature.observeNativeSms(now,eligible,current)&&
+                                           NativeSmsStatusReader.profileEligible()&&
+                                           canRebindClients(candidate.slot,candidate.sub,candidate.feature)&&
+                                           candidate.feature.requestClientRebind()){
+                                            candidate.feature.recordNativeRebind(now)
+                                            android.util.Log.i("Api30PhhIms","native-sms-client=REBIND_REQUESTED slot="+candidate.slot)
+                                        }
+                                    }
+                                }
+                            }
+                        }catch(unavailable:Throwable){
+                            handler.post{
+                                if(!stopping&&nativeProbeEpoch==epoch){
+                                    nativeProbeEpoch++
+                                    candidates.filter{nativeCandidateCurrent(it)}.forEach{
+                                        it.feature.observeNativeSms(SystemClock.elapsedRealtime(),false,null)
+                                    }
+                                }
+                            }
+                        }finally{nativeProbeBusy.set(false)}
+                    }
+                }
+            }
+            handler.postDelayed(this,5000)
+        }
+    }
     private val updateFeatures=object:Runnable{
         override fun run(){
             if(controllerReady){
@@ -61,6 +134,7 @@ class PhhImsService : ImsService() {
         registerReceiver(receiver,IntentFilter(receiver.ALARM_PERIODIC_REGISTER),android.Manifest.permission.MODIFY_PHONE_STATE,null)
         android.util.Log.i("Api30PhhIms","service-created")
         handler.post(updateFeatures)
+        handler.post(checkNativeSms)
     }
     override fun querySupportedImsFeatures(): ImsFeatureConfiguration {
         val builder=ImsFeatureConfiguration.Builder()
@@ -125,6 +199,7 @@ class PhhImsService : ImsService() {
             return false
         }
         return feature.publishActiveRegistration(Runnable {
+            if(phase!=RegistrationPhase.REGISTERED)feature.invalidateNativeSms()
             when(phase){
                 RegistrationPhase.REGISTERING -> registration.onRegistering(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN)
                 RegistrationPhase.REGISTERED -> registration.onRegistered(ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN)
@@ -197,8 +272,10 @@ class PhhImsService : ImsService() {
     }
     @Synchronized
     override fun onDestroy(){
+        stopping=true;nativeProbeEpoch++
         controllerReady=false
         handler.removeCallbacksAndMessages(null)
+        nativeProbeWorker.shutdownNow()
         features.values.toList().forEach{it.onFeatureRemoved()}
         features.clear();registrations.clear();configs.clear();subscriptions.clear()
         unregisterReceiver(receiver)

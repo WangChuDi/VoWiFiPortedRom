@@ -1,6 +1,6 @@
 id=codex_vowifi_stack_modern
 name=Codex VoWiFi modern services (installation stage)
-version=0.2.5
-versionCode=7
+version=0.2.6
+versionCode=8
 author=Codex / attributed upstream contributors
 description=Experimental Android 12+ IWLAN/QNS/IMS installation, selected-SIM leases and supervised recovery. Removed owners remain pending until their original SIM returns; real modern carrier and dual-active-SIM validation is incomplete.

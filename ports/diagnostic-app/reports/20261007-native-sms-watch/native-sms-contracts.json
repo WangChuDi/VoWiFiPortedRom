@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contracts": 82,
+  "production_gate_activity_and_reader_used": true,
+  "binder_context_stubbed": true,
+  "device_self_uid_query_verified": false,
+  "phone_modified": false,
+  "source_pins": {
+    "ims/SmsActivityTracker.java": "1e401d8726663fbf88605a1bcdff6c656d7ba5872a0b47db56bf92ad16fdac04",
+    "ims/NativeSmsRecoveryGate.java": "529114ba4cb56a58f923740de4619798b8dbd88ebe74dc4b3a829c5ca8fee031",
+    "ims/NativeSmsStatusReader.java": "8b973800ab932d051bbd626db3383f6774aaa60ba355d3d2c8a75a411cfda6aa"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "ports/android11/stack/ims/NativeSmsRecoveryGate.java": "529114ba4cb56a58f923740de4619798b8dbd88ebe74dc4b3a829c5ca8fee031",
+  "ports/android11/stack/ims/NativeSmsStatusReader.java": "8b973800ab932d051bbd626db3383f6774aaa60ba355d3d2c8a75a411cfda6aa",
+  "ports/android11/stack/ims/SmsActivityTracker.java": "1e401d8726663fbf88605a1bcdff6c656d7ba5872a0b47db56bf92ad16fdac04",
+  "ports/android11/stack/ims/PhhImsService.kt": "cd057b91f2ff7fa568df2375270f2b1ab38bf74951612576c79a00dfabc96839",
+  "ports/android11/stack/ims/AndroidManifest.xml": "b026544484a33a505d248d56252001e28e47ebc02f55a83f64375ccb12056258",
+  "ports/android11/stack/prepare-ims-source.py": "79b4b083aa7793d3209f53f4a4fa5e98493e661149f4b57f23fcd6aa90eca1d9",
+  "ports/android11/stack/check-native-sms-recovery.py": "e39b526bc96847c7108b77a535fc64344bb44821959155f16b70b3c47f6242f7",
+  "ports/android11/stack/TELEMETRY.md": "8ba181496f31df96fcfc3282b6959790f4b104c0e64e79613b31878f38797a50",
+  "ports/android11/stack/module/module.prop": "f727c942f9035f6c8f2ff5eb8fa3cf942c96a3830888398381a45c797f22c483",
+  "ports/android12/ims/AndroidManifest.xml": "7267754dd48d2302216b28f0348d71cb3512a08ac2736102d180ee04d7d64c26",
+  "ports/android12/module/module.prop": "fc4fde2a328ae24922a38d974cf7fcb54ce31499c043853b278d5a9e2fbd361d",
+  "ports/diagnostic-app/AndroidManifest.xml": "47677677d33792e05dcf8fc96ba3a48cbb95aca95c0260952c1e12bc9d7710d5",
+  "ports/diagnostic-app/MainActivity.java": "23e4d14353ba7e26cf575acf51c9615d5df1c35fbfe37a8d2b10d65fa3e2698f",
+  "ports/diagnostic-app/ImsClientSnapshot.java": "bb839922900b0ad8750f4d62d17e655e9c5d65983f63925b63e65f96a3d9d546",
+  "ports/diagnostic-app/tests/ImsClientSnapshotContract.java": "2ac460da0acf2b9464cce6d6319e1114606aa5bc8f2aa71c8250368fada1c69f"
+}

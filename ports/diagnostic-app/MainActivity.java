@@ -172,6 +172,14 @@ public final class MainActivity extends Activity {
         if(clients!=null)card("IMS 客户端绑定观测","注册 "+clients.optBoolean("registered")+" · 已启用能力位 "+clients.optInt("enabled_mask")+" · 最近上报 "+clients.optInt("last_notified_mask")+
             "\n短信接收接口就绪次数 "+clients.optLong("sms_ready_events")+" · 完成重绑次数 "+clients.optLong("client_rebind_returns")+
             "\n能力回调数量："+(clients.optBoolean("callback_count_observed")?clients.optInt("capability_callback_count"):"未知")+"；上报函数返回不保证每个客户端已收到，也不证明短信收发成功。");
+        if(clients!=null&&clients.has("native_watch_schema")){
+            long checked=clients.optLong("native_watch_checked_elapsed"),age=checked>0?Math.max(0,SystemClock.elapsedRealtime()-checked):-1;
+            String nativeState=clients.optString("native_watch_native","UNKNOWN");
+            card("系统短信自动恢复",nativeWatchStatus(clients.optString("native_watch_status","UNKNOWN"))+" · 短信支持 "+("TRUE".equals(nativeState)?"是":"FALSE".equals(nativeState)?"否":"未知")+
+                "\n"+(age<0?"尚未检查":age>15000?"检测结果已过期，请刷新":"最近检查距今 "+(age/1000)+" 秒")+
+                " · 已检查 "+clients.optLong("native_watch_checks")+" 次 · 已请求恢复 "+clients.optLong("native_watch_requests")+" 次"+
+                "\n当前已适配系统在持续异常且通话、短信空闲时自动恢复；请实际验证收发和通知。");
+        }
         card("最近短信分发器状态日志",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
@@ -257,6 +265,19 @@ public final class MainActivity extends Activity {
         int index=recoveries.getSelectedItemPosition();boolean available=!busy&&last!=null&&index>=0&&index<recoveryOwners.size();
         recoveries.setEnabled(!busy&&!recoveryOwners.isEmpty());rollback.setEnabled(available);
         rollback.setText(available?"恢复 SIM"+(recoveryOwners.get(index)[0]+1)+" 原来的组件和短信模块":"恢复原来的组件和短信模块");
+    }
+    private static String nativeWatchStatus(String value){
+        switch(value){
+            case "HEALTHY":return "状态正常";
+            case "WAITING":return "正在确认状态";
+            case "MISMATCH":return "已确认短信支持不一致";
+            case "RECOVERING":return "已请求恢复，等待核实";
+            case "COOLDOWN":return "等待下次恢复";
+            case "LIMIT":return "已达到自动恢复次数，请手动检查";
+            case "INACTIVE":return "等待注册完成且通话、短信空闲";
+            case "UNSUPPORTED":return "当前系统尚未适配自动恢复";
+            default:return "状态未知";
+        }
     }
     private int componentMask(){int mask=0;for(int i=0;i<components.length;i++)if(components[i].isChecked())mask|=1<<i;return mask;}
     private String componentNames(int mask){ArrayList<String> names=new ArrayList<>();if((mask&1)!=0)names.add("IWLAN");if((mask&2)!=0)names.add("QNS");if((mask&4)!=0)names.add("IMS");return String.join(" + ",names);}
