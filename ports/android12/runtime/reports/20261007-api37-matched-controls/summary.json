@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "partial",
+  "strict_stock_control_checks_passed": true,
+  "stock_fixed_window_seconds": 120,
+  "stock_writable_window_seconds": 360,
+  "stock_writable_peak_private_bytes": 5550759936,
+  "original_last_private_bytes": 12943572992,
+  "original_last_sample_seconds": 302,
+  "original_memory_growth_resolved": false,
+  "original_fixture_cleanup_confirmed": false,
+  "full_api37_lifecycle_verified": false,
+  "original_journals_or_baselines_deleted": false,
+  "new_original_baseline_created": false,
+  "original_selection_restore_attempted": false,
+  "application_or_carrier_traffic_tested": false,
+  "dual_active_sim_verified": false,
+  "physical_phone_modified": false,
+  "all_owned_test_guests_terminal": true,
+  "initial_original_inventory_context_failed": true,
+  "later_context_initialization_completed": true,
+  "direct_settings_commands_successful": true,
+  "bare_app_process_settings_content_query_security_refused": true,
+  "specific_apk_root_cause_established": false,
+  "original_vs_stock_userdata_overlays_packages_differ": true,
+  "source_hashes": {
+    "Api37ContextStages.java": "dd2a7a3e00449cb030243779f98a063e5723354b312eadc49184f1890daef6fd",
+    "build-run-api37-context-stages-20261007.py": "e3b68fc4a0ff050b260ca2dec8879823c5374b2cfacfb9573e0a45cf0fa2b773",
+    "run-api37-matched-stock-controls-20261007.py": "5d5e9c4b6876c2abea21f327520e833ccc9cfb822444895bc13465ac280947c4"
+  }
+}

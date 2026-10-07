@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "probe_sha256": "08126ebb8b0022e32c4f1b763e23250560afd6fd99da21a27b074c552a4339a0",
+  "source_sha256": "dd2a7a3e00449cb030243779f98a063e5723354b312eadc49184f1890daef6fd",
+  "entry_exit": 1,
+  "host_elapsed_seconds": 0.965,
+  "timeout_cause_verified": false,
+  "checkpoints": [
+    "looper-prepare",
+    "looper-prepared",
+    "activity-thread-main",
+    "activity-thread-main-created",
+    "system-context",
+    "system-context-created",
+    "telephony-bootstrap",
+    "telephony-bootstrap-ready",
+    "settings-content-query"
+  ],
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "read_only": true,
+    "physical_phone_modified": false,
+    "raw_messages_exported": false,
+    "initial_thread_looper_present": false,
+    "initial_main_looper_present": false,
+    "exception_chain": [
+      "java.lang.SecurityException",
+      "android.os.RemoteException"
+    ],
+    "fixed_framework_frames": [
+      {
+        "class": "android.os.Parcel",
+        "method": "createExceptionOrNull",
+        "line": 3392
+      },
+      {
+        "class": "android.os.Parcel",
+        "method": "createException",
+        "line": 3376
+      },
+      {
+        "class": "android.os.Parcel",
+        "method": "readException",
+        "line": 3359
+      },
+      {
+        "class": "android.os.Parcel",
+        "method": "readException",
+        "line": 3301
+      },
+      {
+        "class": "android.app.IActivityManager$Stub$Proxy",
+        "method": "getContentProvider",
+        "line": 6601
+      },
+      {
+        "class": "android.app.ActivityThread",
+        "method": "acquireProvider",
+        "line": 8702
+      },
+      {
+        "class": "android.app.ContextImpl$ApplicationContentResolver",
+        "method": "acquireProvider",
+        "line": 4057
+      },
+      {
+        "class": "android.content.ContentResolver",
+        "method": "acquireProvider",
+        "line": 2610
+      },
+      {
+        "class": "android.provider.Settings$ContentProviderHolder",
+        "method": "getProvider",
+        "line": 3666
+      },
+      {
+        "class": "android.provider.Settings$NameValueCache",
+        "method": "getStringForUser",
+        "line": 3930
+      },
+      {
+        "class": "android.provider.Settings$Global",
+        "method": "getStringForUser",
+        "line": 19681
+      },
+      {
+        "class": "android.provider.Settings$Global",
+        "method": "getString",
+        "line": 19664
+      },
+      {
+        "class": "com.android.internal.os.RuntimeInit",
+        "method": "main",
+        "line": 367
+      }
+    ],
+    "status": "failed"
+  },
+  "physical_phone_modified": false,
+  "raw_logs_exported": false,
+  "direct_settings": [
+    {
+      "kind": "settings",
+      "exit": 0,
+      "integer_result_observed": true,
+      "cannot_find_settings_service": false
+    },
+    {
+      "kind": "cmd-settings",
+      "exit": 0,
+      "integer_result_observed": true,
+      "cannot_find_settings_service": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "passed",
+  "same_existing_stock_avd": true,
+  "all_owned_guests_terminal": true,
+  "original_avd_modified": false,
+  "physical_phone_modified": false,
+  "fixed_settings_all_successful": true,
+  "writable_settings_all_successful": true,
+  "writable_peak_private_bytes": 5550759936,
+  "writable_last_private_bytes": 5546729472,
+  "original_fixture_cleanup_confirmed": false,
+  "full_api37_lifecycle_verified": false
+}

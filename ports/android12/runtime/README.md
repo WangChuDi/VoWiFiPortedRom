@@ -13,6 +13,11 @@ The [original-fixture recovery investigation](reports/20261007-api37-recovery/RE
 later localized a Settings-command failure, compared resource growth with a
 calibrated stock guest, and added an isolated, pinned recovery probe. Original
 cleanup and full API37 lifecycle are still unconfirmed.
+The subsequent [matched API37 stock controls](reports/20261007-api37-matched-controls/README.md)
+completed with and without writable-system while the original state still reached
+its memory ceiling. Direct Settings commands worked during a later original
+context probe, but a ContentResolver read was security-refused; this is a narrower
+root-context observation, not a completed carrier or original-fixture recovery.
 Earlier sections below retain the artifact identities and limits of their original batches.
 
 The owned-emulator preparation script checks guest data headroom, a changed boot
