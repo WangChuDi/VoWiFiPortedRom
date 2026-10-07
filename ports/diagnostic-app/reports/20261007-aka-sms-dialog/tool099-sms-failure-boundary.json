@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_sms_sent": false,
+  "current": {
+    "diagnostic_complete": true,
+    "ims_transport": 2,
+    "voice": true,
+    "sms": true,
+    "native_sms_ims_supported": true,
+    "iwlan_interface_matches": true
+  },
+  "send_results": [
+    {
+      "result": 103,
+      "network_error": 0
+    }
+  ],
+  "capability_replay_states": [
+    {
+      "registered": false,
+      "mask": 9
+    },
+    {
+      "registered": true,
+      "mask": 9
+    }
+  ],
+  "capability_change_states": [
+    {
+      "slot": 1,
+      "mask": 9,
+      "registered": false
+    },
+    {
+      "slot": 1,
+      "mask": 9,
+      "registered": false
+    }
+  ],
+  "framework_sms_ready_events": 2,
+  "test_request_rejections": [],
+  "test_finished_reasons": [
+    "result-received"
+  ],
+  "test_callback_attach_errors": [],
+  "test_sms_request_count": 1,
+  "test_wlan_registration_count": 1,
+  "test_sms_capability_true_count": 1,
+  "test_send_error_types": [],
+  "historical_dispatcher_observation_is_not_current_state": true
+}

@@ -148,7 +148,14 @@ does not change its network/vendor dependencies.
    verified before preparation. The final reboot's first native SMS passed without
    another manual reload; the tool also observed a real send's three availability
    flags after its log-reader correction. Multiple boots/long-term observation
-   and confirmation of every older failure's cause remain pending.
+   and confirmation of every older failure's cause remain pending. In0.9.2, a
+   bounded capability replay passed two consecutive native-support observations
+   after an actual reboot.
+   In0.9.3,191calling passed but its first subsequent SMS returned RIL_INVALID_STATE
+   before replacement IMS transmission; an idle cleanup reload and fresh native
+   readiness checks preceded a successful SMS retry. The combined result stays
+   failed and the call-to-SMS routing boundary remains unresolved. See the
+   [current actual evidence](../../diagnostic-app/reports/20261007-aka-sms-dialog/README.md).
 
 Working API30 baselines and published source/artifacts remain preserved while
 these requirements are implemented. Full completion requires all of them.

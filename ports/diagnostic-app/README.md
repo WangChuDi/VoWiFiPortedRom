@@ -297,3 +297,18 @@ native INFO SMS round trip, merged inbox delivery and notification. The latest
 191 test reached SIP responses but no connected/media proof; CSeq attribution
 and the488 rejection remain unresolved. See [changes, identities and explicit
 limits](NATIVE-SMS-20261007.md) and [original API33 recovery](RECORDED-RECOVERY-API33-20261007.md).
+
+## Version0.9.9 AKA, SMS readiness and dialog handling
+
+VersionCode21 embeds newly built API30/modern IMS services. Bounded AKA
+resynchronization, reliable-PRACK ordering, registered-capability replay and
+outgoing early/final dialog routing are shared by both builds. Changed SDP offers
+advance their origin version. The synthetic contract batch covers52 cases.
+
+The temporary AKA/PRACK candidate passed one actual191 call and native SMS. The
+persistent0.9.8 release passed reboot/native SMS/inbox/notification, but its final
+call received UPDATE488. These distinct observations remain preserved. The
+0.9.9 actual reboot and191 call passed. Its first SMS immediately after the call
+failed before replacement IMS transmission; a separate retry after the cleanup
+phone reload passed native delivery/notification. The first combined result
+remains failed. See [exact changes and evidence limits](AKA-SMS-DIALOG-20261007.md).

@@ -26,7 +26,7 @@ def main():
     engines = [B.parent / 'android11/stack/out/vowifi-stack-api30-services.zip',B.parent/'android12/out/modern-services-installation-stage.zip']
     aapt = TOOLS / 'android-build-tools' / ('aapt2.exe' if os.name == 'nt' else 'aapt2')
     badging = subprocess.check_output([str(aapt), 'dump', 'badging', str(apk)], text=True)
-    required = ["name='dev.codex.vowifi.tool'", "versionCode='18'", "versionName='0.9.6-diagnostic'", "sdkVersion:'30'", "targetSdkVersion:'30'"]
+    required = ["name='dev.codex.vowifi.tool'", "versionCode='21'", "versionName='0.9.9-diagnostic'", "sdkVersion:'30'", "targetSdkVersion:'30'"]
     for value in required:
         if value not in badging:
             raise SystemExit('compiled APK metadata mismatch: ' + value)
@@ -41,7 +41,7 @@ def main():
         if 'classes.dex' not in package.namelist():
             raise SystemExit('tool DEX missing')
     digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
-    result = dict(schema=1, tool_version='0.9.6', tool_sha256=digest(apk),
+    result = dict(schema=1, tool_version='0.9.8', tool_sha256=digest(apk),
                   engine_sha256={engine.name:digest(engine)for engine in engines}, embedded_engines_exact=True,
                   signature_verified=not args.unsigned,
                   build_run_in_this_batch=args.build,

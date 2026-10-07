@@ -41,6 +41,11 @@ real SMS test also verified the tool's current-phone/selected-slot historical
 dispatcher observation (up/registered/capable all true). This positive run and
 the fixed lifecycle defect do not prove every old failure's cause or long-term
 boot stability.
+The subsequent [2026-10-07 AKA/SMS/dialog record](../../diagnostic-app/AKA-SMS-DIALOG-20261007.md)
+preserves one temporary candidate call pass and persistent0.9.8 native SMS boot,
+send, receipt and notification passes, alongside its UPDATE488 call failure.
+Module0.9.3/tool0.9.9 add dialog routing/CSeq and changed-SDP version handling;
+the new release requires its own actual traffic result.
 Audible speech still needs user confirmation. Registration alone does not prove audio,
 emergency calling, handover, DTMF, supplementary services or every SMS format.
 

@@ -127,11 +127,19 @@ class PhhImsService : ImsService() {
                 RegistrationPhase.DOWN -> registration.onDeregistered(ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_IMS_SERVICE_DOWN,0,"transport-ended"))
             }
             feature.reportRegistrationCapabilities(phase==RegistrationPhase.REGISTERED)
+            if(phase==RegistrationPhase.REGISTERED)feature.scheduleCapabilityReplay()
             feature.telemetry.phase(dev.codex.vowifi.common.StackTelemetry.Phase.valueOf(phase.name))
             if(phase==RegistrationPhase.REGISTERED)armPeriodicRegisterAlarm(slotId)
             android.util.Log.i("Api30PhhIms","registration="+phase.name+
                 (if(phase==RegistrationPhase.REGISTERED)" tech=IWLAN" else "")+" slot=$slotId")
         })
+    }
+    // Replay actual service state after SMS binding settles; never invent registration.
+    @Synchronized
+    fun republishCapabilities(slotId:Int,subId:Int,feature:PhhMmTelFeature):Boolean {
+        if(features[slotId]!==feature||subscriptions[slotId]!=subId||
+           StackProfile.authorizedSubscription(this,slotId)?.subscriptionId!=subId)return false
+        return feature.publishActiveRegistration(Runnable { feature.republishRegistrationCapabilities() })
     }
     override fun readyForFeatureCreation(){instance=this;controllerReady=true;handler.removeCallbacks(updateFeatures);handler.post(updateFeatures)}
     fun armPeriodicRegisterAlarm(slotId:Int){

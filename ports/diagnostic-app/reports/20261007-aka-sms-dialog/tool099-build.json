@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_version": "0.9.9-diagnostic",
+  "physical_phone_modified": false,
+  "retained_original_hashes": {
+    "vowifi-stack-api30-services.zip": "c22f6987d30ba2eaeffa00c1f7cf530b5bf8c11241ded8bc9fe69bd8cc878ce5",
+    "modern-services-installation-stage.zip": "eebf6d4140e7ccf4f64d7351af9789c6d08f35317a5f477237aec2d9b1ca3a8f",
+    "vowifi-tool.apk": "88097e2715461607a511b89549fbc00dc03388d9378f9dd517bd66ddf7bef0cc"
+  },
+  "api30_ims_rebuilt_with_bounded_capability_replay": true,
+  "sip_dialog_routing_and_sdp_version_rebuilt": true,
+  "api30_ims_sha256": "46ad6ee4cf09edc40880bdc1a9cbc9d77bb648d18771104aae86185de3b0702f",
+  "modern_controller_exactly_retained": true,
+  "signature_verified": true,
+  "embedded_engines_exact": true,
+  "source_freshness_verified": true,
+  "seven_modern_framework_samples_linkage_passed": true,
+  "artifact_sha256": {
+    "api30-engine.zip": "bedcea439f95223d4463cbfb770bc55fe2833b7dab0e2745f650cb7edd1f9cdd",
+    "modern-engine.zip": "ffb9551e50a8ae11c0da4ad562646e2e181aa95ff0ec6c79cfcb4933d854705a",
+    "modern-helper.zip": "5c5748cdd75377a34a05001c22bb3d5e7a9375de060a265b0c3bbb51202b44c4",
+    "vowifi-tool099.apk": "f74fce22708862499ed6f6b7d94aedf837937e675221cf4c3c7cdf056bfde768"
+  },
+  "frozen_production_artifacts_unchanged": true
+}

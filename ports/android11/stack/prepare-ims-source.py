@@ -20,7 +20,7 @@ for p in dest.rglob('*'):
     if p.suffix=='.java':t=t.replace('Rlog.','PortLog.')
     t=t.replace('android.util.Log.e(', 'me.phh.ims.PortLog.e(')
     p.write_text(t,encoding='utf-8',newline='\n')
-for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java'):
+for name in ('PhhImsService.kt','PhhImsBroadcastReceiver.kt','Rnnoise.kt','PortLog.java','StackCheckService.kt','RegistrationCallbackGate.java','VoiceResponseObservation.java','AkaResponseCodec.java','VoiceDialogState.java','SdpSessionVersion.java'):
     shutil.copyfile(B/'ims'/name,dest/'me/phh/ims'/name)
 shutil.copyfile(B/'ims/Api30SipTcpServer.kt',dest/'me/phh/sip/Api30SipTcpServer.kt')
 shutil.copyfile(B/'ims/RpDeliveryError.kt',dest/'me/phh/sip/RpDeliveryError.kt')
@@ -47,7 +47,10 @@ t=t.replace('Rlog.d(TAG, "$slotId onFeatureRemoved")','Rlog.d(TAG, "$slotId onFe
 p.write_text(t,encoding='utf-8',newline='\n')
 edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHandler: SipHandler
     val telemetry=dev.codex.vowifi.common.StackTelemetry.begin("ims",slotId,selectedSubId,java.util.function.LongSupplier { android.os.SystemClock.elapsedRealtime() })
-    init { imsSms.telemetry=telemetry }
+    init {
+        imsSms.telemetry=telemetry
+        imsSms.onReadyCallback={scheduleCapabilityReplay()}
+    }
     private val readinessHandler=android.os.Handler(android.os.Looper.getMainLooper())
     @Volatile private var removed=false
     private val registrationCallbacks=RegistrationCallbackGate()
@@ -56,6 +59,14 @@ edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHa
     private val retryReady=Runnable{if(!removed)onFeatureReady()}
     private var callListener: ImsCallSessionListener? = null
     private var outgoingCallProfile: ImsCallProfile? = null
+    private val replayCapabilities=Runnable {
+        if(!removed)PhhImsService.instance?.republishCapabilities(slotId,selectedSubId,this)
+    }
+    fun scheduleCapabilityReplay(){
+        if(removed)return
+        readinessHandler.removeCallbacks(replayCapabilities)
+        readinessHandler.postDelayed(replayCapabilities,2000)
+    }
     private var activeCallState = ImsCallSessionImplBase.State.IDLE
     private fun ended(reason:ImsReasonInfo) {
         if(activeCallState==ImsCallSessionImplBase.State.TERMINATED) return
@@ -119,7 +130,7 @@ edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()',
         telemetry.end(false)
         if(this::sipHandler.isInitialized) sipHandler.shutdown()''')
 sms='me/phh/ims/PhhImsSms.kt'
-edit(sms,'    lateinit var sipHandler: SipHandler','    lateinit var sipHandler: SipHandler\n    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null')
+edit(sms,'    lateinit var sipHandler: SipHandler','    lateinit var sipHandler: SipHandler\n    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null\n    var onReadyCallback:(()->Unit)?=null')
 edit(sms,'        try {','''        val recorded=java.util.concurrent.atomic.AtomicBoolean(false)
         fun recordOutcome(success:Boolean) {
             if(recorded.compareAndSet(false,true))telemetry?.add(if(success)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_TX_FAILED,1)
@@ -142,19 +153,25 @@ edit(sms,'        // called when android acks a received sms','''        android
         telemetry?.add(if(result==1)dev.codex.vowifi.common.StackTelemetry.Counter.SMS_ACK_OK else dev.codex.vowifi.common.StackTelemetry.Counter.SMS_ACK_FAILED,1)
         // called when android acks a received sms''')
 edit(sms,'        // should not do anything before this is called','''        android.util.Log.i("Api30PhhIms","framework-sms=READY")
+        onReadyCallback?.invoke()
         // should not do anything before this is called''')
 shim='me/phh/ims/PhhMmTelFeatureProtected.java'
 p=dest/shim;t=p.read_text(encoding='utf-8').replace('REGISTRATION_TECH_LTE','REGISTRATION_TECH_IWLAN')
 t=t.replace('public class PhhMmTelFeatureProtected extends MmTelFeature {','''public class PhhMmTelFeatureProtected extends MmTelFeature {
     private boolean registered;
-    public void reportRegistrationCapabilities(boolean active) {
+    public synchronized void reportRegistrationCapabilities(boolean active) {
         registered = active;
         MmTelFeature.MmTelCapabilities value = new MmTelFeature.MmTelCapabilities();
         if (active) value.addCapabilities(capabilities);
         notifyCapabilitiesStatusChanged(value);
+    }
+    public synchronized void republishRegistrationCapabilities() {
+        reportRegistrationCapabilities(registered);
+        android.util.Log.i("Api30PhhIms","capability-replay registered="+registered+" mask="+capabilities);
     }''')
+t=t.replace('public void changeEnabledCapabilities(', 'public synchronized void changeEnabledCapabilities(')
 t=t.replace('capabilities.addCapabilities(this.capabilities);','if (registered) capabilities.addCapabilities(this.capabilities);')
-t=t.replace('Rlog.d(TAG, "Final capabilities: " + this.capabilities);','android.util.Log.i("Api30PhhIms", "capability-change slot="+slotId+" mask="+this.capabilities+" registered="+registered);')
+t=t.replace('PortLog.d(TAG, "Final capabilities: " + this.capabilities);','android.util.Log.i("Api30PhhIms", "capability-change slot="+slotId+" mask="+this.capabilities+" registered="+registered);')
 p.write_text(t,encoding='utf-8',newline='\n')
 
 sip='me/phh/sip/SipHandler.kt'
@@ -165,6 +182,64 @@ edit(sip,'    fun registerCallback(response: SipResponse): Boolean {','    fun r
 edit(sip,'        registerCounter += 1','        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.REGISTER_TX,1)\n        registerCounter += 1')
 edit(sip,'        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {','        if(plainRegReply is SipResponse)telemetry?.sipResponse(plainRegReply.statusCode)\n        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {')
 edit(sip,'        if (regReply !is SipResponse || regReply.statusCode != 200) {','        if(regReply is SipResponse)telemetry?.sipResponse(regReply.statusCode)\n        if (regReply !is SipResponse || regReply.statusCode != 200) {')
+challenge='me/phh/sip/SipChallenge.kt'
+p=dest/challenge;t=p.read_text(encoding='utf-8')
+start=t.index('fun sipAkaChallenge(');end=t.index('data class SipAkaDigestSess(',start)
+t=t[:start]+'''fun sipAkaChallenge(tm: TelephonyManager, nonceB64: String): SipAkaResult {
+    val nonce = Base64.decode(nonceB64, Base64.DEFAULT)
+    require(nonce.size >= 32) { "aka-nonce-length" }
+    val challengeArray = byteArrayOf(16) + nonce.copyOfRange(0,16) + byteArrayOf(16) + nonce.copyOfRange(16,32)
+    val responseB64 = tm.getIccAuthentication(TelephonyManager.APPTYPE_USIM,TelephonyManager.AUTHTYPE_EAP_AKA,
+        Base64.encodeToString(challengeArray,Base64.NO_WRAP)) ?: throw IllegalStateException("aka-response-unavailable")
+    val response = me.phh.ims.AkaResponseCodec.decode(Base64.decode(responseB64,Base64.DEFAULT))
+    android.util.Log.i("Api30PhhIms","aka-result="+response.kind.name)
+    when(response.kind) {
+        me.phh.ims.AkaResponseCodec.Kind.SYNCHRONIZATION_FAILURE -> throw me.phh.ims.AkaResponseCodec.SynchronizationRequired(response.auts())
+        me.phh.ims.AkaResponseCodec.Kind.REJECTED -> throw IllegalStateException("aka-authentication-rejected")
+        me.phh.ims.AkaResponseCodec.Kind.SUCCESS -> return SipAkaResult(response.res(),response.ck(),response.ik())
+    }
+}
+
+'''+t[end:];p.write_text(t,encoding='utf-8',newline='\n')
+edit(sip,'        val plainRegReply =','        var plainRegReply =')
+edit(sip,'        Rlog.d(TAG, "Received $plainRegReply")\n        plainSocket.close()',
+    '        Rlog.d(TAG, "Received $plainRegReply")')
+edit(sip,'        val (wwwAuthenticateType, wwwAuthenticateParams) =','        var (wwwAuthenticateType, wwwAuthenticateParams) =')
+edit(sip,'        val nonceB64 = wwwAuthenticateParams["nonce"]!!','        var nonceB64 = wwwAuthenticateParams["nonce"]!!')
+edit(sip,'        val akaResult = sipAkaChallenge(telephonyManager, nonceB64)','''        fun authenticateAka(): SipAkaResult {
+            for (attempt in 0..2) {
+                try { return sipAkaChallenge(telephonyManager,nonceB64) }
+                catch(sync:me.phh.ims.AkaResponseCodec.SynchronizationRequired) {
+                    if(attempt==2)throw IllegalStateException("aka-resync-limit")
+                    // RFC3310: AUTS accompanies a Digest calculated with an empty password.
+                    val empty=SipAkaResult(ByteArray(0),ByteArray(0),ByteArray(0))
+                    val response=if(requireNonsessAka)SipAkaDigest(user,realm,"sip:$realm",nonceB64,wwwAuthenticateParams["opaque"],empty).toString()
+                        else SipAkaDigestSess(user,realm,"sip:$realm",nonceB64,wwwAuthenticateParams["opaque"],empty).toString()
+                    akaDigest=response+",auts=\\\""+android.util.Base64.encodeToString(sync.auts(),android.util.Base64.NO_WRAP)+"\\\""
+                    android.util.Log.i("Api30PhhIms","aka-sync phase=REQUESTED")
+                    register(plainSocket.gWriter())
+                    val renewed=if(plainSocket is SipConnectionTcp)plainSocket.gReader().parseMessage()
+                        else if(select(listOf(serverSocketUdp.getChannel(),plainSocket.getChannel()))==0)serverSocketUdp.gReader().parseMessage()
+                        else plainSocket.gReader().parseMessage()
+                    if(renewed is SipResponse)telemetry?.sipResponse(renewed.statusCode)
+                    if(renewed !is SipResponse||renewed.statusCode!=401)throw IllegalStateException("aka-resync-challenge-unavailable")
+                    val (kind,params)=renewed.headers["www-authenticate"]!!.first().getAuthValues()
+                    require(kind=="Digest") { "aka-resync-challenge-type" }
+                    val next=params["nonce"] ?: throw IllegalStateException("aka-resync-nonce-unavailable")
+                    require(next!=nonceB64) { "aka-resync-nonce-not-renewed" }
+                    plainRegReply=renewed;wwwAuthenticateType=kind;wwwAuthenticateParams=params;nonceB64=next
+                    android.util.Log.i("Api30PhhIms","aka-sync phase=RECHALLENGED")
+                }
+            }
+            throw IllegalStateException("aka-resync-incomplete")
+        }
+        val akaResult=authenticateAka()
+        val authenticatedChallenge=plainRegReply as SipResponse
+        plainSocket.close()''')
+edit(sip,'        if(plainRegReply.headers.containsKey("security-server")) {',
+    '        if(authenticatedChallenge.headers.containsKey("security-server")) {')
+edit(sip,'            val securityServer = plainRegReply.headers["security-server"]!!',
+    '            val securityServer = authenticatedChallenge.headers["security-server"]!!')
 edit(sip,'subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId)','dev.codex.vowifi.common.StackProfile.selectedSubscription(ctxt,slotId)')
 edit(sip,'''        telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''','''        require(activeSubscription.subscriptionId==expectedSubId) { "IMS subscription changed" }
         telephonyManager = ctxt.getSystemService(TelephonyManager::class.java)''')
@@ -195,7 +270,7 @@ edit(sip,'    var onIncomingCall:', '    var onCallConnected: (() -> Unit)? = nu
 edit(sip,'    var respInFlight: SipResponse? = null','''    @Volatile private var outgoingInvite:SipRequest?=null
     @Volatile private var dialogHeaders:SipHeadersMap?=null
     @Volatile private var dialogTarget:String?=null
-    var respInFlight: SipResponse? = null''')
+    @Volatile var respInFlight: SipResponse? = null''')
 edit(sip,'            setResponseCallback(msg.headers["call-id"]!![0]) { r: SipResponse ->','''            outgoingInvite=msg;dialogHeaders=null;dialogTarget=null
             setResponseCallback(msg.headers["call-id"]!![0]) { r: SipResponse ->''')
 edit(sip,'                    callStarted.set(true)','''                    dialogHeaders=msg2.headers - "cseq" - "content-length" - "content-type" - "expires"
@@ -414,8 +489,109 @@ edit(sip,'                    if(resp.statusCode >= 400) {','''                 
                         android.util.Log.i("Api30PhhIms","voice-rejected="+resp.statusCode)
                         stopCallMedia()''')
 edit(sip,'                var resp = r','''                android.util.Log.i("Api30PhhIms","voice-sip-status="+r.statusCode)
-                if((r.statusCode==180 || r.statusCode==183) && progressReported.compareAndSet(false,true))onCallProgressing?.invoke()
+                android.util.Log.i("Api30PhhIms",me.phh.ims.VoiceResponseObservation.describe(r.statusCode,r.headers,r.body))
+                if((r.statusCode==180 || r.statusCode==183) && progressReported.compareAndSet(false,true)) {
+                    android.util.Log.i("Api30PhhIms","voice-progress phase=ENTER")
+                    try {
+                        onCallProgressing?.invoke()
+                        android.util.Log.i("Api30PhhIms","voice-progress phase=RETURNED")
+                    } catch(t:Throwable) {
+                        progressReported.set(false)
+                        android.util.Log.w("Api30PhhIms","voice-progress-error type="+t.javaClass.simpleName)
+                    }
+                }
                 var resp = r''')
+edit(sip,'''                    prack(resp)
+                    respInFlight = resp''','''                    // Publish pending SDP before another socket reader can receive PRACK200.
+                    respInFlight = resp
+                    android.util.Log.i("Api30PhhIms","voice-prack phase=PREPARED")
+                    prack(resp)''')
+edit(sip,'''                if (cseq.contains("PRACK")) {
+                    resp = respInFlight!!
+                    respInFlight = null
+                    cseq = resp.headers["cseq"]!![0]
+                    rseqHandled = true
+                }''','''                if (cseq.contains("PRACK")) {
+                    if (resp.statusCode < 200) return@setResponseCallback false
+                    if (resp.statusCode in 200..299) {
+                        val pending = respInFlight
+                        if (pending == null) {
+                            android.util.Log.i("Api30PhhIms","voice-prack phase=UNMATCHED")
+                            return@setResponseCallback false
+                        }
+                        resp = pending
+                        respInFlight = null
+                        cseq = resp.headers["cseq"]!![0]
+                        rseqHandled = true
+                        android.util.Log.i("Api30PhhIms","voice-prack phase=CONFIRMED")
+                    }
+                    // Preserve a failed PRACK's own status for the existing rejection path.
+                }''')
+edit(sip,'                if (cseq.contains("ACK")) return@setResponseCallback  false',
+    '                if (cseq.substringAfterLast(" ").trim()=="ACK") return@setResponseCallback false')
+p=dest/sip;t=p.read_text(encoding='utf-8')
+start=t.index('    fun prack(resp: SipResponse) {');end=t.index('    fun rejectCall()',start)
+part=t[start:end];anchor='        synchronized(socket.gWriter()) { socket.gWriter().write(msg.toByteArray()) }'
+if part.count(anchor)!=1:raise RuntimeError('PRACK-write-context-changed')
+part=part.replace(anchor,anchor+'\n        android.util.Log.i("Api30PhhIms","voice-request method=PRACK phase=SENT")')
+t=t[:start]+part+t[end:];p.write_text(t,encoding='utf-8',newline='\n')
+edit(sip,'''                        Rlog.d(TAG, "Sending $msg2")
+                        synchronized(socket.gWriter()) { socket.gWriter().write(msg2.toByteArray()) }''','''                        Rlog.d(TAG, "Sending $msg2")
+                        android.util.Log.i("Api30PhhIms","voice-request method=UPDATE phase=PREPARED")
+                        synchronized(socket.gWriter()) { socket.gWriter().write(msg2.toByteArray()) }
+                        android.util.Log.i("Api30PhhIms","voice-request method=UPDATE phase=SENT")''')
+for label,message in [('MAIN','main/control'),('TCP_SERVER','TCP server'),('UDP_SERVER','UDP server')]:
+    edit(sip,'Rlog.d(TAG, "Got exception in '+message+' socket", t)',
+        'android.util.Log.w("Api30PhhIms","voice-socket-error channel='+label+' type="+t.javaClass.simpleName)')
+# Dialog requests use the early/final Contact and reversed Record-Route, with
+# local CSeq owned by this call rather than the global registration counter.
+edit(sip,'    @Volatile private var outgoingInvite:SipRequest?=null','    @Volatile private var outgoingInvite:SipRequest?=null\n    @Volatile private var outgoingDialog:me.phh.ims.VoiceDialogState?=null')
+edit(sip,'            outgoingInvite=msg;dialogHeaders=null;dialogTarget=null','            outgoingInvite=msg;outgoingDialog=me.phh.ims.VoiceDialogState(msg.headers);dialogHeaders=null;dialogTarget=null')
+p=dest/sip;t=p.read_text(encoding='utf-8')
+start=t.index('    fun prack(resp: SipResponse) {');end=t.index('    fun rejectCall()',start)
+t=t[:start]+'''    fun prack(resp: SipResponse) {
+        val plan=outgoingDialog!!.prepare("PRACK",resp.headers)
+        val whatToPrack="${resp.headers["rseq"]!![0]} ${resp.headers["cseq"]!![0]}"
+        val msg=SipRequest(SipMethod.PRACK,plan.target,plan.headers+
+            ("rack" to listOf(whatToPrack))+("require" to listOf("sec-agree")))
+        synchronized(socket.gWriter()){socket.gWriter().write(msg.toByteArray())}
+        android.util.Log.i("Api30PhhIms","voice-request method=PRACK phase=SENT")
+    }
+
+'''+t[end:];p.write_text(t,encoding='utf-8',newline='\n')
+edit(sip,'''                    val newTo = resp.headers["to"]!![0]
+                    val newFrom = resp.headers["from"]!![0]
+                    val msg2 =
+                        SipRequest(
+                            SipMethod.ACK,
+                            to,
+                            myHeaders - "content-type" + """
+                                CSeq: $cseq ACK
+                                To: $newTo
+                                From: $newFrom
+                                """.toSipHeadersMap()
+                        )''','''                    val plan=outgoingDialog!!.prepare("ACK",resp.headers)
+                    val msg2=SipRequest(SipMethod.ACK,plan.target,plan.headers)''')
+edit(sip,'''                    val route=resp.headers["record-route"]?.reversed()
+                    if(!route.isNullOrEmpty())dialogHeaders=dialogHeaders!!+("route" to route)
+                    dialogTarget=resp.headers["contact"]?.firstOrNull()?.let{extractDestinationFromContact(it)} ?: to''','''                    dialogTarget=plan.target''')
+edit(sip,'''                        val msg2 =
+                            SipRequest(
+                                SipMethod.UPDATE,
+                                to,
+                                (currentCall!!.callHeaders - "route" - "expires") + ("content-type" to listOf("application/sdp")),
+                                newSdp
+                            )''','''                        val plan=outgoingDialog!!.prepare("UPDATE",resp.headers)
+                        val versionedSdp=me.phh.ims.SdpSessionVersion.changedOffer(sdp,newSdp)
+                        val msg2=SipRequest(SipMethod.UPDATE,plan.target,
+                            plan.headers+("content-type" to listOf("application/sdp")),versionedSdp)
+                        android.util.Log.i("Api30PhhIms","voice-dialog method=UPDATE routing=ESTABLISHED sdp-version=ADVANCED")''')
+edit(sip,'''            val via=commonHeaders["via"]
+            var h=dialog - "via" - "cseq" - "content-length" - "content-type" - "expires"
+            if(via!=null)h=h+("via" to via)
+            SipRequest(SipMethod.BYE,target,h)''','''            val plan=outgoingDialog!!.prepare("BYE",null)
+            SipRequest(SipMethod.BYE,plan.target,plan.headers)''')
+edit(sip,'        outgoingInvite=null;dialogHeaders=null;dialogTarget=null','        outgoingInvite=null;outgoingDialog=null;dialogHeaders=null;dialogTarget=null')
 p=dest/sip;t=p.read_text(encoding='utf-8')
 start=t.index('    fun callEncodeThread() {');end=t.index('    var currentCall:',start)
 part=t[start:end]

@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "tool_version": "0.9.8-diagnostic",
+  "engine_sha256": "0129b7e27a8b88690c5024b5aa336e88d9ad9c10638661d72c41a649e306ccb7",
+  "ims_sha256": "c8624d42e9a6202c9dc0506e9a574870c6631e0187b9b70062eabf68c0de0cf5",
+  "call_probe_count": 1,
+  "sms_test_requested": true,
+  "human_audible_speech_confirmed": false,
+  "call_test": {
+    "schema": 1,
+    "status": "failed",
+    "engine_sha256": "0129b7e27a8b88690c5024b5aa336e88d9ad9c10638661d72c41a649e306ccb7",
+    "tool_sha256": "098f8734b540d87fdc15e1fa6d8401a28fcc3503f792cead24b6ac3f49c47533",
+    "physical_replacement_changed": true,
+    "sms_sent": false,
+    "call_probe_count": 1,
+    "human_audible_speech_confirmed": false,
+    "consecutive_wlan_voice_ready_observations": true,
+    "keyguard_showing": true,
+    "call_entry": {
+      "exit": 0,
+      "activity_start_reported": true,
+      "explicit_error_reported": false,
+      "permission_denied_reported": false,
+      "activity_already_running_warning": false
+    },
+    "response_observations": [
+      {
+        "code": "100",
+        "method": "INVITE",
+        "warning": "none",
+        "cause": "none",
+        "sdp": "false",
+        "precondition": "false",
+        "codecs": "none",
+        "qos": "none",
+        "reliable": "false",
+        "contact": "false",
+        "routes": "0"
+      },
+      {
+        "code": "183",
+        "method": "INVITE",
+        "warning": "none",
+        "cause": "none",
+        "sdp": "true",
+        "precondition": "true",
+        "codecs": "AMR,TELEPHONE-EVENT",
+        "qos": "conf_remote_sendrecv,curr_local_sendrecv,curr_remote_none,des_local_mandatory_sendrecv,des_remote_optional_sendrecv",
+        "reliable": "true",
+        "contact": "true",
+        "routes": "1"
+      },
+      {
+        "code": "200",
+        "method": "PRACK",
+        "warning": "none",
+        "cause": "none",
+        "sdp": "false",
+        "precondition": "false",
+        "codecs": "none",
+        "qos": "none",
+        "reliable": "false",
+        "contact": "false",
+        "routes": "0"
+      },
+      {
+        "code": "488",
+        "method": "UPDATE",
+        "warning": "none",
+        "cause": "none",
+        "sdp": "false",
+        "precondition": "false",
+        "codecs": "none",
+        "qos": "none",
+        "reliable": "false",
+        "contact": "false",
+        "routes": "0"
+      }
+    ],
+    "request_phases": [
+      {
+        "method": "PRACK",
+        "phase": "SENT"
+      },
+      {
+        "method": "UPDATE",
+        "phase": "PREPARED"
+      },
+      {
+        "method": "UPDATE",
+        "phase": "SENT"
+      }
+    ],
+    "prack_phases": [
+      "PREPARED",
+      "CONFIRMED"
+    ],
+    "progress_phases": [
+      "ENTER",
+      "RETURNED"
+    ],
+    "progress_errors": [],
+    "socket_errors": [],
+    "audio_errors": [],
+    "voice": {
+      "sip_status_codes": [
+        100,
+        183,
+        200,
+        488
+      ],
+      "connected": false,
+      "tx_frame_checkpoints": [],
+      "played_frame_checkpoints": [],
+      "active_framework_call_observed": false
+    },
+    "same_ims_generation": true,
+    "telemetry_delta": {
+      "voice_tx_frames": 0,
+      "voice_played_frames": 0
+    },
+    "error": "AssertionError",
+    "test_hangup_entry_completed": true,
+    "all_calls_idle_after": true,
+    "bye_200_confirmed": false
+  },
+  "sms_test": {
+    "exit": 0,
+    "new_native_inbox_rows": 1,
+    "new_messages_notification": true,
+    "telemetry_delta": {
+      "sms_tx": 1,
+      "sms_tx_ok": 1,
+      "sms_tx_failed": 0,
+      "sms_rx": 4,
+      "sms_ack_ok": 4,
+      "sms_ack_failed": 0
+    },
+    "original_short_code_policy_restored": true,
+    "passed": true
+  },
+  "full_traffic_passed": false,
+  "persistent_installed_ims_unchanged": true,
+  "original_owner_record_unchanged": true,
+  "all_calls_idle_after": true
+}

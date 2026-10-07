@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "sms_test_count": 1,
+  "phone_reloaded_before_retry_by_previous_test_cleanup": true,
+  "apn_vendor_modem_modified": false,
+  "acknowledgement_observation": {
+    "send": [
+      [
+        "-1",
+        "0"
+      ]
+    ],
+    "accepted": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "rp_response": [
+      [
+        "0",
+        "22"
+      ],
+      [
+        "1",
+        "26"
+      ],
+      [
+        "2",
+        "29"
+      ],
+      [
+        "3",
+        "36"
+      ]
+    ],
+    "sip_ack": [
+      "202",
+      "202",
+      "202",
+      "202"
+    ]
+  },
+  "exit": 0,
+  "new_native_inbox_rows": 1,
+  "new_messages_notification": true,
+  "telemetry_delta": {
+    "sms_tx": 1,
+    "sms_tx_ok": 1,
+    "sms_tx_failed": 0,
+    "sms_rx": 4,
+    "sms_ack_ok": 4,
+    "sms_ack_failed": 0
+  },
+  "original_short_code_policy_restored": true,
+  "fixed_failure_reason": "none"
+}

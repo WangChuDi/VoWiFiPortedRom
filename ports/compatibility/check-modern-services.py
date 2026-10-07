@@ -89,6 +89,7 @@ for role,(package,service) in roles.items():
         if b'Ldev/codex/vowifi/common/StackTelemetryProvider;' not in dex:raise AssertionError('compiled-status-provider-missing')
         if role=='iwlan' and b'Ldev/codex/vowifi/iwlan/TrialIwlanDataService;' in dex:raise AssertionError('legacy-IWLAN-provider-in-modern-APK')
         if role=='iwlan' and any(symbol not in dex for symbol in (b'Ldev/codex/vowifi/runtime/ModernRuntimeProvider;',b'Ldev/codex/vowifi/runtime/ModernServiceBindings;',b'Ldev/codex/vowifi/tool/RuntimeAbiProbe;')):raise AssertionError('service-loader-runtime-probe-missing')
+        if role=='ims' and any(symbol not in dex for symbol in (b'Lme/phh/ims/AkaResponseCodec;',b'Lme/phh/ims/AkaResponseCodec$SynchronizationRequired;',b'Lme/phh/ims/VoiceResponseObservation;',b'Lme/phh/ims/VoiceDialogState;',b'Lme/phh/ims/SdpSessionVersion;')):raise AssertionError('IMS-authentication-dialog-or-safe-response-helper-missing')
     records.append({'role':role,'package':package,'min_sdk':31,'target_sdk':31,'compiled_service_present':True,'compiled_bindings_verified':True,'sha256':metadata['sha256']})
 ims=decode((OUT/'ims-kotlin-classes/me/phh/ims/PhhImsService.class').read_bytes())
 for name,descriptor in {
@@ -105,5 +106,5 @@ with zipfile.ZipFile(OUT/'modern-services-unsigned.zip') as archive:
         if hashlib.sha256(archive.read(role+'-unsigned.apk')).hexdigest()!=manifest['services'][role]['sha256']:raise AssertionError('bundle-payload-mismatch')
     if archive.read('LICENSE-phhusson-ims')!=(B.parent/'android11/vendor/phhusson-ims/LICENSE').read_bytes():raise AssertionError('source-license-mismatch')
     if archive.read('THIRD_PARTY.md')!=(B.parent/'android11/THIRD_PARTY.md').read_bytes():raise AssertionError('source-attribution-mismatch')
-(B/'out/modern-services-bundle-check.json').write_text(json.dumps({'scope':'compiled-artifact-check-not-device-support','services':records,'subscription_aware_ims_entries':3,'exact_bundle':True},indent=2)+'\n',encoding='utf-8')
+(B/'out/modern-services-bundle-check.json').write_text(json.dumps({'scope':'compiled-artifact-check-not-device-support','services':records,'subscription_aware_ims_entries':3,'aka_resync_and_safe_response_helpers_present':True,'exact_bundle':True},indent=2)+'\n',encoding='utf-8')
 print('Modern services compiled roles/SDK31/subscription-aware IMS/bundle/license=PASS; installation and carrier behavior untested')

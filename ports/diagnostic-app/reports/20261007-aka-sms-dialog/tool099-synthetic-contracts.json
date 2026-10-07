@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "aka_framing_contracts": 20,
+  "metadata_privacy_contracts": 12,
+  "dialog_and_sdp_contracts": 20,
+  "live_sim_authentication_attempted": false
+}

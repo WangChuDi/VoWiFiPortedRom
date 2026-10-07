@@ -1,0 +1,44 @@
+[
+  {
+    "artifact": "android-all-12-robolectric-7732740.jar",
+    "sha256": "687ec0ce42646cb4172c3e1958bfd91783933a66ef049d472b90ab1fdf07541c",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-12.1-robolectric-8229987.jar",
+    "sha256": "75e7ac8ad3817d4cdfa24c8479ea8244b752575b03122d79d1e5a4f6e4f33879",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-13-robolectric-9030017.jar",
+    "sha256": "6e67dca81d30295e31ee6a28cfb601b6b66aaeaee51a92386ed099a64cea5996",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-14-robolectric-10818077.jar",
+    "sha256": "6be2218c6a53fe3c57bc22ebdc723edcb7270a8a6f187545708aa5c0ed813977",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-15-robolectric-13954326.jar",
+    "sha256": "e17105f6c432357e6bb278a527f8e848d01fc56ccee01be77725bea23d871990",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-16-robolectric-13921718.jar",
+    "sha256": "8b74a0a137330658d2f33f0dc715d42734f74ba8b2d7014fc2e95aa40d3f682d",
+    "reference_count": 183,
+    "missing": []
+  },
+  {
+    "artifact": "android-all-17-robolectric-15733970.jar",
+    "sha256": "f6a41ad548bb45cccd3b1d4774cb50d57826dd319b6e5accd6b6269876e12d71",
+    "reference_count": 183,
+    "missing": []
+  }
+]

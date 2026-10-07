@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "versions": [
+    33,
+    36
+  ],
+  "apk_sha256": "098f8734b540d87fdc15e1fa6d8401a28fcc3503f792cead24b6ac3f49c47533",
+  "physical_phone_modified": false,
+  "engine_selected": false,
+  "private_limit_per_guest": 6442450944,
+  "disk_floor": 3221225472,
+  "initial_resource_guard_passed": true,
+  "boot": [
+    {
+      "sdk": 33,
+      "boot_completed": true,
+      "owned_identity_verified": true
+    },
+    {
+      "sdk": 36,
+      "boot_completed": true,
+      "owned_identity_verified": true
+    }
+  ],
+  "test_exit": 0,
+  "owned_guest_processes_terminal": true
+}
