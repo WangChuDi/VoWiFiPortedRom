@@ -40,6 +40,7 @@ public final class StackTelemetry {
             started=updated=clock.getAsLong();for(Counter c:Counter.values())counts.put(c,0L);
         }
         private boolean live(){return !retired&&owners.get(key)==this;}
+        public long generation(){return generation;}
         private void touched(){updated=clock.getAsLong();}
         public void phase(Phase value){
             if(value==null||value==Phase.CLOSED||value==Phase.FAILED)throw new IllegalArgumentException("status-phase");

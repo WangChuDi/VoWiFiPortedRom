@@ -328,3 +328,19 @@ remain separate. After policy-cleanup reload, the new tool captured a live discr
 independent MMTEL SMS=true but phone dispatcher SMS=false and native support=false.
 An actual REGISTER refresh200 did not recover it. API33/API36 read-only/refusal
 checks passed; actual SMS stability remains unresolved. See [full evidence and limits](SMS-DISPATCHER-WINDOW-20261007.md).
+
+## Version0.9.11 explicit IMS client rebinding
+
+VersionCode23 / API30 module0.9.4 / IMS0.4.5 add a separate idle-only button to
+rebind the registered framework clients. The root worker verifies the exact
+calibrated ROM, selected live owner, all active calls, response provenance and
+completion. It then refreshes the independent system SMS/dispatcher diagnostics.
+The action performs no phone reload, registration request, call or SMS.
+Unregistered or unsupported profiles remain refused; Android12–17 retain the
+previous modern engine bytes and do not use this API30-specific recovery method.
+
+The IMS0.4.4 precursor recovered a real live dispatcher failure and then passed
+native INFO send/receive/inbox/notification. Explicit-account191 voice also passed.
+These results are distinct from the new provenance build's startup checks and
+from long-term stability. See [exact changes, artifact identities and retained
+failures](IMS-CLIENT-REBIND-20261007.md).

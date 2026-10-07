@@ -1,0 +1,76 @@
+{
+  "status": "recovered-live-failure",
+  "reinstalled": false,
+  "phone_reloaded": false,
+  "new_calls_or_sms": false,
+  "phone_identity_stable": true,
+  "ims_pid_stable": true,
+  "same_ims_generation": true,
+  "ims_version": "0.4.4",
+  "before_clients": {
+    "registered": true,
+    "enabled_mask": 9,
+    "last_notified_mask": 9,
+    "sms_ready_events": 2,
+    "enable_events": 2,
+    "disable_events": 0,
+    "notification_returns": 13,
+    "callback_count_observed": false,
+    "client_rebind_returns": 1,
+    "client_rebind_pending": false,
+    "feature_state": 2
+  },
+  "before_dispatcher": {
+    "native_sms_ims_supported": false,
+    "software_dispatcher_up": true,
+    "software_dispatcher_registered": true,
+    "software_dispatcher_sms_capable": false,
+    "software_dispatcher_available": false
+  },
+  "after_samples": [
+    {
+      "clients": {
+        "registered": true,
+        "enabled_mask": 9,
+        "last_notified_mask": 9,
+        "sms_ready_events": 3,
+        "enable_events": 3,
+        "disable_events": 0,
+        "notification_returns": 16,
+        "callback_count_observed": false,
+        "client_rebind_returns": 2,
+        "client_rebind_pending": false,
+        "feature_state": 2
+      },
+      "dispatcher": {
+        "native_sms_ims_supported": true,
+        "software_dispatcher_up": true,
+        "software_dispatcher_registered": true,
+        "software_dispatcher_sms_capable": true,
+        "software_dispatcher_available": true
+      }
+    },
+    {
+      "clients": {
+        "registered": true,
+        "enabled_mask": 9,
+        "last_notified_mask": 9,
+        "sms_ready_events": 3,
+        "enable_events": 3,
+        "disable_events": 0,
+        "notification_returns": 16,
+        "callback_count_observed": false,
+        "client_rebind_returns": 2,
+        "client_rebind_pending": false,
+        "feature_state": 2
+      },
+      "dispatcher": {
+        "native_sms_ims_supported": true,
+        "software_dispatcher_up": true,
+        "software_dispatcher_registered": true,
+        "software_dispatcher_sms_capable": true,
+        "software_dispatcher_available": true
+      }
+    }
+  ]
+}

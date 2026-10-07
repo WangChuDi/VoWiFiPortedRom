@@ -46,6 +46,12 @@ preserves one temporary candidate call pass and persistent0.9.8 native SMS boot,
 send, receipt and notification passes, alongside its UPDATE488 call failure.
 Module0.9.3/tool0.9.9 add dialog routing/CSeq and changed-SDP version handling;
 the new release requires its own actual traffic result.
+Module0.9.4/tool0.9.11 add guarded framework-client rebinding and separate client
+metadata. IMS0.4.4 recovered an actual registered-but-SMS-disabled dispatcher
+without reinstalling or reloading phone, followed by a native INFO/inbox/notification
+pass. An explicitly scoped191 account call subsequently passed. IMS0.4.5 adds
+response provenance; its own startup and business results remain separately recorded.
+See [the client-rebind evidence and limits](../../diagnostic-app/IMS-CLIENT-REBIND-20261007.md).
 Audible speech still needs user confirmation. Registration alone does not prove audio,
 emergency calling, handover, DTMF, supplementary services or every SMS format.
 

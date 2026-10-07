@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "status": "failed-results-preserved",
+  "cases": [
+    {
+      "case": "ims044-call-sms-boundary-20261007",
+      "status": "failed",
+      "call_test_count": 1,
+      "sms_test_count": 0,
+      "voice_connected": false,
+      "voice_delta": {
+        "voice_tx_frames": 0,
+        "voice_played_frames": 0
+      },
+      "active_call_observed": true,
+      "phone_reloaded_during_call_sms_test": false,
+      "phone_reloaded_after_test_for_policy_cleanup": false,
+      "all_calls_idle_after": true,
+      "human_audible_speech_confirmed": false
+    },
+    {
+      "case": "ims044-recovered-call-sms-20261007",
+      "status": "failed",
+      "call_test_count": 1,
+      "sms_test_count": 0,
+      "voice_connected": false,
+      "voice_delta": {
+        "voice_tx_frames": 0,
+        "voice_played_frames": 0
+      },
+      "active_call_observed": false,
+      "phone_reloaded_during_call_sms_test": false,
+      "phone_reloaded_after_test_for_policy_cleanup": false,
+      "all_calls_idle_after": true,
+      "human_audible_speech_confirmed": false
+    },
+    {
+      "case": "tool0911-api33-api36-smoke-20261007",
+      "status": "failed",
+      "error": "AssertionError",
+      "owned_guest_processes_terminal": true
+    },
+    {
+      "case": "tool0911-api33-api36-smoke-readonly-20261007",
+      "status": "failed",
+      "test_exit": 1,
+      "initial_resource_guard_passed": true,
+      "owned_guest_processes_terminal": true
+    }
+  ]
+}

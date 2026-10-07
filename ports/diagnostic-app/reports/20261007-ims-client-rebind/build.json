@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_version": "0.9.11-diagnostic",
+  "ims_version": "0.4.5-api30-stack",
+  "api30_module_version": "0.9.4-trial",
+  "modern_engine_changed": false,
+  "phone_modified": false,
+  "tool_sha256": "de22787f736555d5efe9260fab3559f04d5f03ffaec3728c0b06564cc0205c3c",
+  "api30_engine_sha256": "07084b8d05ee174319369858160d3feb7cc17e4822e8cf9ae659aa03e61a7d7d",
+  "ims_sha256": "3f971f5ff82c9942fa2e07a3f34f913315e922582bfbaab0913b499d6998ca9d",
+  "modern_engine_sha256": "ffb9551e50a8ae11c0da4ad562646e2e181aa95ff0ec6c79cfcb4933d854705a",
+  "signature_verified": true,
+  "source_freshness_verified": true,
+  "embedded_engines_exact": true,
+  "retained_artifacts_unchanged": true
+}

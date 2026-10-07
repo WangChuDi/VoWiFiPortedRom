@@ -24,6 +24,7 @@ def main():
         subprocess.run([sys.executable, str(B / 'test-diagnostic-progress.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-modern-action-policy.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-sms-dispatcher-window.py')], check=True)
+        subprocess.run([sys.executable, str(B / 'test-ims-client-snapshot.py')], check=True)
     apk = B / ('out/vowifi-tool-unsigned.apk'if args.unsigned else 'out/vowifi-tool.apk')
     engines = [B.parent / 'android11/stack/out/vowifi-stack-api30-services.zip',B.parent/'android12/out/modern-services-installation-stage.zip']
     aapt = TOOLS / 'android-build-tools' / ('aapt2.exe' if os.name == 'nt' else 'aapt2')

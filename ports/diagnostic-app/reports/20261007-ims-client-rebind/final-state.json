@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "status": "ready",
+  "new_calls_or_sms": false,
+  "new_reboot_or_phone_reload": false,
+  "before": {
+    "diagnostic_complete": true,
+    "platform_health": {
+      "phone": {
+        "state": "stable",
+        "first_present": true,
+        "last_present": true
+      },
+      "system_server": {
+        "state": "stable",
+        "first_present": true,
+        "last_present": true
+      }
+    },
+    "ims_transport": 2,
+    "voice": true,
+    "sms": true,
+    "native_sms_ims_supported": true,
+    "sms_dispatcher_window": {
+      "schema": 1,
+      "status": "observed",
+      "query_duration_ms": 2,
+      "sample_count": 1,
+      "phone_identity_stable": true,
+      "reason": "none",
+      "service_up": true,
+      "registered": true,
+      "sms_capable": true,
+      "available": true
+    },
+    "ims_clients_status": {
+      "registered": true,
+      "enabled_mask": 9,
+      "last_notified_mask": 9,
+      "notification_returns": 5,
+      "sms_ready_events": 1,
+      "enable_events": 1,
+      "disable_events": 0,
+      "callback_count_observed": false,
+      "feature_state": 2,
+      "initialized": true,
+      "removed": false,
+      "client_rebind_pending": false,
+      "client_rebind_returns": 0,
+      "sms_session_idle": true,
+      "generation": 2,
+      "rebind_requested": false,
+      "rebind_accepted": false,
+      "schema": 1,
+      "channel": "ims",
+      "slot": 1,
+      "sub": 1,
+      "sample_elapsed": 383296
+    }
+  },
+  "repair_requested": false,
+  "all_calls_idle": true,
+  "phone_identity_stable": true
+}

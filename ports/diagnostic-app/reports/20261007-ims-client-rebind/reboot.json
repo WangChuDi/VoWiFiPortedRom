@@ -1,0 +1,225 @@
+{
+  "status": "ready",
+  "reboot_requested": true,
+  "new_calls_or_sms": false,
+  "actual_apks_match_staged_module": {
+    "dev.codex.vowifi.iwlan": true,
+    "dev.codex.vowifi.qns": true,
+    "me.phh.ims": true
+  },
+  "current_module_version094": true,
+  "observations": [
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "sms_dispatcher_window": {
+        "schema": 1,
+        "status": "observed",
+        "query_duration_ms": 1,
+        "sample_count": 1,
+        "phone_identity_stable": true,
+        "reason": "none",
+        "service_up": true,
+        "registered": false,
+        "sms_capable": false,
+        "available": false
+      },
+      "ims_clients_status_error": "IOException",
+      "ims_status": {},
+      "iwlan_status": {}
+    },
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "sms_dispatcher_window": {
+        "schema": 1,
+        "status": "observed",
+        "query_duration_ms": 1,
+        "sample_count": 1,
+        "phone_identity_stable": true,
+        "reason": "none",
+        "service_up": true,
+        "registered": false,
+        "sms_capable": false,
+        "available": false
+      },
+      "ims_clients_status_error": "IOException"
+    },
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": -2,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false,
+      "sms_dispatcher_window": {
+        "schema": 1,
+        "status": "unknown",
+        "query_duration_ms": 1,
+        "sample_count": 1,
+        "phone_identity_stable": false,
+        "reason": "phone-changed"
+      },
+      "ims_clients_status": {
+        "registered": false,
+        "enabled_mask": 9,
+        "last_notified_mask": 0,
+        "notification_returns": 2,
+        "sms_ready_events": 1,
+        "enable_events": 1,
+        "disable_events": 0,
+        "callback_count_observed": false,
+        "feature_state": 2,
+        "initialized": true,
+        "removed": false,
+        "client_rebind_pending": false,
+        "client_rebind_returns": 0,
+        "sms_session_idle": true,
+        "generation": 1,
+        "rebind_requested": false,
+        "rebind_accepted": false,
+        "schema": 1,
+        "channel": "ims",
+        "slot": 1,
+        "sub": 1,
+        "sample_elapsed": 51188
+      },
+      "ims_status": {
+        "generation": 1,
+        "phase": "REGISTERING",
+        "failed_stage": "STARTING",
+        "registered": false,
+        "child_open": false,
+        "ike_open": false,
+        "register_tx": 0,
+        "sip_status": 0
+      },
+      "iwlan_status": {
+        "generation": 1,
+        "phase": "IKE_NEGOTIATING",
+        "failed_stage": "STARTING",
+        "registered": false,
+        "child_open": false,
+        "ike_open": false,
+        "register_tx": 0,
+        "sip_status": 0
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "platform_health": {
+        "phone": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        },
+        "system_server": {
+          "state": "stable",
+          "first_present": true,
+          "last_present": true
+        }
+      },
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": true,
+      "sms_dispatcher_window": {
+        "schema": 1,
+        "status": "observed",
+        "query_duration_ms": 1,
+        "sample_count": 1,
+        "phone_identity_stable": true,
+        "reason": "none",
+        "service_up": true,
+        "registered": true,
+        "sms_capable": true,
+        "available": true
+      },
+      "ims_clients_status": {
+        "registered": true,
+        "enabled_mask": 9,
+        "last_notified_mask": 9,
+        "notification_returns": 5,
+        "sms_ready_events": 1,
+        "enable_events": 1,
+        "disable_events": 0,
+        "callback_count_observed": false,
+        "feature_state": 2,
+        "initialized": true,
+        "removed": false,
+        "client_rebind_pending": false,
+        "client_rebind_returns": 0,
+        "sms_session_idle": true,
+        "generation": 1,
+        "rebind_requested": false,
+        "rebind_accepted": false,
+        "schema": 1,
+        "channel": "ims",
+        "slot": 1,
+        "sub": 1,
+        "sample_elapsed": 60746
+      },
+      "ims_status": {
+        "generation": 1,
+        "phase": "REGISTERED",
+        "failed_stage": "STARTING",
+        "registered": true,
+        "child_open": false,
+        "ike_open": false,
+        "register_tx": 2,
+        "sip_status": 200
+      },
+      "iwlan_status": {
+        "generation": 1,
+        "phase": "CHILD_OPENED",
+        "failed_stage": "STARTING",
+        "registered": false,
+        "child_open": true,
+        "ike_open": true,
+        "register_tx": 0,
+        "sip_status": 0
+      }
+    }
+  ]
+}

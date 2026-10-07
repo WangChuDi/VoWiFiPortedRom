@@ -185,7 +185,7 @@ public final class RootDiagnostics {
             Object status=provisionClass.getMethod("getProvisioningStatusForCapability",int.class,int.class).invoke(provision,1,1);
             out.put("wlan_voice_provisioned",status);
         }catch(Throwable e){out.put("provisioning_error",e.getClass().getSimpleName());}
-        ExecutorService statusWorkers=Executors.newFixedThreadPool(3,r->{Thread t=new Thread(r,"vowifi-status");t.setDaemon(true);return t;});
+        ExecutorService statusWorkers=Executors.newFixedThreadPool(4,r->{Thread t=new Thread(r,"vowifi-status");t.setDaemon(true);return t;});
         Map<String,Future<JSONObject>> statuses=new LinkedHashMap<>();
         long statusDeadline=SystemClock.elapsedRealtime()+9500;
         try{
@@ -195,6 +195,8 @@ public final class RootDiagnostics {
             for(int index=0;index<channels.length;index++)if(packages[index].equals(provider.optString(keys[index]))){
                 final String channel=channels[index],pkg=packages[index];final int selectedSub=sub;
                 statuses.put(channel,statusWorkers.submit(()->serviceStatus(channel,pkg,slot,selectedSub)));
+                if("ims".equals(channel)&&Build.VERSION.SDK_INT==30&&"raphael".equals(Build.DEVICE))
+                    statuses.put("ims_clients",statusWorkers.submit(()->RootImsClients.observe(slot,selectedSub)));
             }
         }
         CountDownLatch gotReg=new CountDownLatch(1),gotCap=new CountDownLatch(1);
@@ -298,7 +300,7 @@ public final class RootDiagnostics {
         int matched=0;if(current!=null)for(SubscriptionInfo candidate:current)if(candidate.getSimSlotIndex()==slot){if(candidate.getSubscriptionId()!=sub)throw new IllegalStateException("sms-owner-changed");matched++;}
         if(matched!=1)throw new IllegalStateException("sms-owner-changed");
     }
-    private static boolean pinnedSmsFramework(){
+    static boolean pinnedSmsFramework(){
         try(InputStream input=new FileInputStream("/system/framework/telephony-common.jar")){
             java.security.MessageDigest digest=java.security.MessageDigest.getInstance("SHA-256");byte[] block=new byte[16384];int n;
             while((n=input.read(block))!=-1)digest.update(block,0,n);
@@ -404,7 +406,7 @@ public final class RootDiagnostics {
         if(provider.has("owner_slot"))out.put("providers_slot",provider.optInt("owner_slot"));
         return provider;
     }
-    private static String command(int seconds,String...args)throws Exception{
+    static String command(int seconds,String...args)throws Exception{
         java.lang.Process p=new ProcessBuilder(args).redirectErrorStream(true).start();
         ByteArrayOutputStream buffer=new ByteArrayOutputStream();
         Thread reader=new Thread(()->{try(InputStream in=p.getInputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))>=0){if(buffer.size()+n<262144)buffer.write(b,0,n);}}catch(IOException ignored){}});

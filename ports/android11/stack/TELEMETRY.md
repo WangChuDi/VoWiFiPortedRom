@@ -9,11 +9,11 @@ APK process; the tool requires an existing PID and rejects a changed PID.
 ## Access and provenance
 
 The authorities are `dev.codex.vowifi.iwlan.status`,
-`dev.codex.vowifi.qns.status`, and `me.phh.ims.status`. The only supported call is
+`dev.codex.vowifi.qns.status`, and `me.phh.ims.status`. The service-status call is
 `status` with `channel:slot:subscriptionId:16-hex-nonce`. Android privileged-phone
 permission guards acquisition; the provider independently requires Binder UID 0.
 Shell authorization to `su` is not authorization for an unprivileged Binder call.
-All query and mutation methods reject access.
+CRUD methods reject access. The explicit IMS client method below is separate.
 
 Responses contain a fixed metadata schema: selected slot/subscription, nonce,
 process PID, boot count, monotonic sample time, authorization and observation
@@ -60,3 +60,30 @@ modern installation profiles or replace actual modern/dual-active-SIM testing.
 
 Sources retain GPL-2.0 attribution; IMS remains derived from the preserved
 `phhusson/ims` snapshot documented in the parent port.
+
+## IMS client metadata and explicit rebinding, tool0.9.11 / IMS0.4.5
+
+`me.phh.ims.status` additionally accepts `capabilities` and `client-rebind`, with
+`ims:slot:subscriptionId:16-hex-nonce`. Both require root. They use a separate
+closed schema, preserving the old `status` response for older tools. The new
+response includes PID/boot/nonce/sample time and feature generation; the tool
+validates them and process start identity before exporting only safe counters.
+
+Metadata separates enabled capability bits from the last notified bits, counts
+SMS-ready/capability-enable/disable events, and records pending/completed rebinds.
+Unregistered features notify zero. Explicit IWLAN disables are respected during
+replay. `notification_returns` counts returned notification calls, not remote
+delivery. OEM callback reflection failure remains unknown, not zero.
+The historical field `sms_session_idle` describes this feature's **voice call
+state**, IDLE or TERMINATED; it is not a pending-SMS transaction counter.
+
+Rebinding is supported only on the exact calibrated API30 raphael framework.
+The controller owner, live23415 subscription, registered feature and all active
+subscriptions' call states are checked again in root and in the service. The
+feature publishes INITIALIZING then READY after750ms, rechecks its ownership and
+registration, and replays its actual enabled capabilities. Removed features never
+return to READY. Requests have a30-second cooldown. Acceptance only means queued;
+the root worker separately observes completion and stable phone/system processes.
+No REGISTER, phone reload, SIM toggle, call, SMS or APN change is performed by
+this action. A subsequent native support/dispatcher query checks recovery without
+claiming actual traffic success. See [current evidence](../../diagnostic-app/IMS-CLIENT-REBIND-20261007.md).

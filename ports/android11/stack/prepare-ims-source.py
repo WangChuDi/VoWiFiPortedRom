@@ -49,13 +49,15 @@ edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHa
     val telemetry=dev.codex.vowifi.common.StackTelemetry.begin("ims",slotId,selectedSubId,java.util.function.LongSupplier { android.os.SystemClock.elapsedRealtime() })
     init {
         imsSms.telemetry=telemetry
-        imsSms.onReadyCallback={scheduleCapabilityReplay()}
+        imsSms.onReadyCallback={recordSmsReady();scheduleCapabilityReplay()}
+        // Preserve the bootstrap READY contract, then report real base-class state.
+        setFeatureState(ImsFeature.STATE_READY)
     }
     private val readinessHandler=android.os.Handler(android.os.Looper.getMainLooper())
     @Volatile private var removed=false
     private val registrationCallbacks=RegistrationCallbackGate()
     fun publishActiveRegistration(action:Runnable):Boolean=registrationCallbacks.publish(action)
-    private var initialized=false
+    @Volatile private var initialized=false
     private val retryReady=Runnable{if(!removed)onFeatureReady()}
     private var callListener: ImsCallSessionListener? = null
     private var outgoingCallProfile: ImsCallProfile? = null
@@ -67,7 +69,46 @@ edit(feature,'    lateinit var sipHandler: SipHandler','''    lateinit var sipHa
         readinessHandler.removeCallbacks(replayCapabilities)
         readinessHandler.postDelayed(replayCapabilities,2000)
     }
-    private var activeCallState = ImsCallSessionImplBase.State.IDLE
+    @Volatile private var activeCallState = ImsCallSessionImplBase.State.IDLE
+    @Volatile private var rebindPending=false
+    private var lastRebindElapsed=-30000L
+    @Volatile private var rebindReturns=0L
+    fun clientCapabilities():MutableMap<String,Any>{
+        val values=capabilitySnapshot().toMutableMap()
+        values["feature_state"]=getFeatureState()
+        values["initialized"]=initialized
+        values["removed"]=removed
+        values["client_rebind_pending"]=rebindPending
+        values["client_rebind_returns"]=rebindReturns
+        values["sms_session_idle"]=activeCallState==ImsCallSessionImplBase.State.IDLE || activeCallState==ImsCallSessionImplBase.State.TERMINATED
+        return values
+    }
+    fun requestClientRebind():Boolean{
+        if(removed||!initialized||!hasActiveRegistration()||rebindPending)return false
+        val now=android.os.SystemClock.elapsedRealtime()
+        if(now-lastRebindElapsed<30000)return false
+        rebindPending=true;lastRebindElapsed=now
+        readinessHandler.post {
+            val owner=PhhImsService.instance
+            if(owner==null||!owner.canRebindClients(slotId,selectedSubId,this)){
+                rebindPending=false
+            }else{
+                setFeatureState(ImsFeature.STATE_INITIALIZING)
+                readinessHandler.postDelayed({
+                    // Restoring this live feature's state is not a new registration.
+                    if(!removed){
+                        setFeatureState(ImsFeature.STATE_READY)
+                        if(owner.canRebindClients(slotId,selectedSubId,this)){
+                            owner.republishCapabilities(slotId,selectedSubId,this)
+                            rebindReturns++
+                        }
+                    }
+                    rebindPending=false
+                },750)
+            }
+        }
+        return true
+    }
     private fun ended(reason:ImsReasonInfo) {
         if(activeCallState==ImsCallSessionImplBase.State.TERMINATED) return
         activeCallState=ImsCallSessionImplBase.State.TERMINATED
@@ -125,6 +166,8 @@ edit(feature,'        if(this::sipHandler.isInitialized) return','''        if(r
     private fun onFeatureReadyInner(){
         if(this::sipHandler.isInitialized) return''')
 edit(feature,'        if(this::sipHandler.isInitialized) sipHandler.shutdown()','''        removed=true
+        rebindPending=false
+        setFeatureState(ImsFeature.STATE_UNAVAILABLE)
         readinessHandler.removeCallbacksAndMessages(null)
         registrationCallbacks.close()
         telemetry.end(false)
@@ -155,24 +198,8 @@ edit(sms,'        // called when android acks a received sms','''        android
 edit(sms,'        // should not do anything before this is called','''        android.util.Log.i("Api30PhhIms","framework-sms=READY")
         onReadyCallback?.invoke()
         // should not do anything before this is called''')
-shim='me/phh/ims/PhhMmTelFeatureProtected.java'
-p=dest/shim;t=p.read_text(encoding='utf-8').replace('REGISTRATION_TECH_LTE','REGISTRATION_TECH_IWLAN')
-t=t.replace('public class PhhMmTelFeatureProtected extends MmTelFeature {','''public class PhhMmTelFeatureProtected extends MmTelFeature {
-    private boolean registered;
-    public synchronized void reportRegistrationCapabilities(boolean active) {
-        registered = active;
-        MmTelFeature.MmTelCapabilities value = new MmTelFeature.MmTelCapabilities();
-        if (active) value.addCapabilities(capabilities);
-        notifyCapabilitiesStatusChanged(value);
-    }
-    public synchronized void republishRegistrationCapabilities() {
-        reportRegistrationCapabilities(registered);
-        android.util.Log.i("Api30PhhIms","capability-replay registered="+registered+" mask="+capabilities);
-    }''')
-t=t.replace('public void changeEnabledCapabilities(', 'public synchronized void changeEnabledCapabilities(')
-t=t.replace('capabilities.addCapabilities(this.capabilities);','if (registered) capabilities.addCapabilities(this.capabilities);')
-t=t.replace('PortLog.d(TAG, "Final capabilities: " + this.capabilities);','android.util.Log.i("Api30PhhIms", "capability-change slot="+slotId+" mask="+this.capabilities+" registered="+registered);')
-p.write_text(t,encoding='utf-8',newline='\n')
+edit(feature,'        return ImsFeature.STATE_READY','        return super.getFeatureState()')
+shutil.copyfile(B/'ims/PhhMmTelFeatureProtected.java',dest/'me/phh/ims/PhhMmTelFeatureProtected.java')
 
 sip='me/phh/sip/SipHandler.kt'
 edit(sip,'class SipHandler(val ctxt: Context, slotId: Int) {','class SipHandler(val ctxt: Context, slotId: Int, expectedSubId:Int) {')

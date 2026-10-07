@@ -26,7 +26,11 @@ import kotlinx.coroutines.launch
 enum class RegistrationPhase { REGISTERING, REGISTERED, DOWN }
 
 class PhhImsService : ImsService() {
-    companion object { @Volatile var instance: PhhImsService? = null }
+    companion object {
+        @Volatile var instance: PhhImsService? = null
+        @JvmStatic fun clientCapabilityStatus(slot:Int,sub:Int,rebind:Boolean):Map<String,Any> =
+            instance?.inspectClientCapabilities(slot,sub,rebind) ?: throw IllegalStateException("ims-service-unavailable")
+    }
     private val receiver = PhhImsBroadcastReceiver()
     private val features = ConcurrentHashMap<Int,PhhMmTelFeature>()
     private val registrations = ConcurrentHashMap<Int,ImsRegistrationImplBase>()
@@ -140,6 +144,36 @@ class PhhImsService : ImsService() {
         if(features[slotId]!==feature||subscriptions[slotId]!=subId||
            StackProfile.authorizedSubscription(this,slotId)?.subscriptionId!=subId)return false
         return feature.publishActiveRegistration(Runnable { feature.republishRegistrationCapabilities() })
+    }
+    @Synchronized
+    fun canRebindClients(slotId:Int,subId:Int,feature:PhhMmTelFeature):Boolean {
+        if(features[slotId]!==feature||subscriptions[slotId]!=subId||
+           StackProfile.selectedSubscription(this,slotId)?.subscriptionId!=subId||!feature.hasActiveRegistration())return false
+        try{
+            val tm=getSystemService(android.telephony.TelephonyManager::class.java) ?: return false
+            val active=getSystemService(android.telephony.SubscriptionManager::class.java)?.activeSubscriptionInfoList ?: return false
+            if(active.any{tm.createForSubscriptionId(it.subscriptionId).callState!=android.telephony.TelephonyManager.CALL_STATE_IDLE})return false
+            if(features.values.any{it.clientCapabilities()["sms_session_idle"]!=true})return false
+        }catch(unavailable:Throwable){return false}
+        return true
+    }
+    @Synchronized
+    private fun inspectClientCapabilities(slot:Int,sub:Int,rebind:Boolean):Map<String,Any>{
+        require(StackProfile.selectedSubscription(this,slot)?.subscriptionId==sub&&subscriptions[slot]==sub)
+        val feature=features[slot] ?: throw IllegalStateException("ims-feature-unavailable")
+        var accepted=false
+        if(rebind){
+            require(android.os.Build.VERSION.SDK_INT==30&&android.os.Build.DEVICE=="raphael")
+            val digest=java.security.MessageDigest.getInstance("SHA-256")
+            java.io.FileInputStream("/system/framework/telephony-common.jar").use{input->
+                val block=ByteArray(16384)
+                while(true){val n=input.read(block);if(n<0)break;digest.update(block,0,n)}
+            }
+            require(digest.digest().joinToString(""){"%02x".format(it.toInt() and 255)}=="6cc255f3cd8fe8f11191a1d2ec0bfddfdccf31d3851cdb3cd9282564871c3f74")
+            require(canRebindClients(slot,sub,feature))
+            accepted=feature.requestClientRebind()
+        }
+        return feature.clientCapabilities().also{it["generation"]=feature.telemetry.generation();it["rebind_requested"]=rebind;it["rebind_accepted"]=accepted}
     }
     override fun readyForFeatureCreation(){instance=this;controllerReady=true;handler.removeCallbacks(updateFeatures);handler.post(updateFeatures)}
     fun armPeriodicRegisterAlarm(slotId:Int){

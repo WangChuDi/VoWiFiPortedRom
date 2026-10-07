@@ -27,7 +27,7 @@ public final class MainActivity extends Activity {
     private JSONObject last;
     private String[] rootPrefix;
     private boolean busy;
-    private Button trial,enable,reload,rollback,install;
+    private Button trial,enable,reload,rebind,rollback,install;
     private final CheckBox[] components=new CheckBox[3];
     public void onCreate(Bundle saved){
         super.onCreate(saved);
@@ -55,6 +55,7 @@ public final class MainActivity extends Activity {
         trial=button("试用所选组件 · 最多 5 分钟自动回退",v->action("trial"));body.addView(trial);
         enable=button("保留当前试验并常驻",v->action("enable"));body.addView(enable);
         reload=button("重新拉起 · 空闲时重载电话服务",v->action("reload"));body.addView(reload);
+        rebind=button("重新绑定 IMS 客户端 · 空闲时",v->rebindClients());body.addView(rebind);
         body.addView(text("选择要恢复原配置的 SIM",14));
         recoveries=new Spinner(this);body.addView(recoveries);
         recoveries.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
@@ -110,7 +111,7 @@ public final class MainActivity extends Activity {
         if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
         reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
         StringBuilder unavailable=new StringBuilder();
-        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","native_sms_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error"})
+        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","native_sms_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error","ims_clients_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         JSONObject health=data.optJSONObject("platform_health");
@@ -166,6 +167,10 @@ public final class MainActivity extends Activity {
             card("本代语音媒体观测","已发送 RTP 帧 "+service.optInt("voice_tx_frames")+" · 已交给音频播放的帧 "+service.optInt("voice_played_frames")+"\n累计观测；需要实际通话验证听感");
         }
         else if(service!=null)card("检查时的 IMS 实例","未观测到所选 SIM 的有效实例");
+        JSONObject clients=data.optJSONObject("ims_clients_status");
+        if(clients!=null)card("IMS 客户端绑定观测","注册 "+clients.optBoolean("registered")+" · 已启用能力位 "+clients.optInt("enabled_mask")+" · 最近上报 "+clients.optInt("last_notified_mask")+
+            "\n短信接收接口就绪次数 "+clients.optLong("sms_ready_events")+" · 完成重绑次数 "+clients.optLong("client_rebind_returns")+
+            "\n能力回调数量："+(clients.optBoolean("callback_count_observed")?clients.optInt("capability_callback_count"):"未知")+"；上报函数返回不保证每个客户端已收到，也不证明短信收发成功。");
         card("最近短信分发器状态日志",data.optString("sms_dispatcher","未观测"));
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
@@ -184,6 +189,7 @@ public final class MainActivity extends Activity {
         boolean canRetain=activeMask>=1&&activeMask<=7&&(activeMask==7||providers.optInt("persistent_component_selection")==1);
         enable.setEnabled(diagnosticReady()&&identities&&selectedOwner&&data.optBoolean("engine_supported")&&active&&canRetain&&!"ENABLED".equals(providers.optString("persistent")));
         reload.setEnabled(diagnosticReady()&&identities&&selectedOwner&&data.optBoolean("engine_supported")&&active);
+        rebind.setEnabled(diagnosticReady()&&data.optInt("sdk")==30&&identities&&selectedOwner&&active&&clients!=null&&clients.optBoolean("registered")&&clients.optBoolean("initialized")&&!clients.optBoolean("removed")&&clients.optBoolean("sms_session_idle"));
         recoveryOwners.clear();ArrayList<String> recoveryLabels=new ArrayList<>();int recoveryIndex=0;
         org.json.JSONArray owners=providers==null?null:providers.optJSONArray("active_owners");
         if(owners!=null)for(int index=0;index<owners.length();index++){
@@ -241,7 +247,7 @@ public final class MainActivity extends Activity {
         c.addView(text(heading,16));TextView detail=text(value,14);detail.setTextIsSelectable(true);c.addView(detail);results.addView(c);
     }
     private void setActions(boolean supported){
-        if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
+        if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rebind.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
         for(CheckBox checkbox:components)if(checkbox!=null)checkbox.setEnabled(false);
         if(recoveries!=null)recoveries.setEnabled(false);
     }
@@ -311,6 +317,24 @@ public final class MainActivity extends Activity {
             last=null;setActions(false);
             if(data.has("sdk")){render(data);status(DiagnosticPolicy.wlanConfirmed(data)?"已恢复 WLAN 注册；请查看下方最新能力。":"操作已请求，尚未确认 WLAN 注册；请刷新检查结果。"+(data.has("action_observation_error")?"\n等待检查未完成："+data.optString("action_observation_error"):""));}
             else{status(data.optString("action_result"));if(!data.optBoolean("recovery_pending_owner"))diagnose();}
+        });
+    }
+    private void rebindClients(){
+        if(busy||!diagnosticReady()||!rebind.isEnabled())return;
+        final int slot=slots.get(sims.getSelectedItemPosition()),sub=last.optInt("sub_id",-1);
+        if(last.optInt("slot",-1)!=slot||sub<0)return;
+        execute("正在重新绑定 IMS 客户端…",()->{
+            String raw=shell("CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout 35s app_process /system/bin dev.codex.vowifi.tool.RootImsClients rebind "+slot+" "+sub,40);
+            JSONObject accepted=null;for(String line:raw.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))accepted=new JSONObject(line);
+            if(accepted==null||!"client-rebind".equals(accepted.optString("action")))throw new IOException("client-action-result-unconfirmed");
+            boolean completed=Boolean.TRUE.equals(accepted.opt("action_completed"));
+            final String message=completed?"客户端重绑已完成，正在核对注册及系统短信分发器…":"未确认重绑完成，正在重新检查当前状态…";
+            runOnUiThread(()->{if(!isFinishing())status(message);});
+            JSONObject diagnostic=readDiagnostic(slot,45);diagnostic.put("client_rebind_result",accepted);return diagnostic;
+        },data->{render(data);JSONObject action=data.optJSONObject("client_rebind_result");
+            JSONObject window=data.optJSONObject("sms_dispatcher_window");
+            boolean ready=window!=null&&"observed".equals(window.optString("status"))&&window.optBoolean("available")&&data.optBoolean("native_sms_ims_supported");
+            status(action!=null&&action.optBoolean("action_completed")?(ready?"重绑完成，本次查询确认系统短信分发器就绪；实际收发仍需验证。":"重绑完成，尚未确认系统短信分发器就绪；请查看链路状态。"):"未确认重绑完成；注册、通话空闲状态或 ROM 接口可能不满足，请查看检查结果。");
         });
     }
     private void installModule(){

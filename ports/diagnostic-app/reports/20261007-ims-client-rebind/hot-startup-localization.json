@@ -1,0 +1,32 @@
+{
+  "status": "observed",
+  "current": {
+    "ims": {
+      "generation": 1,
+      "phase": "REGISTERING",
+      "failed_stage": "STARTING",
+      "ike_open": false,
+      "child_open": false,
+      "registered": false,
+      "sip_status": 0,
+      "register_tx": 0,
+      "epdg_dns_count": 0
+    },
+    "iwlan": {
+      "generation": 8,
+      "phase": "IKE_NEGOTIATING",
+      "failed_stage": "STARTING",
+      "ike_open": false,
+      "child_open": false,
+      "registered": false,
+      "sip_status": 0,
+      "register_tx": 0,
+      "epdg_dns_count": 3
+    }
+  },
+  "phone_identity_stable": true,
+  "ims_pid_stable": true,
+  "read_only": true,
+  "new_calls_or_sms": false,
+  "phone_reloaded": false
+}

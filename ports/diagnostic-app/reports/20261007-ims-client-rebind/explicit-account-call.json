@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "call_test_count": 1,
+  "sms_test_count": 0,
+  "explicit_phone_account_selected": true,
+  "voice_connected": true,
+  "voice_delta": {
+    "voice_tx_frames": 320,
+    "voice_played_frames": 293
+  },
+  "active_call_observed": true,
+  "bye_200_observed": true,
+  "phone_reloaded_during_call_sms_test": false,
+  "phone_reloaded_after_test_for_policy_cleanup": false,
+  "phone_identity_and_owner_preserved": true,
+  "all_calls_idle_after": true,
+  "human_audible_speech_confirmed": false,
+  "ims_version": "0.4.4"
+}

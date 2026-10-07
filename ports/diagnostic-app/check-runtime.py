@@ -55,7 +55,11 @@ def check(guest):
         if value.get('diagnostic_complete')is not True or value.get('diagnostic_stage')!='finished' or value.get('diagnostic_error') or any(health.get(name,{}).get('state')!='stable'for name in ('phone','system_server')):raise ValueError('complete-stable-platform-observation-unconfirmed')
         result['complete_stable_platform_observation']=True
         result['diagnostic_fields_observed']={key:key in value for key in ('runtime_abi','sim_state','dns','selected_policy','ims_transport','cap_observed','native_sms_ims_supported','native_sms_error')}
-        if 'native_sms_ims_supported'not in value and 'native_sms_error'not in value:raise ValueError('native-sms-observation-missing')
+        if 'native_sms_ims_supported'not in value and 'native_sms_error'not in value:
+            # Empty selected slots intentionally stop before subscription-specific
+            # queries. Do not manufacture an IMS/SMS result on a fake-SIM guest.
+            if 'sub_id'in value or value.get('sim')!='无活动 SIM' or value.get('subscription_error'):raise ValueError('native-sms-observation-missing')
+            result['native_sms_not_queried_without_active_subscription']=True
         if 'native_sms_ims_supported'in value and not isinstance(value['native_sms_ims_supported'],bool):raise ValueError('native-sms-observation-type')
         if 'native_sms_ims_supported'in value:
             window=value.get('sms_dispatcher_window')
@@ -64,6 +68,10 @@ def check(guest):
         rc,value=entry('RootDiagnostics','0',True)
         if rc or value.get('error')!='SecurityException' or 'sdk' in value:raise ValueError('nonroot-diagnostic-not-refused')
         result['nonroot_diagnostic_refused']=True
+        for label,nonroot,wanted in [('nonroot_client_rebind',True,'SecurityException'),('uncalibrated_client_rebind',False,'IOException')]:
+            rc,value=entry('RootImsClients','rebind 0 1',nonroot)
+            if rc or value.get('error')!=wanted or value.get('action_accepted')or value.get('action_completed'):raise ValueError('client-rebind-guard-unconfirmed')
+            result[label+'_refused']=True
         for label,args,nonroot in [('nonroot_action','trial 0 1 7',True),('invalid_mask','trial 0 1 0',False),('invalid_slot','trial 8 1 7',False),('invalid_subscription','trial 0 -1 7',False),('invalid_action','arbitrary 0 1 7',False)]:
             rc,value=entry('ModernAppActions',args,nonroot)
             if rc!=1 or value.get('error')!='SecurityException' or value.get('action_completed'):raise ValueError('action-guard-unconfirmed')
