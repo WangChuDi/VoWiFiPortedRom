@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "status": "verified",
+  "module_sha256": "a9aae03e5b6b45477b20c0a5f2de7b880cc9080cc7451bc6b91af63225e1a4ff",
+  "helper_sha256": "5c5748cdd75377a34a05001c22bb3d5e7a9375de060a265b0c3bbb51202b44c4",
+  "apks": {
+    "iwlan": "5ee8d67d5b9a53d98646c7d64cfdae0261a072dbca05d3c570c3c2d602340528",
+    "qns": "798ac76899c8dea99b587f1e0b47fb64708fb238b3323d6f21f5a9bc74d11800",
+    "ims": "4d645baf4c0f7a744e3cefac4190ddc83f977790451cd67c155b15ca0ad1a009"
+  },
+  "exact_payload_inventory_verified": true,
+  "signed_apks_verified_during_packaging": true,
+  "default_output_replaced": false,
+  "production_release": false
+}

@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "contracts": 19,
+  "adb_mocked": true,
+  "real_device_test": false,
+  "source_sha256": "be95dd5711d89795ac9f2c48d8456d50fd47482a870fd43c5c6fb53986204fad"
+}

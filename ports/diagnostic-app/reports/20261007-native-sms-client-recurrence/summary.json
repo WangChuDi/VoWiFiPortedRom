@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "status": "recovered-current-native-sms-mismatch",
+  "manual_recovery_verified": true,
+  "native_sms_inbox_notification_verified": true,
+  "recurrence_after_phone_reload_observed": true,
+  "automatic_recovery_verified": false,
+  "phone_apk_module_modified": false,
+  "full_goal_complete": false,
+  "real_dual_sim_verified": false,
+  "modern_carrier_verified": false
+}

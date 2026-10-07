@@ -53,9 +53,10 @@ STAGES={
     'cleanup':('entire_outer_permission_observation_restored',),
 }
 
-def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing=False,preparing_only=False):
+def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing=False,preparing_only=False,helper=None,helper_slot='runtime'):
     record=dict(schema=1,sdk=sdk,status='started',stages={})
-    remote='/data/local/tmp/codex-modern-runtime-check.zip';nonce=uuid.uuid4().hex
+    remote='/data/local/tmp/codex-modern-'+('owner-audit' if helper_slot=='audit' else 'runtime-check')+'.zip';nonce=uuid.uuid4().hex
+    helper=helper or B.parent/'out/runtime/runtime-check.zip'
     root='/data/local/tmp/codex-modern-installation-tests/'+nonce
     def command(*parts,check=True,timeout=35):
         return subprocess.run([adb,'-s',serial,*parts],capture_output=True,text=True,timeout=timeout,check=check)
@@ -185,9 +186,17 @@ def trial(adb,sdk,serial,module_zip,resident=False,resident_only=False,preparing
         record['actual_resident_forced_kill_verified']=True
     failure=None;started=False
     try:
-        guard();helper=B.parent/'out/runtime/runtime-check.zip'
+        guard()
         digest=hashlib.sha256(helper.read_bytes()).hexdigest();record['helper_sha256']=digest
-        command('push',str(helper),remote)
+        # An isolated audit helper never overwrites the original recovery engine
+        # or an unrelated audit helper. Both fixed paths are broker allowlisted.
+        exists=command('shell','test -e '+remote,check=False)
+        if helper_slot=='audit' and exists.returncode==0:
+            if shell('sha256sum '+remote).split()[0]!=digest:raise ValueError('retained-audit-helper-mismatch')
+            record['matching_existing_audit_helper_reused']=True
+        elif helper_slot=='audit' and exists.returncode!=1:raise ValueError('audit-helper-presence-unconfirmed')
+        else:command('push',str(helper),remote)
+        record['original_runtime_helper_preserved']=helper_slot=='audit'
         if shell('sha256sum '+remote).split()[0]!=digest:raise ValueError('helper-digest-mismatch')
         # Verify all staged payload bytes before entering the Java fixture. No
         # /system or production Magisk directory is modified by this runner.
@@ -332,6 +341,8 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--adb',required=True);parser.add_argument('--guest',required=True,action='append')
     parser.add_argument('--module',required=True,type=Path);parser.add_argument('--output',required=True,type=Path)
+    parser.add_argument('--helper',type=Path,help='canonical isolated helper; must exactly match the module controller')
+    parser.add_argument('--helper-slot',choices=('runtime','audit'),default='runtime',help='audit preserves the original runtime helper and refuses replacement of different audit bytes')
     parser.add_argument('--resident',action='store_true',help='also run real background renewal, duplicate refusal, SIGKILL/restart and disable recovery')
     parser.add_argument('--resident-only',action='store_true',help='run only new resident prerequisites and lifecycle; does not repeat the full selection suite')
     parser.add_argument('--preparing',action='store_true',help='actually SIGKILL staged/committed PREPARING snapshots and recover in new processes')
@@ -341,13 +352,16 @@ def main():
     if args.preparing_only and not args.preparing:parser.error('preparing-only-requires-preparing')
     if args.preparing and args.resident:parser.error('separate-preparation-and-resident-lifecycle-batches-required')
     if args.preparing_only and args.resident_only:parser.error('distinct-scoped-batches-required')
+    if args.helper_slot=='audit' and args.resident:parser.error('resident-requires-published-runtime-helper-profile')
     for guest in args.guest:
         match=re.fullmatch(r'(3[1-7]):(emulator-[0-9]+)',guest)
         if not match:parser.error('explicit-emulator-profile-required')
         guests.append((int(match[1]),match[2]))
     if len(guests)>10 or len({g[0] for g in guests})!=len(guests) or len({g[1] for g in guests})!=len(guests):parser.error('distinct-version-and-serial-required')
     output=args.output.absolute();module=args.module.absolute()
+    helper=(args.helper or B.parent/'out/runtime/runtime-check.zip').absolute()
     if output.resolve()!=output or output.exists() or module.resolve()!=module or not module.is_file():parser.error('fresh-canonical-report-and-module-required')
+    if helper.resolve()!=helper or not helper.is_file():parser.error('canonical-helper-file-required')
     # Restrict zip extraction to the exact builder's payload and independently
     # verify its digest inventory. Never extract attacker-selected path entries.
     with zipfile.ZipFile(module) as archive:
@@ -365,12 +379,12 @@ def main():
             if not match or match[2] in recorded:parser.error('module-digest-inventory-refused')
             recorded[match[2]]=match[1]
         if set(recorded)!=expected-{'payload.sha256'} or any(hashlib.sha256(archive.read(name)).hexdigest()!=digest for name,digest in recorded.items()):parser.error('module-digest-mismatch')
-        if archive.read('controller.zip')!=(B.parent/'out/runtime/runtime-check.zip').read_bytes():parser.error('module-helper-mismatch')
+        if archive.read('controller.zip')!=helper.read_bytes():parser.error('module-helper-mismatch')
     output.parent.mkdir(parents=True,exist_ok=True)
     record=dict(schema=1,status='started',concurrent_device_workers=len(guests),versions=[])
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8')
     with ThreadPoolExecutor(max_workers=len(guests)) as pool:
-        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module,args.resident,args.resident_only,args.preparing,args.preparing_only),guests))
+        record['versions']=list(pool.map(lambda guest:trial(args.adb,*guest,module,args.resident,args.resident_only,args.preparing,args.preparing_only,helper,args.helper_slot),guests))
     record['status']='passed' if all(v['status']=='passed' for v in record['versions']) else 'failed'
     output.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps(record))
     return 0 if record['status']=='passed' else 1

@@ -1,0 +1,5 @@
+{
+  "ports/android12/package-module.py": "519ae9867d6d5e2138d0baaa469fe033e3af4b3eae5c5ea0cb461020532358c2",
+  "ports/android12/runtime/check-installation-emulator.py": "d353d27518a5308852628f7c2323ffdfbd4652592143d02f758b0bc6f5516d44",
+  "ports/android12/runtime/test-isolated-lifecycle-artifacts.py": "be95dd5711d89795ac9f2c48d8456d50fd47482a870fd43c5c6fb53986204fad"
+}

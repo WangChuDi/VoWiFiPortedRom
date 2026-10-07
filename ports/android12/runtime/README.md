@@ -15,8 +15,13 @@ calibrated stock guest, and added an isolated, pinned recovery probe. Original
 cleanup was still unconfirmed then. The subsequent
 [compatible original-record recovery](reports/20261007-api37-compatible-recovery/README.md)
 passed selection, installation, outer-policy restoration and audit, with the
-original installation/owner RESTORED and shared mode released. Full API37
-lifecycle remains unverified; the original failed run remains a failed run.
+original installation/owner RESTORED and shared mode released. That recovery
+did not establish the full lifecycle; the original failed run remains a failed run.
+The later [isolated full lifecycle batch](reports/20261007-api37-full-lifecycle/README.md)
+passed all 50 stages of the current full fixture plus PREPARING interruption
+checks on that same recovered AVD. It preserved the original 11 records and
+runtime helper, restored navigation and confirmed emulator termination. This
+does not cover the resident loop, real Magisk mounting, carrier traffic or dual SIMs.
 The subsequent [matched API37 stock controls](reports/20261007-api37-matched-controls/README.md)
 completed with and without writable-system while the original state still reached
 its memory ceiling. Direct Settings commands worked during a later original
@@ -170,7 +175,7 @@ exit code means the filesystem is writable.
 | 14 | 34 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 15 | 35 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 16 | 36 | Independent parallel agent integration and QNS framework/restoration passed |
-| 17 | 37 | Official android-37.0 guest: earlier runtime checks passed and lifecycle failed; subsequent original-record cleanup/audit passed with a compatible helper; no complete lifecycle, ROM or carrier proof |
+| 17 | 37 | Official android-37.0 guest: earlier failed lifecycle retained; original-record cleanup/audit and subsequent 50-stage isolated full fixture plus PREPARING SIGKILL/recovery passed; resident loop, production mounting and carrier/dual-SIM proof remain unverified |
 
 Safe results, artifact hashes and limitations are archived in
 [the version matrix](reports/20261006/matrix.json) and its per-version JSON
@@ -455,3 +460,36 @@ the guarded root worker passes them to the existing CLI. The modern activity
 contains experimental selection/retention/recovery controls, with positive modern
 device interaction still pending. See
 [application source, build and evidence](../../diagnostic-app/MODERN-INTEGRATION-20261006.md).
+
+## Isolated lifecycle artifact selection
+
+The packager accepts `--build-dir`, `--helper` and a fresh `--output`. It still
+verifies each signed APK against the unsigned APK in the selected build directory
+and records the signed bytes in `installation.properties`. Explicit output keeps
+the default `out` module untouched; an existing explicit output is refused.
+
+The full runner accepts `--helper`, requiring exact byte equality with the module
+controller before starting a device worker. `--helper-slot audit` uses only the
+fixed broker-allowed `/data/local/tmp/codex-modern-owner-audit.zip`; it reuses an
+identical existing helper, refuses different or unconfirmed existing bytes, and
+preserves `/data/local/tmp/codex-modern-runtime-check.zip`. The ordinary runtime
+slot keeps its prior behavior. The audit slot supports the full fixture and
+`--preparing`, but explicitly refuses `--resident`: the resident supervisor's
+published-helper entry contract is a separate profile.
+
+```sh
+python ../package-module.py --signed-dir /path/to/retained-signed-apks \
+  --build-dir /path/to/retained-unsigned-build --helper /path/to/current-helper.zip \
+  --output /path/to/fresh-isolated-module.zip
+python check-installation-emulator.py --adb /path/to/adb \
+  --guest 37:emulator-5582 --module /path/to/fresh-isolated-module.zip \
+  --helper /path/to/current-helper.zip --helper-slot audit --preparing \
+  --output /path/to/fresh-lifecycle.json
+python test-isolated-lifecycle-artifacts.py
+```
+
+The 19 host contracts cover selected-byte provenance, canonical paths, retained
+outputs, mismatch refusal before workers, the audit/resident boundary, and audit
+helper reuse/refusal/push decisions with mocked ADB. The actual API37 batch
+separately proves matching-helper reuse and preservation on the guest; the host
+contracts do not establish carrier or Magisk behavior.

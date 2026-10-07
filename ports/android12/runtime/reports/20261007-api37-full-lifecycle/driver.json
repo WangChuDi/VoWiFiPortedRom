@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "passed",
+  "physical_phone_modified": false,
+  "original_runtime_helper_preserved": true,
+  "original_record_bytes_preserved": true,
+  "full_carrier_voice_sms_verified": false,
+  "dual_active_sim_verified": false,
+  "original_record_count": 11,
+  "runner_exit": 0,
+  "lifecycle_status": "passed",
+  "completed_stage_count": 50,
+  "actual_preparing_forced_kill_verified": true,
+  "navigation_restored": true
+}
