@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "engine_install_requested": false,
+  "phone_reload_requested": false,
+  "new_call_or_sms": false,
+  "tool_version": "0.9.18",
+  "prior_tool_retained_exact": true,
+  "tool_installed_exact": true,
+  "shell_uid2000_probe_completed": true,
+  "native_ready_after_tool_update": false,
+  "phone_identity_stable": true,
+  "ims_identity_stable": true,
+  "three_engine_apks_unchanged": true,
+  "error": "AssertionError"
+}

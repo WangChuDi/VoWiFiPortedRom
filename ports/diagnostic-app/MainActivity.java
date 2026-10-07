@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.*;
 import android.telephony.*;
 import android.view.View;
+import android.view.Gravity;
 import android.widget.*;
 import org.json.JSONObject;
 import java.io.*;
@@ -29,49 +30,88 @@ public final class MainActivity extends Activity {
     private boolean busy;
     private Button trial,enable,reload,rebind,rollback,install;
     private final CheckBox[] components=new CheckBox[3];
+    private MaterialTheme theme;
+    private LinearLayout overview,operations,detailGroup;
+    private ScrollView scroll;
+    private ProgressBar progress;
+    private TextView connectionTitle,connectionDetail;
+    private Button check;
+    private final Button[] navigation=new Button[3];
+    private int selectedPage;
     public void onCreate(Bundle saved){
         super.onCreate(saved);
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);
-        body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(20),dp(30),dp(20),dp(25));
-        body.setBackgroundColor(Color.rgb(244,247,252));scroll.addView(body);setContentView(scroll);
-        TextView title=text("VoWiFi 工具",28);body.addView(title);
-        body.addView(text("按 SIM 检查网络、IMS 和短信能力",15));
-        sims=new Spinner(this);body.addView(sims);
+        theme=new MaterialTheme(this);
+        getWindow().setStatusBarColor(theme.background);getWindow().setNavigationBarColor(theme.surface);
+        getWindow().getDecorView().setSystemUiVisibility(theme.dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        LinearLayout root=column();root.setBackgroundColor(theme.background);
+        scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setClipToPadding(false);
+        body=column();body.setPadding(dp(20),dp(16),dp(20),dp(24));scroll.addView(body);
+        root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        LinearLayout nav=new LinearLayout(this);nav.setPadding(dp(12),dp(8),dp(12),dp(10));nav.setBackgroundColor(theme.surface);
+        String[] pages={"概览","诊断","操作"};
+        for(int i=0;i<3;i++){final int page=i;navigation[i]=button(pages[i],v->selectPage(page));navigation[i].setContentDescription(pages[i]+"页面");LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(52),1);p.setMargins(dp(4),0,dp(4),0);nav.addView(navigation[i],p);}
+        root.addView(nav);setContentView(root);
+        TextView title=text("VoWiFi",30);theme.typography(title,30,true);body.addView(title);
+        TextView subtitle=text("让每一步连接都清楚可见",14);subtitle.setTextColor(theme.secondary);body.addView(subtitle);
+        body.addView(text("当前检查的 SIM",12));sims=new Spinner(this);sims.setMinimumHeight(dp(52));theme.surface(sims,theme.container,16);body.addView(sims);
         sims.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
-            public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){last=null;setActions(false);if(results!=null)results.removeAllViews();if(summary!=null)summary.setText("SIM 已选择，请运行只读检查。");}
+            public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){last=null;setActions(false);if(results!=null)results.removeAllViews();if(summary!=null)status("SIM 已选择，请运行只读检查。");resetOverview();}
             public void onNothingSelected(android.widget.AdapterView<?> p){}
         });
-        summary=text("先选择 SIM，再运行只读检查。需要在 Magisk 中允许本应用使用 root。",14);body.addView(summary);
-        body.addView(button("只读检查链路",v->diagnose()));
-        results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);body.addView(results);
-        body.addView(text("可选替换",21));
-        body.addView(text("分别选择组件，先试用最多 5 分钟，再决定是否保留常驻。修改组合前先恢复当前事务。Android 11 已验证 raphael / VOXI；Android 12–17 提供实验引擎，需验证当前机型的隧道、通话和短信。每张卡分别保存配置；双卡同时注册仍需实机验证。",14));
+        summary=text("选择 SIM 后检查。请在 Magisk 中允许本应用使用 root。",13);summary.setTextColor(theme.secondary);summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);body.addView(summary);
+        progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(theme.primary));progress.setVisibility(View.GONE);body.addView(progress,new LinearLayout.LayoutParams(-1,dp(4)));
+        check=button("检查当前链路",v->diagnose());theme.button(check,true);body.addView(check);
+        overview=column();results=column();operations=column();body.addView(overview);body.addView(results);body.addView(operations);
+        TextView operationsTitle=text("管理替换组件",22);theme.typography(operationsTitle,22,true);operations.addView(operationsTitle);
+        operations.addView(text("先试用最多 5 分钟，确认后保留常驻。修改组件组合前，请恢复当前事务。",14));
+        operations.addView(text("Android 11：raphael / VOXI 已进行实机验证，短信收发仍有未解决的问题。Android 12–17：实验引擎，当前机型的实际通话、短信及双卡同时注册需分别验证。",13));
+        LinearLayout choices=panel(operations,theme.container);choices.addView(text("选择组件",16));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
         for(int i=0;i<components.length;i++){
-            components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setChecked(true);body.addView(components[i]);
+            components[i]=new CheckBox(this);components[i].setText(labels[i]);components[i].setTextColor(theme.onSurface);components[i].setTextSize(14);components[i].setMinHeight(dp(52));components[i].setButtonTintList(android.content.res.ColorStateList.valueOf(theme.primary));components[i].setChecked(true);choices.addView(components[i]);
             components[i].setOnCheckedChangeListener((view,checked)->refreshTrialSelection());
         }
-        actionStatus=text("运行检查后开放适配的操作。",14);body.addView(actionStatus);
-        trial=button("试用所选组件 · 最多 5 分钟自动回退",v->action("trial"));body.addView(trial);
-        enable=button("保留当前试验并常驻",v->action("enable"));body.addView(enable);
-        reload=button("重新拉起 · 空闲时重载电话服务",v->action("reload"));body.addView(reload);
-        rebind=button("重新绑定 IMS 客户端 · 空闲时",v->rebindClients());body.addView(rebind);
-        body.addView(text("选择要恢复原配置的 SIM",14));
-        recoveries=new Spinner(this);body.addView(recoveries);
+        actionStatus=text("运行检查后开放适配的操作。",14);operations.addView(actionStatus);
+        trial=button("试用所选组件 · 5 分钟自动回退",v->action("trial"));theme.button(trial,true);operations.addView(trial);
+        enable=button("保留当前试验并常驻",v->action("enable"));operations.addView(enable);
+        LinearLayout repair=panel(operations,theme.surface);repair.addView(text("恢复连接",18));
+        reload=button("重新拉起 · 空闲时重载电话服务",v->action("reload"));repair.addView(reload);
+        rebind=button("重新绑定 IMS 客户端 · 空闲时",v->rebindClients());repair.addView(rebind);
+        LinearLayout recovery=panel(operations,theme.surface);recovery.addView(text("恢复原配置",18));recovery.addView(text("选择需要恢复的 SIM",14));
+        recoveries=new Spinner(this);recoveries.setMinimumHeight(dp(52));recovery.addView(recoveries);
         recoveries.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
             public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){refreshRecovery();}
             public void onNothingSelected(android.widget.AdapterView<?> p){refreshRecovery();}
         });
-        rollback=button("恢复原来的组件和短信模块",v->action("rollback"));body.addView(rollback);
-        install=button("安装配套模块更新 · 需要重启",v->installModule());body.addView(install);
-        body.addView(text("安装更新后，请通过手机电源菜单重启；检查按钮不会拨号、发送短信或读取短信正文。",13));
-        body.addView(button("刷新检查结果",v->diagnose()));
+        rollback=button("恢复原来的组件和短信模块",v->action("rollback"));recovery.addView(rollback);
+        LinearLayout updates=panel(operations,theme.surface);updates.addView(text("模块与权限",18));
+        install=button("安装配套模块更新 · 需要重启",v->installModule());updates.addView(install);
+        updates.addView(text("当前后端：root。Shizuku 尚未接入；ADB 模式不能完成本模块的系统组件替换。安装更新后，请通过手机电源菜单重启。",13));
+        updates.addView(text("检查只读取链路元数据，不会拨号、发送短信或读取短信正文。",13));
+        selectPage(saved==null?0:saved.getInt("page",0));resetOverview();
         setActions(false);loadSims();
         if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},1);
     }
-    private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(27,42,62));t.setPadding(0,dp(8),0,dp(8));return t;}
+    private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);theme.typography(t,size,size>=18);t.setPadding(0,dp(6),0,dp(6));return t;}
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
-    private Button button(String label,View.OnClickListener click){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(click);return b;}
+    private Button button(String label,View.OnClickListener click){Button b=new Button(this);b.setText(label);theme.button(b,false);b.setOnClickListener(click);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,0);b.setLayoutParams(p);return b;}
+    private LinearLayout column(){LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);return layout;}
+    private LinearLayout panel(LinearLayout parent,int color){LinearLayout layout=column();layout.setPadding(dp(18),dp(12),dp(18),dp(14));theme.surface(layout,color,24);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(14),0,0);parent.addView(layout,p);return layout;}
+    private void selectPage(int page){selectedPage=Math.max(0,Math.min(2,page));if(overview==null)return;overview.setVisibility(selectedPage==0?View.VISIBLE:View.GONE);results.setVisibility(selectedPage==1?View.VISIBLE:View.GONE);operations.setVisibility(selectedPage==2?View.VISIBLE:View.GONE);for(int i=0;i<3;i++){theme.button(navigation[i],i==selectedPage);navigation[i].setSelected(i==selectedPage);}scroll.post(()->scroll.smoothScrollTo(0,0));}
+    protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",selectedPage);}
+    private void resetOverview(){if(overview==null)return;overview.removeAllViews();LinearLayout hero=panel(overview,theme.primaryContainer);connectionTitle=text("等待检查",24);connectionTitle.setTextColor(theme.onPrimaryContainer);hero.addView(connectionTitle);connectionDetail=text("检查后查看 Wi-Fi、隧道、IMS 注册和短信分发状态。",14);connectionDetail.setTextColor(theme.onPrimaryContainer);hero.addView(connectionDetail);overview.addView(text("诊断页提供逐层状态，操作页管理替换与恢复。",14));}
+    private void updateOverview(JSONObject data){
+        resetOverview();boolean wlan=DiagnosticPolicy.wlanConfirmed(data);connectionTitle.setText(wlan?"Wi-Fi Calling 已注册":data.optInt("ims_transport")==-2?"IMS 正在注册":"尚未确认 Wi-Fi Calling");
+        connectionDetail.setText("SIM"+(data.optInt("slot")+1)+" · "+(data.optBoolean("cap_observed")?"语音能力 "+(data.optBoolean("voice")?"可用":"未上报")+" · SMS 能力 "+(data.optBoolean("sms")?"可用":"未上报"):"等待能力观测")+"\n注册与能力是状态检查；实际通话、短信和通知需分别验证。");
+        LinearLayout stages=panel(overview,theme.surface);stages.addView(text("连接进度",18));
+        overviewRow(stages,"01","Wi-Fi",data.optString("wifi","未观测"));
+        JSONObject tunnel=data.optJSONObject("iwlan_status");overviewRow(stages,"02","IWLAN 隧道",tunnel!=null&&tunnel.optBoolean("observed")?phaseName(tunnel.optString("phase")):"未取得有效会话观测");
+        overviewRow(stages,"03","IMS 注册",wlan?"本次检查确认 WLAN 注册":"请在诊断页核对注册回调与进程稳定性");
+        JSONObject dispatcher=data.optJSONObject("sms_dispatcher_window");overviewRow(stages,"04","系统短信分发器",dispatcher!=null&&"observed".equals(dispatcher.optString("status"))?dispatcher.optBoolean("available")?"本次查询就绪 · 实际收发未由此验证":"本次查询未就绪":"未取得有效观测");
+        Button details=button("查看分层诊断",v->selectPage(1));overview.addView(details);
+    }
+    private void overviewRow(LinearLayout parent,String number,String heading,String value){LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(0,dp(10),0,dp(10));TextView marker=text(number,14);marker.setGravity(Gravity.CENTER);marker.setTextColor(theme.primary);theme.surface(marker,theme.container,16);row.addView(marker,new LinearLayout.LayoutParams(dp(42),dp(42)));LinearLayout copy=column();copy.setPadding(dp(14),0,0,0);TextView label=text(heading,16);theme.typography(label,16,true);copy.addView(label);TextView detail=text(value,13);detail.setTextColor(theme.secondary);copy.addView(detail);row.addView(copy,new LinearLayout.LayoutParams(0,-2,1));parent.addView(row);}
+    private void diagnosticSection(String heading,boolean expanded){LinearLayout section=panel(results,theme.container);TextView toggle=text(heading+(expanded?"  −":"  +"),18);toggle.setMinimumHeight(dp(48));section.addView(toggle);LinearLayout content=column();section.addView(content);content.setVisibility(expanded?View.VISIBLE:View.GONE);toggle.setOnClickListener(v->{boolean open=content.getVisibility()!=View.VISIBLE;content.setVisibility(open?View.VISIBLE:View.GONE);toggle.setText(heading+(open?"  −":"  +"));});toggle.setContentDescription(heading+"，点击展开或收起");detailGroup=content;}
     private void loadSims(){
         slots.clear();ArrayList<String> labels=new ArrayList<>();
         TelephonyManager tm=getSystemService(TelephonyManager.class);
@@ -86,7 +126,7 @@ public final class MainActivity extends Activity {
             label+=checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED?" · 等待读取权限":info==null?" · 无活动卡":" · "+info.getCarrierName();
             labels.add(label);
         }
-        sims.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));
+        sims.setAdapter(spinnerAdapter(labels));
         if(count>1)sims.setSelection(1);
     }
     public void onRequestPermissionsResult(int request,String[] permissions,int[] granted){super.onRequestPermissionsResult(request,permissions,granted);loadSims();}
@@ -104,9 +144,11 @@ public final class MainActivity extends Activity {
         return new JSONObject(json);
     }
     private void status(String message){summary.setText(message);if(actionStatus!=null)actionStatus.setText(message);}
+    private ArrayAdapter<String> spinnerAdapter(List<String> labels){return new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,labels){public View getView(int position,View reuse,android.view.ViewGroup parent){View v=super.getView(position,reuse,parent);if(v instanceof TextView)((TextView)v).setTextColor(theme.onSurface);return v;}public View getDropDownView(int position,View reuse,android.view.ViewGroup parent){View v=super.getDropDownView(position,reuse,parent);v.setBackgroundColor(theme.surface);if(v instanceof TextView){((TextView)v).setTextColor(theme.onSurface);((TextView)v).setMinHeight(dp(48));}return v;}};}
     private void render(JSONObject data){
-        last=data;results.removeAllViews();
+        last=data;results.removeAllViews();detailGroup=null;resetOverview();
         if(data.has("error")&&!data.has("sdk")){status("检查未完成："+data.optString("error")+"。请核对 root 授权及系统接口。");setActions(false);return;}
+        updateOverview(data);
         status("Android API "+data.optInt("sdk")+" · SIM"+(data.optInt("slot")+1)+" · 只读结果");
         if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
         reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
@@ -118,12 +160,14 @@ public final class MainActivity extends Activity {
         card("电话服务进程观测",health==null?"未观测，不能判断进程是否稳定":
             "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n比较检查开始与结束时的进程身份；一致不代表 IMS 或运营商链路正常。");
         if(!diagnosticReady())card("检查尚未完成","停留阶段："+diagnosticStage(data.optString("diagnostic_stage"))+"。已取得的结果保留；请刷新检查后再开始替换或安装更新。");
+        diagnosticSection("设备与系统",false);
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
         JSONObject abi=data.optJSONObject("runtime_abi");
         if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
             " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
             "\n"+(abi.optBoolean("modern_candidate")?"属于 Android12–17 候选范围；需检查当前机型安装与服务绑定":abi.optInt("sdk")==30?"Android11 接口范围；替换需匹配已验证设备":"超出当前替换版本范围")+
             "\n只检查当前 root 进程中的接口；未验证权限、运营商注册或现代模块可用性。独立 IKE 库也可能仅在服务进程可见。");
+        diagnosticSection("网络与 IWLAN 隧道",false);
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
         card("ePDG DNS",data.optString("dns","未观测"));
         card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));
@@ -137,11 +181,13 @@ public final class MainActivity extends Activity {
             card("检查时的 IWLAN 会话",detail+"\n服务采样状态；不保证运营商此刻仍能传输数据");
         }
         else if(iwlan!=null)card("检查时的 IWLAN 会话","未观测到所选 SIM 的有效实例");
+        diagnosticSection("APN 与运营商配置",false);
         card("首选互联网 APN",data.optString("apn","不可见"));
         card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+(data.has("wfc_roaming_setting")?data.optBoolean("wfc_roaming_setting"):"未知")+" · 偏好模式 "+(data.has("wfc_mode")?data.optInt("wfc_mode"):"未知"):"不可见 · "+data.optString("settings_error","未知"));
         card("WLAN 语音 provisioning",data.has("wlan_voice_provisioned")?Boolean.toString(data.optBoolean("wlan_voice_provisioned"))+"（框架配置结果，不代表运营商已接受注册）":"不可见 · "+data.optString("provisioning_error","未知"));
         JSONObject policy=data.optJSONObject("selected_policy");
         if(policy!=null)card("所选 SIM 的运营商策略",policy.toString());
+        diagnosticSection("IMS 注册与系统短信",true);
         int networks=data.optInt("ims_network_count");
         card("所选 SIM 的 IMS 网络",data.has("network_error")?"不可见 · "+data.optString("network_error"):networks+" 个 · 接口 "+(data.isNull("ims_interface")?"未观测":data.optString("ims_interface","不可见"))+" · P-CSCF "+data.optInt("pcscf_count")+(data.optInt("ims_unattributed_network_count")>0?"\n另有 "+data.optInt("ims_unattributed_network_count")+" 个 IMS 网络无法归属到卡槽":"")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
         int t=data.optInt("ims_transport",-1);
@@ -174,6 +220,7 @@ public final class MainActivity extends Activity {
             card("SIP 连接与重试",SipTransportObservation.describe(service));
             card("本代系统短信投递观测","IMS 收到 "+service.optInt("sms_rx")+" · 系统确认成功 "+service.optInt("sms_ack_ok")+" · 系统拒绝 "+service.optInt("sms_ack_failed")+"\n发送请求 "+service.optInt("sms_tx")+" · 网络确认成功 "+service.optInt("sms_tx_ok")+" · 发送失败 "+service.optInt("sms_tx_failed")+"\n累计元数据，不代表下一条短信一定成功，也不证明已显示通知");
             card("最近一次短信发送链路",SmsSendStatus.describe(service));
+            card("IMS 入站消息与接收通道",SipReceiveStatus.describe(service));
             card("本代语音媒体观测","已发送 RTP 帧 "+service.optInt("voice_tx_frames")+" · 已交给音频播放的帧 "+service.optInt("voice_played_frames")+"\n累计观测；需要实际通话验证听感");
         }
         else if(service!=null)card("检查时的 IMS 实例","未观测到所选 SIM 的有效实例");
@@ -190,6 +237,7 @@ public final class MainActivity extends Activity {
                 "\n当前已适配系统在持续异常且通话、短信空闲时自动恢复；请实际验证收发和通知。");
         }
         card("最近短信分发器状态日志",data.optString("sms_dispatcher","未观测"));
+        diagnosticSection("替换事务与恢复记录",false);
         JSONObject providers=data.optJSONObject("providers");
         int ownerSlot=providers==null?-1:providers.optInt("owner_slot",-1);
         card("替换控制器"+(ownerSlot>=0?"（管理 SIM"+(ownerSlot+1)+"）":""),providers==null?(data.has("controller_error")?"状态读取失败 · "+data.optString("controller_error"):"未加载配套模块"):providers.optString("mode")+" · "+providers.optString("persistent","未常驻")+"\n"+("ACTIVE".equals(providers.optString("transaction"))?"替代组件："+componentNames(providers.optInt("components",7)):"尚未启动替换"));
@@ -218,7 +266,7 @@ public final class MainActivity extends Activity {
             recoveryOwners.add(new int[]{recoverySlot,recoverySub});recoveryLabels.add("SIM"+(recoverySlot+1)+(owner.optBoolean("recovery_pending_owner")?"（等待原卡回归）":""));
         }
         if(recoveryLabels.isEmpty())recoveryLabels.add("无待恢复事务");
-        recoveries.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,recoveryLabels));
+        recoveries.setAdapter(spinnerAdapter(recoveryLabels));
         recoveries.setSelection(recoveryIndex);refreshRecovery();
         if(recoveryOwners.size()>1)card("其他卡的替换事务",recoveryOwners.size()+" 张卡分别管理；恢复所选事务后，其他卡的配置和租约保留。电话服务重载会短暂重建两张卡的连接。");
         if(!diagnosticReady()){status("检查未完成，已保留部分结果。请刷新检查后再操作。");}
@@ -260,9 +308,8 @@ public final class MainActivity extends Activity {
         }
     }
     private void card(String heading,String value){
-        LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(14),dp(4),dp(14),dp(10));c.setBackgroundColor(Color.WHITE);
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(9),0,0);c.setLayoutParams(p);
-        c.addView(text(heading,16));TextView detail=text(value,14);detail.setTextIsSelectable(true);c.addView(detail);results.addView(c);
+        LinearLayout c=panel(detailGroup==null?results:detailGroup,theme.surface);
+        TextView label=text(heading,16);theme.typography(label,16,true);c.addView(label);TextView detail=text(value,14);detail.setTextColor(theme.secondary);detail.setTextIsSelectable(true);c.addView(detail);
     }
     private void setActions(boolean supported){
         if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rebind.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
@@ -390,9 +437,9 @@ public final class MainActivity extends Activity {
     private interface Work{JSONObject run()throws Exception;}
     private interface Show{void run(JSONObject data);}
     private void execute(String message,Work work,Show show){
-        busy=true;status(message);sims.setEnabled(false);setActions(false);
+        busy=true;status(message);sims.setEnabled(false);check.setEnabled(false);progress.setVisibility(View.VISIBLE);setActions(false);
         worker.submit(()->{JSONObject response;try{response=work.run();}catch(Throwable e){response=new JSONObject();try{response.put("error",e.getClass().getSimpleName());if(e instanceof RootFailure)response.put("action_error",e.getMessage());}catch(Exception ignored){}}
-            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);if(!isFinishing()){if(result.has("error")&&!result.has("sdk")){last=null;setActions(false);status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
+            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);check.setEnabled(true);progress.setVisibility(View.GONE);if(!isFinishing()){if(result.has("error")&&!result.has("sdk")){last=null;setActions(false);resetOverview();results.removeAllViews();status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
         });
     }
     private String shell(String command,int seconds)throws Exception{

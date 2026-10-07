@@ -25,9 +25,9 @@ def apply(source):
         CoroutineScope(Dispatchers.IO).launch {
             var failure=dev.codex.vowifi.common.StackTelemetry.SipFailure.NETWORK_IO
             dev.codex.vowifi.common.SipReceiveLoops.run(receiveCurrent,
-                {parseMessage(capturedConnection.gReader(),capturedConnection.gWriter(),attempt)},
-                {error->failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=MAIN type="+error.javaClass.simpleName)},
-                {connectionEnded(capturedConnection,attempt,failure)})
+                {parseMessage(capturedConnection.gReader(),capturedConnection.gWriter(),attempt,capturedRx,dev.codex.vowifi.common.SipReceiveObservation.Channel.MAIN)},
+                {error->capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.MAIN,dev.codex.vowifi.common.SipReceiveObservation.State.FAILED);failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=MAIN type="+error.javaClass.simpleName)},
+                {capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.MAIN,dev.codex.vowifi.common.SipReceiveObservation.State.ENDED);connectionEnded(capturedConnection,attempt,failure)})
         }
         val capturedListener=serverSocket
         CoroutineScope(Dispatchers.IO).launch {
@@ -35,9 +35,10 @@ def apply(source):
             dev.codex.vowifi.common.SipReceiveLoops.runTcp(receiveCurrent,
                 {
                     val(reader,writer)=capturedListener.accept()
+                    val peer=try{capturedRx?.accepted()}catch(error:Throwable){writer.close();throw error}
                     object:dev.codex.vowifi.common.SipReceiveLoops.Client {
-                        override fun read():Boolean=parseMessage(reader,writer,attempt)
-                        override fun close(){writer.close()}
+                        override fun read():Boolean=parseMessage(reader,writer,attempt,capturedRx,dev.codex.vowifi.common.SipReceiveObservation.Channel.TCP)
+                        override fun close(){try{writer.close()}finally{peer?.close()}}
                     }
                 },
                 java.util.concurrent.Executor{worker->CoroutineScope(Dispatchers.IO).launch{worker.run()}},4,
@@ -45,8 +46,8 @@ def apply(source):
                     android.util.Log.w("Api30PhhIms","voice-socket-error channel=TCP_PEER type="+error.javaClass.simpleName)
                     if(error is SipAttemptFailure)connectionEnded(capturedConnection,attempt,failureKind(error))
                 },
-                {error->failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=TCP_SERVER type="+error.javaClass.simpleName)},
-                {connectionEnded(capturedConnection,attempt,failure)})
+                {error->capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.TCP,dev.codex.vowifi.common.SipReceiveObservation.State.FAILED);failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=TCP_SERVER type="+error.javaClass.simpleName)},
+                {capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.TCP,dev.codex.vowifi.common.SipReceiveObservation.State.ENDED);connectionEnded(capturedConnection,attempt,failure)})
         }
         val capturedUdp=serverSocketUdp
         CoroutineScope(Dispatchers.IO).launch {
@@ -58,8 +59,9 @@ def apply(source):
                 {
                     packet.length=bufferIn.size
                     capturedUdp.socket.receive(packet)
+                    if(receiveCurrent.asBoolean)capturedRx?.datagram()
                     val reader=ByteArrayInputStream(packet.data,packet.offset,packet.length).sipReader()
-                    while(parseMessage(reader,writer,attempt)){}
+                    while(parseMessage(reader,writer,attempt,capturedRx,dev.codex.vowifi.common.SipReceiveObservation.Channel.UDP)){}
                     if(receiveCurrent.asBoolean){
                         val reply=writer.toByteArray()
                         if(reply.isNotEmpty())capturedUdp.socket.send(DatagramPacket(reply,reply.size,packet.address,packet.port))
@@ -67,7 +69,33 @@ def apply(source):
                     writer.reset()
                     true
                 },
-                {error->failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=UDP_SERVER type="+error.javaClass.simpleName)},
-                {connectionEnded(capturedConnection,attempt,failure)})
+                {error->capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.UDP,dev.codex.vowifi.common.SipReceiveObservation.State.FAILED);failure=failureKind(error);android.util.Log.w("Api30PhhIms","voice-socket-error channel=UDP_SERVER type="+error.javaClass.simpleName)},
+                {capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.UDP,dev.codex.vowifi.common.SipReceiveObservation.State.ENDED);connectionEnded(capturedConnection,attempt,failure)})
         }''' + source[end:]
+    once('    @Volatile private var imsReady = false','    @Volatile private var imsReady = false\n    @Volatile private var inboundObservation:dev.codex.vowifi.common.SipReceiveObservation?=null')
+    once('    private fun closeConnection() {','    private fun closeConnection() {\n        inboundObservation?.retire();inboundObservation=null')
+    once('        setResponseCallback(registerHeaders["call-id"]!![0]){registerCallback(it,attempt)}','''        val capturedRx=telemetry?.beginReceive(attempt.generation)
+        inboundObservation=capturedRx
+        setResponseCallback(registerHeaders["call-id"]!![0]){registerCallback(it,attempt)}''')
+    once('        setRequestCallback(SipMethod.MESSAGE, ::handleSms)','        setRequestCallback(SipMethod.MESSAGE){handleSms(it,capturedRx)}')
+    once('fun parseMessage(reader: SipReader, writer: OutputStream,attempt:dev.codex.vowifi.common.SipReconnectGate.Attempt<Network>?=reconnectGate.current()): Boolean {','fun parseMessage(reader: SipReader, writer: OutputStream,attempt:dev.codex.vowifi.common.SipReconnectGate.Attempt<Network>?=reconnectGate.current(),rx:dev.codex.vowifi.common.SipReceiveObservation?=null,channel:dev.codex.vowifi.common.SipReceiveObservation.Channel=dev.codex.vowifi.common.SipReceiveObservation.Channel.MAIN): Boolean {')
+    once('        Rlog.d(TAG, "RObject() message $msg")','''        if(msg is SipResponse || msg is SipRequest)rx?.parsed(channel,msg is SipRequest && msg.method==SipMethod.MESSAGE)
+        Rlog.d(TAG, "RObject() message $msg")''')
+    once('    fun handleSms(request: SipRequest): Int {','    fun handleSms(request: SipRequest,rx:dev.codex.vowifi.common.SipReceiveObservation?=null): Int {')
+    once('''        if (sms == null) {
+            Rlog.w(TAG, "Could not decode sms pdu")''','''        if (sms == null) {
+            rx?.rp(dev.codex.vowifi.common.SipReceiveObservation.Rp.DECODE_ERROR)
+            Rlog.w(TAG, "Could not decode sms pdu")''')
+    once('        Rlog.d(TAG, "Decoded SMS type ${sms.type}, ${sms.pdu?.toString()}")','''        rx?.rp(when(sms.type){
+            SmsType.RP_DATA_FROM_NETWORK->dev.codex.vowifi.common.SipReceiveObservation.Rp.DATA
+            SmsType.RP_ACK_FROM_NETWORK->dev.codex.vowifi.common.SipReceiveObservation.Rp.ACK
+            SmsType.RP_ERROR_FROM_NETWORK->dev.codex.vowifi.common.SipReceiveObservation.Rp.ERROR
+            else->dev.codex.vowifi.common.SipReceiveObservation.Rp.OTHER
+        })
+        Rlog.d(TAG, "Decoded SMS type ${sms.type}, ${sms.pdu?.toString()}")''')
+    for result,cause in [('true','-1'),('false','sms.cause ?: -1')]:
+        old=f'if (pending != null) {{ pending.observation?.onRp({result},{cause}); completeSms(ref, pending, pending.state.onRp({result})) }}'
+        once(old,old+' else rx?.unmatched()')
+    for channel,anchor in [('MAIN','            dev.codex.vowifi.common.SipReceiveLoops.run(receiveCurrent,\n                {parseMessage(capturedConnection'),('TCP','            dev.codex.vowifi.common.SipReceiveLoops.runTcp(receiveCurrent,'),('UDP','            dev.codex.vowifi.common.SipReceiveLoops.run(receiveCurrent,\n                {\n                    packet.length')]:
+        once(anchor,f'            if(receiveCurrent.asBoolean)capturedRx?.loop(dev.codex.vowifi.common.SipReceiveObservation.Channel.{channel},dev.codex.vowifi.common.SipReceiveObservation.State.RUNNING)\n'+anchor)
     return source

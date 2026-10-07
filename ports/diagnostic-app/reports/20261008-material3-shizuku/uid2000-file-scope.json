@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "module_file_exists_for_root": true,
+  "shell_read_access_test_exit": 1,
+  "shell_read_access_granted": false,
+  "write_test_attempted": false,
+  "shizuku_transport_tested": false
+}

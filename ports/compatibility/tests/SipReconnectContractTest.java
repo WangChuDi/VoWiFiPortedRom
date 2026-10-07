@@ -60,6 +60,7 @@ public final class SipReconnectContractTest {
         check(fresh.getInt("sip_status")==0&&fresh.getLong("sip_response_elapsed")==0&&fresh.getString("sip_failure").equals("NONE"),"new attempt clears historical response and ignores old results");
         check(SipTransportObservation.describe(fresh).contains("尚无已观测 SIP 响应"),"new attempt UI does not reuse historical response");
         JSONObject legacy=new JSONObject(fresh.toString());
+        legacy.remove("sip_receive");
         for(String key:new String[]{"sip_connect_schema","sip_attempt","sip_attempt_started_elapsed","sip_stage","sip_stage_elapsed","sip_transport","sip_failure","sip_failure_stage","sip_failure_elapsed","sip_response_elapsed","sip_retry_due_elapsed"})legacy.remove(key);
         check(SipTransportObservation.describe(validate(legacy)).contains("历史响应码不能确认"),"legacy engine accepted with explicit unknown SIP timing");
         JSONObject incomplete=status();incomplete.remove("sip_transport");reject(incomplete,"incomplete extension");

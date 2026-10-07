@@ -30,7 +30,7 @@ public final class TelemetrySnapshot {
         long sample=number(value,"sample_elapsed");if(sample<began||sample>now||now-sample>5000)throw new IllegalArgumentException("status-stale");
         boolean observed=flag(value,"observed"),authorized=flag(value,"authorized");
         if(observed&&!authorized)throw new IllegalArgumentException("status-unauthorized");
-        for(Iterator<String> i=value.keys();i.hasNext();){String key=i.next();if(!BASE.contains(key)&&!TEXT.contains(key)&&!FLAGS.contains(key)&&!NUMBERS.contains(key)&&!SIP_KEYS.contains(key)&&!SMS_KEYS.contains(key))throw new IllegalArgumentException("status-schema");}
+        for(Iterator<String> i=value.keys();i.hasNext();){String key=i.next();if(!BASE.contains(key)&&!TEXT.contains(key)&&!FLAGS.contains(key)&&!NUMBERS.contains(key)&&!SIP_KEYS.contains(key)&&!SMS_KEYS.contains(key)&&!key.equals("sip_receive"))throw new IllegalArgumentException("status-schema");}
         JSONObject clean=new JSONObject();for(String key:BASE)clean.put(key,value.get(key));
         if(!observed)return clean;
         for(String key:FLAGS)clean.put(key,flag(value,key));
@@ -71,6 +71,10 @@ public final class TelemetrySnapshot {
             if("ACCEPTED".equals(state)&&(!"NONE".equals(failure)||!"ACCEPTED".equals(rp)||(code!=200&&code!=202)))throw new IllegalArgumentException("status-sms-acceptance");
             if("FAILED".equals(state)&&"NONE".equals(failure))throw new IllegalArgumentException("status-sms-failure");
             for(String key:SMS_KEYS)clean.put(key,value.get(key));
+        }
+        if(value.has("sip_receive")){
+            if(!sip||!"ims".equals(channel))throw new IllegalArgumentException("status-receive-owner");
+            clean.put("sip_receive",SipReceiveStatus.validate(value.getJSONObject("sip_receive"),number(value,"sip_attempt"),number(value,"sip_attempt_started_elapsed"),sample,flag(value,"retired")));
         }
         return clean;
     }

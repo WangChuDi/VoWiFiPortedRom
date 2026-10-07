@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "passed-ui-scope",
+  "tool_sha256": "d452897e3d58cd93fb33d7b33f8574bd57bf1a52a015e9fa446ec92ffedc6f7f",
+  "production_java_manifest_match_built_inputs": true,
+  "light_visible_ui_passed": true,
+  "dark_large_font_visible_ui_passed": true,
+  "rootless_full_stack_verified": false,
+  "shizuku_sdk_integrated": false,
+  "engine_upgrade_deployed": false,
+  "new_call_or_sms": false,
+  "sms_stability_resolved": false,
+  "android17_runtime_deferred": true
+}

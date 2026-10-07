@@ -21,6 +21,7 @@ public final class StackTelemetry {
     public static synchronized Owner begin(String channel,int slot,int sub,LongSupplier clock){
         if(sub<0||clock==null)throw new IllegalArgumentException("status-owner");
         Owner owner=new Owner(key(channel,slot),channel,slot,sub,++sequence,clock);
+        Owner previous=owners.get(owner.key);if(previous!=null&&previous.sipReceive!=null)previous.sipReceive.retire();
         owners.put(owner.key,owner);return owner;
     }
     public static synchronized Map<String,Object> snapshot(String channel,int slot,int sub){
@@ -44,6 +45,7 @@ public final class StackTelemetry {
         private final EnumMap<Counter,Long> counts=new EnumMap<>(Counter.class);
         private long smsSequence;
         private SmsSendObservation smsSend;
+        private SipReceiveObservation sipReceive;
         private Owner(String key,String channel,int slot,int sub,long generation,LongSupplier clock){
             this.key=key;this.channel=channel;this.slot=slot;this.sub=sub;this.generation=generation;this.clock=clock;
             started=updated=sipStageElapsed=clock.getAsLong();for(Counter c:Counter.values())counts.put(c,0L);
@@ -55,6 +57,11 @@ public final class StackTelemetry {
             smsSend=new SmsSendObservation(++smsSequence,clock);touched();return smsSend;
         }}
         private void touched(){updated=clock.getAsLong();}
+        public SipReceiveObservation beginReceive(long attempt){synchronized(StackTelemetry.class){
+            if(!live()||!"ims".equals(channel)||attempt<1||attempt!=sipAttempt)return null;
+            if(sipReceive==null)sipReceive=new SipReceiveObservation(attempt,clock);
+            return sipReceive;
+        }}
         public void phase(Phase value){
             if(value==null||value==Phase.CLOSED||value==Phase.FAILED)throw new IllegalArgumentException("status-phase");
             synchronized(StackTelemetry.class){if(live()){phase=value;registered=value==Phase.REGISTERED;touched();
@@ -75,6 +82,7 @@ public final class StackTelemetry {
         }}}
         public void sipResponse(int code){synchronized(StackTelemetry.class){if(live()){sipStatus=code>=100&&code<=699?code:0;touched();}}}
         public void sipAttempt(long attempt,boolean tcp){synchronized(StackTelemetry.class){if(live()&&"ims".equals(channel)&&attempt>sipAttempt){
+            if(sipReceive!=null)sipReceive.retire();sipReceive=null;
             sipAttempt=attempt;touched();sipStarted=sipStageElapsed=updated;
             sipStage=SipStage.PLAIN_CONNECT;sipTransport=tcp?SipTransport.TCP:SipTransport.UDP;
             sipFailure=SipFailure.NONE;sipFailureStage=SipStage.UNOBSERVED;
@@ -86,6 +94,7 @@ public final class StackTelemetry {
         public void sipRetry(long attempt,long delay){if(delay<0||delay>60000)throw new IllegalArgumentException("sip-retry-delay");synchronized(StackTelemetry.class){if(live()&&sipAttempt>0&&attempt==sipAttempt){touched();sipStageElapsed=updated;sipStage=SipStage.RETRY_WAIT;sipRetryDue=updated+delay;}}}
         public void add(Counter counter,int value){synchronized(StackTelemetry.class){if(live()&&value>0){counts.put(counter,Math.min(Integer.MAX_VALUE,counts.get(counter)+value));touched();}}}
         public void end(boolean error){synchronized(StackTelemetry.class){if(live()){
+            if(sipReceive!=null)sipReceive.retire();
             failedStage=phase;phase=error?Phase.FAILED:Phase.CLOSED;failed=error;retired=true;
             ike=child=registered=false;inbound=outbound=0;iface="";touched();
             if("ims".equals(channel)){sipStage=SipStage.STOPPED;sipStageElapsed=updated;sipRetryDue=0;}
@@ -102,6 +111,7 @@ public final class StackTelemetry {
             data.put("epdg_dns_count",epdgDns);
             if("ims".equals(channel)){
                 data.putAll(smsSend==null?SmsSendObservation.unobserved():smsSend.snapshot());
+                data.put("sip_receive",sipReceive==null?SipReceiveObservation.unobserved():sipReceive.snapshot());
                 data.put("sip_connect_schema",1);data.put("sip_attempt",sipAttempt);data.put("sip_attempt_started_elapsed",sipStarted);
                 data.put("sip_stage",sipStage.name());data.put("sip_stage_elapsed",sipStageElapsed);data.put("sip_transport",sipTransport.name());
                 data.put("sip_failure",sipFailure.name());data.put("sip_failure_stage",sipFailureStage.name());data.put("sip_failure_elapsed",sipFailureElapsed);

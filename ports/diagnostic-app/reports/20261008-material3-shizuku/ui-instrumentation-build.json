@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "target_tool_sha256": "d452897e3d58cd93fb33d7b33f8574bd57bf1a52a015e9fa446ec92ffedc6f7f",
+  "test_apk_sha256": "5e7633107b69dc7bce49a39cbfa9aba89a52a2ad63ff7123b9aac68ed2cf0396",
+  "source_sha256": "ce78883c81a4c3de315bcffaa6804ae87c4cf29802dcc610d38d42736c4e4d1e",
+  "target_apk_rebuilt": false,
+  "engine_rebuilt": false,
+  "phone_modified": false
+}

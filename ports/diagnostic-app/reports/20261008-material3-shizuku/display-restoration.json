@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "night_mode_before": "no",
+  "font_scale_before": "1.0",
+  "ui_profile": "dark-large-font-1.3",
+  "new_calls_or_sms": false,
+  "engines_modified": false,
+  "instrumentation_exit": 0,
+  "previews_exported": true,
+  "status": "passed",
+  "usb_stay_awake_restored": true,
+  "night_mode_restored": true,
+  "font_scale_restored": true
+}

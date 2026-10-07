@@ -5,6 +5,15 @@ run a read-only check, and optionally control the separately built replacement
 engine. The source and embedded engine retain GPL-2.0 licensing; see
 [Android11 third-party notices](../android11/THIRD_PARTY.md).
 
+Version0.9.18 uses a Material 3 styled Overview/Diagnostics/Actions interface,
+with expandable diagnostic groups and separate registration/SMS-dispatcher
+observations. The current UI APK was installed without changing the live engines.
+The UID2000 feasibility probe supports some telephony diagnostics, but Shizuku is
+not integrated and the existing full Magisk replacement still needs root. See
+[the interface, permission scope and validation record](MATERIAL3-SHIZUKU-20261008.md).
+The embedded ingress-diagnostic engines remain candidates; their newer counters
+are described in [the registered receive-path record](SIP-INGRESS-20261007.md).
+
 ## Checks
 
 The root helper reports only selected-subscription metadata:
