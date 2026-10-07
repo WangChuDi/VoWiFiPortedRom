@@ -42,3 +42,4 @@ The [public builder verification](public-build.json) reproduced the executed
 test's classes.dex exactly; signed container identity is recorded separately.
 SHA256SUMS covers every fixed report. Raw logs, private records, SIM identities,
 signing keys and SMS bodies are excluded.
+Reports and checksums use canonical LF bytes, matching Git blobs and source archives.

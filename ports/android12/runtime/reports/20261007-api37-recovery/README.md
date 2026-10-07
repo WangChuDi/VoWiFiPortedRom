@@ -88,6 +88,7 @@ the original helper/schema guards and layer ordering, stages no engine and creat
 no replacement baseline. Its public build reproduced the actual executed probe.
 Fixed metadata is archived with SHA256SUMS; private journals, raw logs, console
 tokens, SIM identities and SMS bodies are excluded.
+Report checksums cover canonical LF bytes, matching Git blobs and source archives.
 
 Pending original selection/installation/outer cleanup, the complete 49-stage
 API37 lifecycle, actual modern Magisk/OS reboot, carrier voice/SMS/notifications,
