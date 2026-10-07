@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "read_only": true,
+  "new_calls_or_sms": false,
+  "installed_ims_exact": true,
+  "installed_tool_exact": true,
+  "all_original_transaction_evidence_unchanged": true,
+  "all_slots_idle": true,
+  "active_slot": {
+    "diagnostic_complete": true,
+    "ims_transport": 2,
+    "voice": true,
+    "sms": true,
+    "native_sms_ims_supported": true,
+    "iwlan_interface_matches": true
+  },
+  "persistent_full_replacement": true,
+  "phone_system_stable": true
+}

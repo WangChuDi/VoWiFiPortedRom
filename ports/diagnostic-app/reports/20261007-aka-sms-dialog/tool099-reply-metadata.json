@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_sms_sent": false,
+  "message_bodies_accessed": false,
+  "authorized_short_code_reply_rows_last_10_minutes": 1,
+  "authorized_short_code_reply_present": true
+}

@@ -26,6 +26,11 @@ boot/native SMS but its call failed with UPDATE488. These results are retained
 alongside the current release, rather than replaced by later successes.
 
 The old0.9.6 production artifacts remain frozen outside this new isolated build.
+The final post-cleanup read-only record confirms the exact installed IMS/tool,
+full persistent selection, original evidence unchanged, idle call states and
+current WLAN/native SMS support. Metadata-only querying additionally found one
+recent native inbox reply from the authorized85075 short code on the tested
+subscription. No body column or body filter was used in that executed query.
 The shared source now targets0.9.9; use its new build outputs for reproduction.
 Current APK/ZIP SHA-256 values are in `tool099-build.json`. Modern ABI linkage is
 static sample evidence, not actual Android12–17 carrier support. API37 original
