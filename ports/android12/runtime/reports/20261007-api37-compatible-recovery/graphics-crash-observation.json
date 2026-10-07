@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "graphics-crash-observation",
+  "exit": 0,
+  "surfaceflinger_mentions": 72,
+  "abort_count": 13,
+  "abort_categories": {
+    "ReadColorBuffer": 13,
+    "ColorBuffer": 13,
+    "Assertion": 13,
+    "failed": 13
+  },
+  "graphics_abort_symbols": [
+    "hasReadColorBufferDma"
+  ]
+}

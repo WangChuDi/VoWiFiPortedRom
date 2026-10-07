@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "host_only": true,
+  "adb_invoked": false,
+  "guest_mutation_performed": false,
+  "cases": [
+    {
+      "case": "absent-phone-observed",
+      "passed": true
+    },
+    {
+      "case": "missing-system-server",
+      "passed": true
+    },
+    {
+      "case": "duplicate-process",
+      "passed": true
+    },
+    {
+      "case": "invalid-starttime",
+      "passed": true
+    },
+    {
+      "case": "raw-values-redacted",
+      "passed": true
+    },
+    {
+      "case": "fixed-command-error-only",
+      "passed": true
+    },
+    {
+      "case": "apply",
+      "passed": true
+    },
+    {
+      "case": "restore",
+      "passed": true
+    },
+    {
+      "case": "saved-action-forged",
+      "passed": true
+    },
+    {
+      "case": "foreign-navigation",
+      "passed": true
+    },
+    {
+      "case": "existing-apply",
+      "passed": true
+    },
+    {
+      "case": "existing-restore",
+      "passed": true
+    },
+    {
+      "case": "wrong-sdk",
+      "passed": true
+    },
+    {
+      "case": "command-timeout",
+      "passed": true
+    },
+    {
+      "case": "records-changed",
+      "passed": true
+    }
+  ]
+}

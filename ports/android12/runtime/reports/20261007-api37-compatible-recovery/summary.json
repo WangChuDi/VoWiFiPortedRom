@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "original-fixture-restored-and-audited",
+  "settings_paths_compared": 5,
+  "settings_queries_observed": 20,
+  "diagnostic_host_contracts": 15,
+  "v6_runner_host_contracts": 10,
+  "compatible_runner_host_contracts": 14,
+  "original_helper_replaced": false,
+  "old_apks_replaced": false,
+  "new_baseline_created": false,
+  "legacy_journal_migrated": false,
+  "original_records_deleted": false,
+  "original_navigation_restored": true,
+  "owned_emulators_terminal": true,
+  "physical_phone_modified": false,
+  "full_api37_lifecycle_verified": false,
+  "modern_carrier_call_sms_verified": false,
+  "dual_active_sim_verified": false
+}

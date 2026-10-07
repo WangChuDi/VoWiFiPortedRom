@@ -1,0 +1,19 @@
+{
+  "ports/android12/runtime/recovery-api37/Api37CompatibleFixtureRecovery.java": "6b24ac6d9b7dc4d946eb5ba4a0dcd8c9f1e5396289080f1c3da7b8d2730a21fe",
+  "ports/android12/runtime/recovery-api37/Api37OriginalFixtureRecoveryV6.java": "1085afb92989f5a2b56bb9d2e8c2c956c28b3d9f3009110548cc6fb5c332b014",
+  "ports/android12/runtime/recovery-api37/Api37RoleReadOnlyProbe.java": "8671f740207a995cc655e2dd9675b1936c09b199c53315b26590dbed4117191c",
+  "ports/android12/runtime/recovery-api37/Api37SettingsReadOnlyProbe.java": "0c3fed06c7eec45fd92f1eba4bf325a12642987b55b6778e3ad9185d1a4fd614",
+  "ports/android12/runtime/recovery-api37/build-compatible-helper.py": "5216051748f53c5039791c981e145951494324fe6f350a149bfc6cbba659d9a1",
+  "ports/android12/runtime/recovery-api37/build-compatible-probe.py": "9a1327679d0cfa9f248092ccd49e9cc10177b950da614dedadb341e3743f5c22",
+  "ports/android12/runtime/recovery-api37/build-original-child-probe.py": "df950228ac2c2cf5855c88bfc91be11dcd0278e4cf8d612355d97b1aff64a3d5",
+  "ports/android12/runtime/recovery-api37/build-role-probe.py": "77c2a0127ab614b1064bbe43c7d7ed610e98b06a397a0d0b91e29527fdff60b0",
+  "ports/android12/runtime/recovery-api37/build-settings-probe.py": "dda670c5b0a15f021d6ddf8f2c17961f9d9880be8c61d100e801f8a0ac6f7734",
+  "ports/android12/runtime/recovery-api37/original-guest-navigation.py": "325f5ce0874a6a1f67353dc5bd17884a33bdf4ad5c90dec3cb440fda25952741",
+  "ports/android12/runtime/recovery-api37/run-compatible-probe.py": "4404610eabf4341d77246954a8ad27cbf74f60c63b9864a9b1b06d59e19975ea",
+  "ports/android12/runtime/recovery-api37/run-original-child-probe.py": "5a817da1f1909d4d63648b373d34ac8bbf81d658c6396d5a33d3bc069a336073",
+  "ports/android12/runtime/recovery-api37/run-role-probe.py": "934652bcd8cd2cd6f2376a307100c00b9e7495e4ace9da3142c382d05cac502e",
+  "ports/android12/runtime/recovery-api37/run-settings-probe.py": "6e960d52bc976a4c55f8ba0146debd67c5ecf48a8b8c0f2185d3fae0948d18ee",
+  "ports/android12/runtime/recovery-api37/test-compatible-runner.py": "9ed38c964b4882a22c538557fad37e71a2b7e82c0b29e634da9316b1f008059d",
+  "ports/android12/runtime/recovery-api37/test-diagnostic-guards.py": "04678cc911f5165287a814dbe05386a0b01eadf82e2b4d6e57198d0e0e8bae55",
+  "ports/android12/runtime/recovery-api37/test-original-child-runner.py": "7d6ff708152afe1e4b2c708b4bc5d9f3c6dfe0a6e4dc5bb4afb6b1e93976da05"
+}

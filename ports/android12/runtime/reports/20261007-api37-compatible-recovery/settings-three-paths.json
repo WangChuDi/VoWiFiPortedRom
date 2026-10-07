@@ -1,0 +1,300 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "settings-read-only",
+  "status": "observed",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "raw_output_exported": false,
+  "retained_helper_verified": true,
+  "probe_sha256": "3726f898bd2e157555ee7ce797bc93a208be51e0beb95adaf86c6fdf7db7f20f",
+  "source_sha256": "0c3fed06c7eec45fd92f1eba4bf325a12642987b55b6778e3ad9185d1a4fd614",
+  "direct_queries": [
+    {
+      "query": "boot-count",
+      "kind": "adb-settings",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 4,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "DECIMAL"
+    },
+    {
+      "query": "boot-count",
+      "kind": "adb-cmd",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 4,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "DECIMAL"
+    },
+    {
+      "query": "lease-sub",
+      "kind": "adb-settings",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    },
+    {
+      "query": "lease-sub",
+      "kind": "adb-cmd",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    },
+    {
+      "query": "lease-boot",
+      "kind": "adb-settings",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    },
+    {
+      "query": "lease-boot",
+      "kind": "adb-cmd",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    },
+    {
+      "query": "lease-until",
+      "kind": "adb-settings",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    },
+    {
+      "query": "lease-until",
+      "kind": "adb-cmd",
+      "command_exit": 0,
+      "single_value_line": true,
+      "stdout_bytes": 5,
+      "stderr_bytes": 0,
+      "error_categories": [],
+      "value_category": "NULL_LITERAL"
+    }
+  ],
+  "package_calibration": {
+    "command_exit": 0,
+    "known_packages_present": true
+  },
+  "phone_process_present_before": true,
+  "original_record_count": 11,
+  "entry_exit": 0,
+  "checkpoints": [
+    "context",
+    "boot-count",
+    "lease-sub",
+    "lease-boot",
+    "lease-until"
+  ],
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "settings-read-only",
+    "read_only": true,
+    "settings_written": false,
+    "new_baseline_created": false,
+    "physical_phone_modified": false,
+    "parent_root_confirmed": true,
+    "inherited_classpath_present": true,
+    "inherited_library_path_present": false,
+    "cases": [
+      {
+        "query": "boot-count",
+        "results": [
+          {
+            "kind": "app-child-settings",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 4,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "DECIMAL",
+            "elapsed_ms": 221
+          },
+          {
+            "kind": "app-child-cmd",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 4,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "DECIMAL",
+            "elapsed_ms": 115
+          },
+          {
+            "kind": "retained-helper-get",
+            "call_completed": true,
+            "value_category": "DECIMAL",
+            "elapsed_ms": 220
+          }
+        ]
+      },
+      {
+        "query": "lease-sub",
+        "results": [
+          {
+            "kind": "app-child-settings",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 227
+          },
+          {
+            "kind": "app-child-cmd",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 111
+          },
+          {
+            "kind": "retained-helper-get",
+            "call_completed": true,
+            "value_category": "ABSENT",
+            "elapsed_ms": 342
+          }
+        ]
+      },
+      {
+        "query": "lease-boot",
+        "results": [
+          {
+            "kind": "app-child-settings",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 124
+          },
+          {
+            "kind": "app-child-cmd",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 116
+          },
+          {
+            "kind": "retained-helper-get",
+            "call_completed": true,
+            "value_category": "ABSENT",
+            "elapsed_ms": 221
+          }
+        ]
+      },
+      {
+        "query": "lease-until",
+        "results": [
+          {
+            "kind": "app-child-settings",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 108
+          },
+          {
+            "kind": "app-child-cmd",
+            "deadline_exceeded": false,
+            "child_terminal_confirmed": true,
+            "child_exit": 0,
+            "output_complete": true,
+            "stdout_reader_terminal": true,
+            "stderr_reader_terminal": true,
+            "output_overflow": false,
+            "stdout_bytes": 5,
+            "stderr_bytes": 0,
+            "error_categories": [],
+            "single_value_line": true,
+            "value_category": "NULL_LITERAL",
+            "elapsed_ms": 102
+          },
+          {
+            "kind": "retained-helper-get",
+            "call_completed": true,
+            "value_category": "ABSENT",
+            "elapsed_ms": 223
+          }
+        ]
+      }
+    ],
+    "status": "observed"
+  },
+  "original_records_unchanged": true,
+  "phone_process_present_after": true,
+  "service_processes_stable": true,
+  "elapsed_seconds": 11.803
+}

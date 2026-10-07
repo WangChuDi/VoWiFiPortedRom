@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "retained-selection-child-observation",
+  "entry_exit": 1,
+  "single_result": true,
+  "matching_stage": true,
+  "error": "IOException",
+  "reason": "unclassified",
+  "cleanup_confirmed": false,
+  "physical_phone_modified": false
+}

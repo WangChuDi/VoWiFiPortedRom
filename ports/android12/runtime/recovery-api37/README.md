@@ -8,7 +8,51 @@ authenticates a SIM, calls, or sends/reads SMS. Installation/recovery implementa
 and attribution remain in the [controller](../../controller/README.md) and the
 [phhusson source/license notice](../../../android11/THIRD_PARTY.md).
 
-The runtime helper is pinned to
+## Current result: compatible recovery completed
+
+The [2026-10-07 continuation](../reports/20261007-api37-compatible-recovery/README.md)
+restored the original schema1 installation and schema3 owner, released shared
+IWLAN mode, restored outer authorization policy and passed the final audit.
+The old helper and three old APKs retained their original hashes. No journal was
+migrated, deleted or replaced with a new baseline. This is recovery of one
+fake-SIM fixture, not a complete API37 lifecycle or carrier/dual-SIM result.
+
+Actual read-only comparison passed every Settings path with unchanged records
+and stable Phone/system_server identities. A v5 restore then hit the role broker's
+fixed-classpath guard; v6 used independent retained-helper entries but still failed
+legacy raw-flag comparison. A separate read-only permission probe showed unchanged
+package owners and grants, with changes limited to PermissionController sensitivity
+metadata. The current controller's two-bit comparison was audited and built into
+a separate compatible helper.
+
+That helper uses the already-supported fixture path
+`/data/local/tmp/codex-modern-owner-audit.zip`. The runner refuses an existing
+different payload and verifies root ownership, fixed helper/classes/source hashes
+and the original helper/APKs before every action. Children use only the compatible
+helper as CLASSPATH. The outer audit has five raw flag-field differences, all within
+the two informational flag types (mask768), and zero authorization-policy changes.
+Cleanup observed those sensitivity bits unchanged during the operation.
+
+SurfaceFlinger repeatedly crashed at the graphics `hasReadColorBufferDma` assertion.
+Temporary three-button navigation provided a stable recovery window. The original
+gestural navigation was subsequently restored and the owned emulator stopped.
+An earlier restore attempt ran after its bounded monitor had ended and made no
+write; its failed report remains alongside the later successful restore.
+
+New entry pairs are `build-settings-probe.py` / `run-settings-probe.py`,
+`build-role-probe.py` / `run-role-probe.py`, and `build-compatible-probe.py` /
+`run-compatible-probe.py`. Build the separate helper with `build-compatible-helper.py`;
+the compatible runner requires `--compatible-helper-dir`. Use fresh canonical
+build/report directories. Navigation changes use `original-guest-navigation.py`
+with `--action apply` or `restore`; a later restore can specify a fresh
+`--report-name restore-NAME.json` to preserve earlier evidence. Host checks are
+`test-diagnostic-guards.py`, `test-original-child-runner.py` and
+`test-compatible-runner.py`. The last requires probe and compatible-helper build
+directories. Source-byte attributes preserve SHA-pinned probe inputs.
+
+## Historical v5 investigation and invocation
+
+The retained runtime helper is pinned to
 `ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d`,
 from `modern-api32-api37-runtime-partial-20261007`. All three old installed
 privileged APK paths and hashes are checked before invoking the probe. Do not
@@ -21,14 +65,14 @@ The probe was compiled against headers with SHA-256
 Its referenced constructor/restore/status signatures were checked against the
 retained tag. Both the earlier probe and the current calibrated execution reached
 the original selection restore method and failed at `ModernRootSettings.command:19`.
-Installation and outer recovery remain unverified. The earlier probe digest
+Installation and outer recovery were unverified in that run. The earlier probe digest
 `2cb0989abaeea05dbb78cef3279596627061f3081b85e23407419ce4d7a1f913`
 belongs to source retained in commit `4c49d8c`, not the current source.
 The current independently pinned Java source digest is
 `5ae0d75ae69ce182ffed33b4d5f289d29dc67eb98163ea54a8b62504ded0f833`;
 its built and executed probe digest is
 `9439d1f4c95c1d6109e0665a812b7ea3412c28c0aa10df62abd5173ac10afae6`.
-No signed APK/module/helper was rebuilt for this investigation.
+No signed APK/module/helper was rebuilt for that v5 investigation.
 The runner pins both tested source and probe digests independently of the local
 build manifest. Editing the manifest and payload together cannot select a new probe.
 Before checking a privileged path, the runner now requires a successful package
@@ -67,7 +111,7 @@ from the observed Settings failure in selection recovery. The child has a
 25-second deadline, a 32-KiB output limit, confirmed reader completion and exactly
 one matching successful result. Excess or incomplete output fails closed.
 Cleanup must confirm the complete original outer observation; audit must report
-no fixed policy changes. Neither action has yet been reached in the actual run.
+no fixed policy changes. Neither action had been reached in that actual v5 run.
 Each layer has a fresh report and must succeed before the next layer. No failed
 mutation assertion is converted to success or silently retried. This investigation
 did **not** pass those layers; do not create a new fixture over the pending original.

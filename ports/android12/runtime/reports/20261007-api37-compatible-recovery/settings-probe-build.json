@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "status": "built",
+  "source_sha256": "0c3fed06c7eec45fd92f1eba4bf325a12642987b55b6778e3ad9185d1a4fd614",
+  "settings_compile_source_sha256": "31d33c102cc1153539d84a915c28835fd2d0d501120fab69b772b0a511e8f70e",
+  "compile_classes_sha256": "d278b9a365ab1a8a1660e8d4b580ea47be5dece89cc2b10d2832a9883140d7b0",
+  "probe_sha256": "3726f898bd2e157555ee7ce797bc93a208be51e0beb95adaf86c6fdf7db7f20f",
+  "retained_runtime_helper_sha256": "ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d",
+  "helper_definition_packaged": false,
+  "device_validated": false
+}

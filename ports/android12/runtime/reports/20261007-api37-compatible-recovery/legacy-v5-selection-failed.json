@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "selection",
+  "read_only": false,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "timeout_cause_verified": false,
+  "package_inventory": {
+    "command_exit": 0,
+    "known_platform_packages_present": true
+  },
+  "payload_path_observations": [
+    {
+      "component": "Api31Iwlan",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Qns",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Ims",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    }
+  ],
+  "retained_helper_verified": true,
+  "retained_payloads_verified": true,
+  "probe_sha256": "9439d1f4c95c1d6109e0665a812b7ea3412c28c0aa10df62abd5173ac10afae6",
+  "entry_exit": 1,
+  "host_command_elapsed_seconds": 7.157,
+  "exit_indicates_sigkill": false,
+  "checkpoints": [
+    "context",
+    "subscription",
+    "telephony",
+    "sim-observed",
+    "inventory-observed",
+    "selection-restore"
+  ],
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "selection",
+    "read_only": false,
+    "physical_phone_modified": false,
+    "new_baseline_created": false,
+    "readiness_samples": 2,
+    "two_consecutive_ready_samples": true,
+    "sim_state": 5,
+    "single_ready_fake_subscription": true,
+    "fixture_count": 1,
+    "fixtures": [
+      {
+        "ordinal": 0,
+        "installation_phase": "PREPARED",
+        "installation_schema_1": true,
+        "outer_record_present": true,
+        "owners": [
+          {
+            "phase": "RESTORING",
+            "schema_3": true,
+            "current_owner": true,
+            "mode_owned": true
+          }
+        ]
+      }
+    ],
+    "error": "SecurityException",
+    "reason": "unclassified",
+    "origin": "ModernRolePermissionBroker.restore:22",
+    "status": "failed"
+  },
+  "host_total_elapsed_seconds": 8.566
+}

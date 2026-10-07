@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "settings-read-only",
+  "status": "failed",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "raw_output_exported": false,
+  "error": "ValueError",
+  "reason": "owned-booted-api37-required",
+  "elapsed_seconds": 181.998
+}

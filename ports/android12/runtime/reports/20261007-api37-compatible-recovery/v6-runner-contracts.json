@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "host_only": true,
+  "adb_invoked": false,
+  "guest_mutation_performed": false,
+  "cases": [
+    {
+      "case": "package-command-fails",
+      "expected": "package-command-unavailable",
+      "passed": true
+    },
+    {
+      "case": "platform-calibration-missing",
+      "expected": "package-inventory-uncalibrated",
+      "passed": true
+    },
+    {
+      "case": "retained-package-absent",
+      "expected": "retained-package-absent",
+      "passed": true
+    },
+    {
+      "case": "path-command-fails",
+      "expected": "package-path-command-unavailable",
+      "passed": true
+    },
+    {
+      "case": "path-output-empty",
+      "expected": "package-path-observation-unconfirmed",
+      "passed": true
+    },
+    {
+      "case": "path-different",
+      "expected": "retained-privileged-path-mismatch",
+      "passed": true
+    },
+    {
+      "case": "valid-final",
+      "expected": "passed",
+      "passed": true
+    },
+    {
+      "case": "failed-final",
+      "expected": "failed",
+      "passed": true
+    },
+    {
+      "case": "duplicate-final",
+      "expected": "failed",
+      "passed": true
+    },
+    {
+      "case": "wrong-schema-final",
+      "expected": "failed",
+      "passed": true
+    }
+  ]
+}

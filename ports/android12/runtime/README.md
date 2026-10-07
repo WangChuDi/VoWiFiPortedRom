@@ -12,7 +12,11 @@ cleanup evidence and does not claim 49-stage or production installation success.
 The [original-fixture recovery investigation](reports/20261007-api37-recovery/README.md)
 later localized a Settings-command failure, compared resource growth with a
 calibrated stock guest, and added an isolated, pinned recovery probe. Original
-cleanup and full API37 lifecycle are still unconfirmed.
+cleanup was still unconfirmed then. The subsequent
+[compatible original-record recovery](reports/20261007-api37-compatible-recovery/README.md)
+passed selection, installation, outer-policy restoration and audit, with the
+original installation/owner RESTORED and shared mode released. Full API37
+lifecycle remains unverified; the original failed run remains a failed run.
 The subsequent [matched API37 stock controls](reports/20261007-api37-matched-controls/README.md)
 completed with and without writable-system while the original state still reached
 its memory ceiling. Direct Settings commands worked during a later original
@@ -166,7 +170,7 @@ exit code means the filesystem is writable.
 | 14 | 34 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 15 | 35 | Final tool0.9.2 batch: runtime bindings/QNS restoration, app backend and 49 lifecycle stages passed |
 | 16 | 36 | Independent parallel agent integration and QNS framework/restoration passed |
-| 17 | 37 | Official android-37.0 guest: runtime bindings/QNS restoration and tool root checks passed; lifecycle failed at selection-reopen, cleanup unconfirmed; no ROM/carrier proof |
+| 17 | 37 | Official android-37.0 guest: earlier runtime checks passed and lifecycle failed; subsequent original-record cleanup/audit passed with a compatible helper; no complete lifecycle, ROM or carrier proof |
 
 Safe results, artifact hashes and limitations are archived in
 [the version matrix](reports/20261006/matrix.json) and its per-version JSON

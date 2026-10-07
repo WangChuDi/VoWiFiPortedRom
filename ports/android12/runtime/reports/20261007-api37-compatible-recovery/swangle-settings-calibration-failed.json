@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "settings-read-only",
+  "status": "failed",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "raw_output_exported": false,
+  "retained_helper_verified": true,
+  "probe_sha256": "3726f898bd2e157555ee7ce797bc93a208be51e0beb95adaf86c6fdf7db7f20f",
+  "source_sha256": "0c3fed06c7eec45fd92f1eba4bf325a12642987b55b6778e3ad9185d1a4fd614",
+  "direct_queries": [],
+  "package_calibration": {
+    "command_exit": 224,
+    "known_packages_present": false
+  },
+  "error": "ValueError",
+  "reason": "package-calibration-unconfirmed",
+  "elapsed_seconds": 1.947
+}

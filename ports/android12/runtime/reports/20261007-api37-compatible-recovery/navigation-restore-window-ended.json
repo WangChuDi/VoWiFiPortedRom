@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "navigation-restore",
+  "status": "failed",
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "raw_output_exported": false,
+  "write_attempted": false,
+  "error": "ValueError",
+  "reason": "owned-api37-required"
+}

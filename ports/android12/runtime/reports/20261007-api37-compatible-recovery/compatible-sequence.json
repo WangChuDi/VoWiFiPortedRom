@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "restored-and-audited",
+  "physical_phone_modified": false,
+  "new_baseline_created": false,
+  "original_journals_deleted": false,
+  "actions": [
+    {
+      "action": "inventory",
+      "report": "inventory-0.json",
+      "status": "passed"
+    },
+    {
+      "action": "selection",
+      "report": "selection.json",
+      "status": "passed"
+    },
+    {
+      "action": "installation",
+      "report": "installation.json",
+      "status": "passed"
+    },
+    {
+      "action": "outer",
+      "report": "outer.json",
+      "status": "passed"
+    },
+    {
+      "action": "audit",
+      "report": "audit.json",
+      "status": "passed"
+    },
+    {
+      "action": "inventory",
+      "report": "inventory-final.json",
+      "status": "passed"
+    }
+  ],
+  "package_samples": [
+    {
+      "command_exit": 0,
+      "known_platform_packages_present": true,
+      "all_retained_packages_present": true
+    },
+    {
+      "command_exit": 0,
+      "known_platform_packages_present": true,
+      "all_retained_packages_present": true
+    }
+  ],
+  "retained_file_observations": [
+    {
+      "component": "Api31Iwlan",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    },
+    {
+      "component": "Api31Qns",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    },
+    {
+      "component": "Api31Ims",
+      "command_exit": 0,
+      "expected_digest_observed": true
+    }
+  ],
+  "original_fixture_cleanup_confirmed": true,
+  "full_api37_lifecycle_verified": false
+}

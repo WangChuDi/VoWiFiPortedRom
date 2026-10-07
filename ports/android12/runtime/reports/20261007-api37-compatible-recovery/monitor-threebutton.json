@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "status": "bounded-window-deadline",
+  "gpu_backend": "swangle",
+  "vulkan_disabled": true,
+  "quickboot_file_backed_requested": false,
+  "window_seconds": 900,
+  "system_writable_requested": true,
+  "userdata_writable": true,
+  "configured_guest_memory_mib": 2048,
+  "original_avd_preserved": true,
+  "wipe_requested": false,
+  "snapshot_load_save_requested": false,
+  "physical_phone_modified": false,
+  "payload_staging_requested": false,
+  "owned_processes_terminal": true,
+  "boot_observed": true,
+  "sample_count": 177,
+  "peak_private_bytes": 3299659776,
+  "last_sample": {
+    "seconds": 897,
+    "private_bytes": 3280457728,
+    "disk_free_bytes": 10132332544,
+    "free_physical_bytes": 13244456960
+  }
+}

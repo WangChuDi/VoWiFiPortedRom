@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "permissions",
+  "read_only": true,
+  "status": "passed",
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "timeout_cause_verified": false,
+  "package_inventory": {
+    "command_exit": 0,
+    "known_platform_packages_present": true
+  },
+  "payload_path_observations": [
+    {
+      "component": "Api31Iwlan",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Qns",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Ims",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    }
+  ],
+  "retained_helper_verified": true,
+  "retained_payloads_verified": true,
+  "probe_sha256": "a5f14049633bf1d07f5e063556832420d68e39dc2a4c9dba10a2ce1252626378",
+  "entry_exit": 0,
+  "host_command_elapsed_seconds": 0.4,
+  "exit_indicates_sigkill": false,
+  "checkpoints": [],
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "permissions",
+    "read_only": true,
+    "settings_written": false,
+    "physical_phone_modified": false,
+    "new_baseline_created": false,
+    "roles": [
+      {
+        "role_index": 0,
+        "package_owner_verified": true,
+        "grant_matches_original": true,
+        "legacy_foreign_change": false,
+        "informational_change": false,
+        "authorization_foreign_change": false,
+        "policy_equal_ignoring_information": true
+      },
+      {
+        "role_index": 1,
+        "package_owner_verified": true,
+        "grant_matches_original": true,
+        "legacy_foreign_change": true,
+        "informational_change": true,
+        "authorization_foreign_change": false,
+        "policy_equal_ignoring_information": true
+      },
+      {
+        "role_index": 2,
+        "package_owner_verified": true,
+        "grant_matches_original": true,
+        "legacy_foreign_change": true,
+        "informational_change": true,
+        "authorization_foreign_change": false,
+        "policy_equal_ignoring_information": true
+      }
+    ],
+    "original_role_record_unchanged": true,
+    "status": "passed"
+  },
+  "host_total_elapsed_seconds": 1.351
+}

@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "audit",
+  "read_only": false,
+  "status": "passed",
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "timeout_cause_verified": false,
+  "package_inventory": {
+    "command_exit": 0,
+    "known_platform_packages_present": true
+  },
+  "payload_path_observations": [
+    {
+      "component": "Api31Iwlan",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Qns",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    },
+    {
+      "component": "Api31Ims",
+      "command_exit": 0,
+      "single_apk_path_observed": true,
+      "expected_privileged_path_observed": true
+    }
+  ],
+  "compatible_helper_sha256": "5c5748cdd75377a34a05001c22bb3d5e7a9375de060a265b0c3bbb51202b44c4",
+  "compatibility_source_verified": true,
+  "retained_helper_replaced": false,
+  "legacy_journal_migrated": false,
+  "retained_helper_verified": true,
+  "retained_payloads_verified": true,
+  "probe_sha256": "763e9bd0cf0c0d1d6e576e790c8fdfa3ac78f97ae8d09795d30e0bcbd764bcd1",
+  "entry_exit": 0,
+  "host_command_elapsed_seconds": 3.856,
+  "exit_indicates_sigkill": false,
+  "checkpoints": [
+    "context",
+    "subscription",
+    "telephony",
+    "sim-observed",
+    "inventory-observed",
+    "original-outer-entry"
+  ],
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "audit",
+    "read_only": false,
+    "physical_phone_modified": false,
+    "new_baseline_created": false,
+    "compatibility_audited": true,
+    "legacy_journal_migrated": false,
+    "permission_policy_excluded_informational_mask": 768,
+    "readiness_samples": 2,
+    "two_consecutive_ready_samples": true,
+    "sim_state": 5,
+    "single_ready_fake_subscription": true,
+    "fixture_count": 1,
+    "fixtures": [
+      {
+        "ordinal": 0,
+        "installation_phase": "RESTORED",
+        "installation_schema_1": true,
+        "outer_record_present": true,
+        "owners": [
+          {
+            "phase": "RESTORED",
+            "schema_3": true,
+            "current_owner": true,
+            "mode_owned": false
+          }
+        ]
+      }
+    ],
+    "outer": {
+      "separate_child_process": true,
+      "child_exit": 0,
+      "original_entry_confirmed": true,
+      "compatible_helper_only_classpath": true,
+      "permission_policy_excluded_informational_mask": 768,
+      "raw_flag_difference_count": 5,
+      "authorization_policy_changes": 0
+    },
+    "status": "passed"
+  },
+  "host_total_elapsed_seconds": 5.861
+}

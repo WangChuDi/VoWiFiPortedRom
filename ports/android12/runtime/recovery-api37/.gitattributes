@@ -1,0 +1,3 @@
+# Preserve the exact SHA-pinned source bytes used for these isolated probes.
+Api37OriginalFixtureRecoveryV6.java -text
+Api37CompatibleFixtureRecovery.java -text
