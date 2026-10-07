@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "phone_rebooted": false,
+  "phone_reloaded": false,
+  "module_staged": true,
+  "actual_apks_match_new_module": {
+    "iwlan": true,
+    "qns": true,
+    "ims": true
+  },
+  "phone_identity_stable": true,
+  "original_transaction_unchanged": true
+}

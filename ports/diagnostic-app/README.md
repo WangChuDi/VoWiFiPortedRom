@@ -351,3 +351,13 @@ native-SMS/dispatcher false state to true while WLAN voice remained registered,
 with Phone identity stable, IMS PID unchanged and no production update. This specific UI run
 sent no new call/SMS and did not recheck every replacement action. See
 [the own-UID UI evidence and retained failures](reports/20261007-app-own-uid/README.md).
+
+## Version0.9.12 scoped reconnect and underlying Wi-Fi loss
+
+VersionCode24 packages API30 module0.9.5/IMS0.4.6 and modern module0.2.5.
+Selected physical Wi-Fi loss now withdraws its IWLAN session; serialized SIP
+attempts reject canceled readers/results and expose fresh transport-stage metadata.
+Two physical API30 off/on cycles automatically restored WLAN/native SMS without
+Phone reload or client rebind. A subsequent191/native INFO/inbox/notification test
+and one actual module reboot passed. Modern carrier and dual-active-SIM validation
+remain incomplete. See [implementation, identities and retained failures](SIP-RECONNECT-20261007.md).

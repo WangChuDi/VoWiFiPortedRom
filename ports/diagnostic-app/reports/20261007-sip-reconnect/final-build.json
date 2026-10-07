@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "tool_version": "0.9.12-diagnostic",
+  "ims_version": "0.4.6-api30-stack",
+  "api30_module_version": "0.9.5-trial",
+  "modern_module_version": "0.2.5",
+  "phone_modified": false,
+  "device_validated": false,
+  "artifacts": {
+    "vowifi-tool0912.apk": "88107e0b5893a98f2e33d050abcbea86b1409b2082b714b2510268a08be21ea2",
+    "api30-engine.zip": "6a90f38987b16e1e5c17d64b248d866c4fa06ce0dbc6b331d7b2a8a031352e9b",
+    "ims046.apk": "c90774c206b82b17ebde9a190cfd368e04c3ec50e4fc95c08a4f7d9df38d1224",
+    "modern-engine.zip": "e72ff919ae1c04878447bd96b8fb8435cb65ebf501c57148e5837839a3ebf7b2"
+  },
+  "signature_verified": true,
+  "embedded_engines_exact": true,
+  "api30_api31_compile_verified": true,
+  "retained_artifacts_unchanged": true,
+  "source_inputs_unchanged": true
+}

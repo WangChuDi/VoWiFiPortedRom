@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "phone_rebooted": false,
+  "phone_reloaded": false,
+  "sim_reinserted": false,
+  "new_call_sms_sent": false,
+  "cycles": [],
+  "error": "AssertionError",
+  "error_line": 27
+}

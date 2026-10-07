@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "status": "observed",
+  "read_only": true,
+  "new_call_sms_sent": false,
+  "phone_reloaded": false,
+  "samples": [
+    {
+      "diagnostic_complete": true,
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 1
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 10
+      },
+      "ims": {
+        "observed": true,
+        "phase": "REGISTERED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": true,
+        "register_tx": 4,
+        "sip_status": 200,
+        "generation": 4
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 1
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 10
+      },
+      "ims": {
+        "observed": true,
+        "phase": "REGISTERED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": true,
+        "register_tx": 4,
+        "sip_status": 200,
+        "generation": 4
+      }
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "iwlan": {
+        "observed": true,
+        "phase": "CHILD_OPENED",
+        "ike_open": true,
+        "child_open": true,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 1
+      },
+      "qns": {
+        "observed": true,
+        "phase": "IWLAN_SELECTED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": false,
+        "register_tx": 0,
+        "sip_status": 0,
+        "generation": 10
+      },
+      "ims": {
+        "observed": true,
+        "phase": "REGISTERED",
+        "ike_open": false,
+        "child_open": false,
+        "registered": true,
+        "register_tx": 4,
+        "sip_status": 200,
+        "generation": 4
+      }
+    }
+  ],
+  "installed_tool_sha256": "de22787f736555d5efe9260fab3559f04d5f03ffaec3728c0b06564cc0205c3c",
+  "installed_ims_sha256": "3f971f5ff82c9942fa2e07a3f34f913315e922582bfbaab0913b499d6998ca9d",
+  "owner_full_replacement_preserved": true,
+  "phone_identity_stable": true
+}

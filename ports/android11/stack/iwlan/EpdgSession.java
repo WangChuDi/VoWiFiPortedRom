@@ -34,6 +34,8 @@ public final class EpdgSession {
     private final List<IpSecTransform> transforms=new CopyOnWriteArrayList<>();
     private volatile Object session;
     private volatile IpSecManager.IpSecTunnelInterface tunnel;
+    private ConnectivityManager watchedConnectivity;
+    private ConnectivityManager.NetworkCallback wifiCallback;
     private List<InetAddress> pcscf=Collections.emptyList();
     private volatile boolean opened;
     private String stage="initialization";
@@ -88,6 +90,12 @@ public final class EpdgSession {
             if(nc!=null&&nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)&&!nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)){wifi=n;break;}
         }
         if(wifi==null)throw new IllegalStateException("no-wifi");
+        watchUnderlyingNetwork(cm,wifi);
+        // Selection may race with loss before the callback registration completes.
+        NetworkCapabilities selectedCapabilities=cm.getNetworkCapabilities(wifi);
+        if(selectedCapabilities==null||!selectedCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                ||selectedCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN))throw new IllegalStateException("wifi-lost-before-connect");
+        if(stopping.get())return;
         InetAddress remote=null,local=null;
         observe(StackTelemetry.Phase.DNS);
         InetAddress[] resolved=wifi.getAllByName("epdg.epc.mnc015.mcc234.pub.3gppnetwork.org");
@@ -207,11 +215,30 @@ public final class EpdgSession {
         return s;
     }
     private void observe(StackTelemetry.Phase phase){if(telemetry!=null)telemetry.phase(phase);}
+    private void watchUnderlyingNetwork(ConnectivityManager cm,Network selected){
+        synchronized(resourceLock){
+            if(stopping.get())return;
+            watchedConnectivity=cm;
+            wifiCallback=new ConnectivityManager.NetworkCallback(){
+                @Override public void onLost(Network lost){
+                    if(selected.equals(lost)&&!stopping.get())fail("underlying-network-lost");
+                }
+            };
+            cm.registerNetworkCallback(new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(),wifiCallback);
+        }
+    }
+    private void stopNetworkWatch(){
+        final ConnectivityManager cm;final ConnectivityManager.NetworkCallback callback;
+        synchronized(resourceLock){cm=watchedConnectivity;callback=wifiCallback;watchedConnectivity=null;wifiCallback=null;}
+        if(cm!=null&&callback!=null)try{cm.unregisterNetworkCallback(callback);}catch(IllegalArgumentException ignored){}
+    }
     private void fail(String reason){if(telemetry!=null)telemetry.end(true);if(notified.compareAndSet(false,true))listener.closed(reason);close();}
     public void close(){
         if(telemetry!=null)telemetry.end(false);
         final Object current;
         synchronized(resourceLock){stopping.set(true);current=session;}
+        stopNetworkWatch();
         if(current==null){cleanup();return;}
         try{get(current,"close");}catch(Exception ignored){}
         if(!timer.isShutdown())try{timer.schedule(()->{try{get(current,"kill");}catch(Exception ignored){}cleanup();},3,TimeUnit.SECONDS);}catch(RejectedExecutionException ignored){}
@@ -224,6 +251,7 @@ public final class EpdgSession {
             transforms.clear();
             if(tunnel!=null)try{tunnel.close();}catch(Exception ignored){}
         }
+        stopNetworkWatch();
         timer.shutdownNow();worker.shutdown();
     }
 }

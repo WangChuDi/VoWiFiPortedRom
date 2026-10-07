@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "status": "ready",
+  "reboot_requested": true,
+  "new_calls_or_sms": false,
+  "actual_apks_match_staged_module": {
+    "dev.codex.vowifi.iwlan": true,
+    "dev.codex.vowifi.qns": true,
+    "me.phh.ims": true
+  },
+  "current_module_version095": true,
+  "mounted_payloads_match": {
+    "Api30Iwlan": true,
+    "Api30Qns": true,
+    "Api30PhhIms": true
+  },
+  "boot_count_advanced": true,
+  "observations": [
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -3,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false
+    },
+    {
+      "diagnostic_complete": true
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": -2,
+      "voice": false,
+      "sms": false,
+      "native_sms_ims_supported": false
+    },
+    {
+      "diagnostic_complete": true,
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": true
+    }
+  ]
+}

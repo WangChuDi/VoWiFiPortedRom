@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "phone_rebooted": false,
+  "phone_reloaded": false,
+  "new_calls_or_sms": false,
+  "module_staged": true,
+  "samples": [
+    {
+      "diagnostic_complete": true,
+      "ims_transport": 2,
+      "voice": true,
+      "sms": true,
+      "native_sms_ims_supported": false,
+      "dispatcher_available": false,
+      "ims": {
+        "observed": true,
+        "phase": "REGISTERED",
+        "registered": true,
+        "generation": 1,
+        "register_tx": 2,
+        "sip_status": 200,
+        "sip_connect_schema": 1,
+        "sip_attempt": 1,
+        "sip_stage": "REGISTERED",
+        "sip_failure": "NONE",
+        "sip_failure_stage": "UNOBSERVED",
+        "sip_response_elapsed": 12459757,
+        "sip_retry_due_elapsed": 0
+      }
+    }
+  ],
+  "original_apks_backed_up": true,
+  "dev.codex.vowifi.tool_installed_exact": true,
+  "me.phh.ims_installed_exact": true,
+  "client_rebind_completed": true,
+  "after_rebind": {
+    "diagnostic_complete": true,
+    "ims_transport": 2,
+    "voice": true,
+    "sms": true,
+    "native_sms_ims_supported": true,
+    "dispatcher_available": true,
+    "ims": {
+      "observed": true,
+      "phase": "REGISTERED",
+      "registered": true,
+      "generation": 1,
+      "register_tx": 2,
+      "sip_status": 200,
+      "sip_connect_schema": 1,
+      "sip_attempt": 1,
+      "sip_stage": "REGISTERED",
+      "sip_failure": "NONE",
+      "sip_failure_stage": "UNOBSERVED",
+      "sip_response_elapsed": 12459757,
+      "sip_retry_due_elapsed": 0
+    }
+  },
+  "original_transaction_unchanged": true,
+  "phone_identity_stable": true,
+  "all_calls_idle_after": true
+}

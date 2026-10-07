@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "status": "scoped-validation-passed",
+  "api30_real_automatic_reconnect_cycles": 2,
+  "api30_module_reboot_verified": true,
+  "native_call_sms_inbox_notification_verified": true,
+  "api30_api31_compile_verified": true,
+  "modern_real_carrier_verified": false,
+  "dual_active_sim_verified": false,
+  "full_goal_complete": false
+}

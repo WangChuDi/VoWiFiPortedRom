@@ -163,6 +163,7 @@ public final class MainActivity extends Activity {
         JSONObject service=data.optJSONObject("ims_status");
         if(service!=null&&service.optBoolean("observed")){
             card("检查时的 IMS 实例","会话代次 "+service.optLong("generation")+" · "+phaseName(service.optString("phase"))+"\n本代 REGISTER 发送 "+service.optInt("register_tx")+" · 最近响应 "+service.optInt("sip_status"));
+            card("SIP 连接与重试",SipTransportObservation.describe(service));
             card("本代系统短信投递观测","IMS 收到 "+service.optInt("sms_rx")+" · 系统确认成功 "+service.optInt("sms_ack_ok")+" · 系统拒绝 "+service.optInt("sms_ack_failed")+"\n发送请求 "+service.optInt("sms_tx")+" · 网络确认成功 "+service.optInt("sms_tx_ok")+" · 发送失败 "+service.optInt("sms_tx_failed")+"\n累计元数据，不代表下一条短信一定成功，也不证明已显示通知");
             card("本代语音媒体观测","已发送 RTP 帧 "+service.optInt("voice_tx_frames")+" · 已交给音频播放的帧 "+service.optInt("voice_played_frames")+"\n累计观测；需要实际通话验证听感");
         }

@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "registry_schema_checks": 37,
+  "sip_handover_provenance_checks": 31,
+  "device_test": false
+}

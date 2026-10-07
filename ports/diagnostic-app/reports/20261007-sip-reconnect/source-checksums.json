@@ -1,0 +1,13 @@
+{
+  "ports/android11/stack/common/SipReconnectGate.java": "00d121f10439d5d7a109ff27b3d2bf4400145536210c2d9b003a10c659da19e9",
+  "ports/android11/stack/common/StackTelemetry.java": "77ebec5d56970f77c3ed7f35b89e02f08b715ba8faca4a10e1e13d24901c4c4f",
+  "ports/android11/stack/sip_reconnect_source.py": "1ba9c92a6605a9813375938f53cee2f362f1027ed1c985b5116f627962636058",
+  "ports/android11/stack/prepare-ims-source.py": "07126055dcec4a8a7f007e18b38e9f22bba1b88cf2af1cad727f21abc57e552b",
+  "ports/android11/stack/iwlan/EpdgSession.java": "79d26af59d5532a2ca853a2b2af8f10dfebf5e98049fcb1ae3a5101a7e125df0",
+  "ports/diagnostic-app/TelemetrySnapshot.java": "478c9043ac22e0c4ee0b6d6ea5cb6330029f1c51348d3096472a4221810fdd2f",
+  "ports/diagnostic-app/SipTransportObservation.java": "bb6db4d98b4f276529d6f9e425aeb1ddefbd67d2cd778a411ec68cac4e31a5f7",
+  "ports/diagnostic-app/MainActivity.java": "a317b9f58bdb78a9e53cdd501cc095d8fa570509f6e852fce2c0ac36b3083c98",
+  "ports/compatibility/tests/SipReconnectContractTest.java": "0f1bb7141fcdf07fe7b62cf738d443df9db25ea7f9de5619379a91127957ebda",
+  "ports/compatibility/test-telemetry.py": "b525635892e29698ad891f13e39ba822c88086d9c76a226b0cf1abba6c65083c",
+  "ports/diagnostic-app/validate.py": "0167e2d3f0a50ee980d5e9e387d28ccd4cfe703259c683c384a110705b62cac1"
+}

@@ -205,10 +205,13 @@ sip='me/phh/sip/SipHandler.kt'
 edit(sip,'class SipHandler(val ctxt: Context, slotId: Int) {','class SipHandler(val ctxt: Context, slotId: Int, expectedSubId:Int) {')
 edit(sip,'    private var imsReady = false','    var telemetry: dev.codex.vowifi.common.StackTelemetry.Owner? = null\n    private var imsReady = false')
 edit(feature,'sipHandler = SipHandler(imsService, slotId, selectedSubId)','sipHandler = SipHandler(imsService, slotId, selectedSubId)\n        sipHandler.telemetry=telemetry')
-edit(sip,'    fun registerCallback(response: SipResponse): Boolean {','    fun registerCallback(response: SipResponse): Boolean {\n        telemetry?.sipResponse(response.statusCode)')
+edit(sip,'    fun registerCallback(response: SipResponse): Boolean {','''    fun registerCallback(response: SipResponse, attempt:dev.codex.vowifi.common.SipReconnectGate.Attempt<Network>): Boolean {
+        if(!reconnectGate.current(attempt))return true
+        telemetry?.sipResponse(attempt.generation,response.statusCode)
+        if(response.statusCode!=200)telemetry?.sipFailure(attempt.generation,dev.codex.vowifi.common.StackTelemetry.SipFailure.SIP_REJECTED)''')
 edit(sip,'        registerCounter += 1','        telemetry?.add(dev.codex.vowifi.common.StackTelemetry.Counter.REGISTER_TX,1)\n        registerCounter += 1')
-edit(sip,'        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {','        if(plainRegReply is SipResponse)telemetry?.sipResponse(plainRegReply.statusCode)\n        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {')
-edit(sip,'        if (regReply !is SipResponse || regReply.statusCode != 200) {','        if(regReply is SipResponse)telemetry?.sipResponse(regReply.statusCode)\n        if (regReply !is SipResponse || regReply.statusCode != 200) {')
+edit(sip,'        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {','        requireAttempt(attempt)\n        if(plainRegReply is SipResponse)telemetry?.sipResponse(attempt.generation,plainRegReply.statusCode)\n        if (plainRegReply !is SipResponse || plainRegReply.statusCode != 401) {')
+edit(sip,'        if (regReply !is SipResponse || regReply.statusCode != 200) {','        requireAttempt(attempt)\n        if(regReply is SipResponse)telemetry?.sipResponse(attempt.generation,regReply.statusCode)\n        if (regReply !is SipResponse || regReply.statusCode != 200) {')
 challenge='me/phh/sip/SipChallenge.kt'
 p=dest/challenge;t=p.read_text(encoding='utf-8')
 start=t.index('fun sipAkaChallenge(');end=t.index('data class SipAkaDigestSess(',start)
@@ -323,30 +326,50 @@ edit(sip,'                                "a=des:qos mandatory local sendrecv"\n
                                 "a=des:qos mandatory remote sendrecv"
                             } else {''')
 edit(sip,'                                currentCall!!.callHeaders + ("content-type" to listOf("application/sdp")),','                                (currentCall!!.callHeaders - "route" - "expires") + ("content-type" to listOf("application/sdp")),')
-edit(sip,'    private var imsReady = false','''    private var imsReady = false
+edit(sip,'    private var imsReady = false','''    @Volatile private var imsReady = false
     @Volatile private var stopped = false
     @Volatile private var selectedNetwork: Network? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    private val attempting=AtomicBoolean(false)
-    private var connectionGeneration=0
+    private val reconnectGate=dev.codex.vowifi.common.SipReconnectGate<Network>()
+    private var latestNetwork:Network?=null
     private var preferredPcscf=0
     private var retryDelay=2000L
     private var recoverNetwork:((Network)->Unit)?=null
-    private fun connectionEnded(connection:SipConnection){
+    private var recoverCurrentNetwork:(()->Unit)?=null
+    private class SipAttemptFailure(val kind:dev.codex.vowifi.common.StackTelemetry.SipFailure):java.io.IOException()
+    private fun requireAttempt(attempt:dev.codex.vowifi.common.SipReconnectGate.Attempt<Network>){
+        if(stopped||!reconnectGate.current(attempt))throw SipAttemptFailure(dev.codex.vowifi.common.StackTelemetry.SipFailure.CANCELED)
+    }
+    private fun failureKind(error:Throwable):dev.codex.vowifi.common.StackTelemetry.SipFailure=when(error){
+        is SipAttemptFailure -> error.kind
+        is java.net.SocketTimeoutException -> dev.codex.vowifi.common.StackTelemetry.SipFailure.TIMEOUT
+        is java.io.IOException -> dev.codex.vowifi.common.StackTelemetry.SipFailure.NETWORK_IO
+        is SecurityException -> dev.codex.vowifi.common.StackTelemetry.SipFailure.UNAVAILABLE
+        is IllegalArgumentException -> dev.codex.vowifi.common.StackTelemetry.SipFailure.PARAMETER_ERROR
+        else -> dev.codex.vowifi.common.StackTelemetry.SipFailure.OTHER
+    }
+    private fun connectionEnded(connection:SipConnection,attempt:dev.codex.vowifi.common.SipReconnectGate.Attempt<Network>?=reconnectGate.current()){
         myHandler.post {
-            if(stopped || !this::socket.isInitialized || socket!==connection)return@post
+            if(stopped || attempt==null || !reconnectGate.current(attempt) || !this::socket.isInitialized || socket!==connection)return@post
             val found=selectedNetwork ?: return@post
-            selectedNetwork=null;closeConnection();imsFailureCallback?.invoke()
-            myHandler.postDelayed({recoverNetwork?.invoke(found)},retryDelay)
+            telemetry?.sipFailure(attempt.generation,dev.codex.vowifi.common.StackTelemetry.SipFailure.NETWORK_IO)
+            reconnectGate.lost(found);selectedNetwork=null;closeConnection();imsFailureCallback?.invoke()
+            telemetry?.sipRetry(attempt.generation,retryDelay)
+            myHandler.postDelayed({recoverCurrentNetwork?.invoke()},retryDelay)
         }
     }
     fun refreshRegistration(){
-        if(stopped)return
-        if(imsReady)try{register()}catch(_:Throwable){if(this::socket.isInitialized)connectionEnded(socket)}
-        else if(this::network.isInitialized)myHandler.post{recoverNetwork?.invoke(network)}
+        myHandler.post{
+            if(stopped)return@post
+            val attempt=reconnectGate.current()
+            if(imsReady&&attempt!=null)thread(name="SipRefresh"){
+                try{requireAttempt(attempt);register()}catch(_:Throwable){if(this::socket.isInitialized)connectionEnded(socket,attempt)}
+            }else recoverCurrentNetwork?.invoke()
+        }
     }
     fun shutdown() {
         stopped = true
+        reconnectGate.stop()
         stopCallMedia()
         networkCallback?.let { try { connectivityManager.unregisterNetworkCallback(it) } catch (_: Throwable) {} }
         networkCallback = null
@@ -385,7 +408,7 @@ t=t[:start]+t[end:]
 t=t.replace('expires=600000','expires=1800').replace('Expires: 600000','Expires: 1800')
 t=t.replace('P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=20810b8c49752501','P-Access-Network-Info: IEEE-802.11')
 t=t.replace('                    Expires: 1800\n','                    P-Access-Network-Info: IEEE-802.11\n                    Expires: 1800\n',1)
-t=t.replace('        subscribe()\n        // always keep callback','''        if (!imsReady) { imsReady=true; imsReadyCallback?.invoke() }
+t=t.replace('        subscribe()\n        // always keep callback','''        if (!imsReady) { imsReady=true;myHandler.post{if(reconnectGate.current(attempt)&&imsReady)imsReadyCallback?.invoke()} }
         android.util.Log.i("Api30PhhIms","sip-register=200")
         subscribe()
         // always keep callback''')
@@ -394,37 +417,58 @@ end=t.index('\n    fun updateCommonHeaders(',start)
 t=t[:start]+'''    fun getVolteNetwork() {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onLost(lost: Network) {
-                if (selectedNetwork == lost) { connectionGeneration++;selectedNetwork=null; closeConnection(); imsFailureCallback?.invoke() }
+                if(latestNetwork==lost)latestNetwork=null
+                val attempt=reconnectGate.current()
+                if (reconnectGate.lost(lost)) {
+                    if(attempt!=null){telemetry?.sipFailure(attempt.generation,dev.codex.vowifi.common.StackTelemetry.SipFailure.CANCELED);telemetry?.sipStage(attempt.generation,dev.codex.vowifi.common.StackTelemetry.SipStage.WAITING_NETWORK)}
+                    selectedNetwork=null;closeConnection();imsFailureCallback?.invoke()
+                }
             }
             override fun onAvailable(found: Network) { maybeConnect(found) }
             override fun onLinkPropertiesChanged(found: Network, lp: LinkProperties) { maybeConnect(found) }
             private fun maybeConnect(found: Network) {
-                if(stopped || selectedNetwork == found) return
+                if(stopped) return
                 val lp=connectivityManager.getLinkProperties(found) ?: return
                 // API30 telephony advertises CELLULAR even for a WLAN DataService.
                 if(lp.interfaceName?.startsWith("ipsec") != true || lp.pcscfServers.isEmpty()) return
-                if(!attempting.compareAndSet(false,true))return
+                latestNetwork=found
+                val attempt=reconnectGate.offer(found) ?: return
+                closeConnection()
                 selectedNetwork=found; network=found
-                val generation=++connectionGeneration
+                telemetry?.sipAttempt(attempt.generation,!isControlSocketUdp)
                 thread(name="Api30SipConnect") {
-                    try { connect(); if(!imsReady)throw java.io.IOException("registration-incomplete");retryDelay=2000L } catch(t: Throwable) {
+                    var failure:Throwable?=null
+                    try { connect(attempt);requireAttempt(attempt);if(!imsReady)throw SipAttemptFailure(dev.codex.vowifi.common.StackTelemetry.SipFailure.SIP_REJECTED) } catch(t: Throwable) {
+                        failure=t
                         val frame=t.stackTrace.firstOrNull { it.className.startsWith("me.phh.") }
                         android.util.Log.w("Api30PhhIms","connect-error="+t.javaClass.simpleName+" at="+frame?.className+":"+frame?.lineNumber)
-                        myHandler.post {
-                            if(generation==connectionGeneration){
-                                selectedNetwork=null;preferredPcscf++;closeConnection();imsFailureCallback?.invoke()
-                                myHandler.postDelayed({maybeConnect(found)},retryDelay)
-                                retryDelay=(retryDelay*2).coerceAtMost(60000L)
+                    }finally{
+                        val completed=Runnable{
+                            val current=reconnectGate.current(attempt)
+                            val success=current&&failure==null&&imsReady
+                            if(!success){
+                                selectedNetwork=null;closeConnection()
+                                if(!stopped){telemetry?.sipFailure(attempt.generation,if(current)failure?.let{failureKind(it)} ?: dev.codex.vowifi.common.StackTelemetry.SipFailure.SIP_REJECTED else dev.codex.vowifi.common.StackTelemetry.SipFailure.CANCELED);imsFailureCallback?.invoke()}
+                            }else retryDelay=2000L
+                            val result=reconnectGate.finish(attempt,success)
+                            if(!stopped){
+                                if(result.deferredNetwork!=null)maybeConnect(result.deferredNetwork)
+                                else if(!success&&current){
+                                    preferredPcscf++;telemetry?.sipRetry(attempt.generation,retryDelay)
+                                    myHandler.postDelayed({if(reconnectGate.current()==null)recoverCurrentNetwork?.invoke()},retryDelay)
+                                    retryDelay=(retryDelay*2).coerceAtMost(60000L)
+                                }
                             }
                         }
-                    }finally{
-                        attempting.set(false)
+                        if(!myHandler.post(completed))closeConnection()
                     }
                 }
             }
             fun recover(found:Network)=maybeConnect(found)
+            fun recoverCurrent(){latestNetwork?.let{maybeConnect(it)}}
         }
         recoverNetwork={callback.recover(it)}
+        recoverCurrentNetwork={callback.recoverCurrent()}
         networkCallback=callback
         connectivityManager.requestNetwork(NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
@@ -716,4 +760,6 @@ edit(connection,'    override fun close() {\n        socket.close()\n    }',''' 
         if(this::inTransform.isInitialized) inTransform.close()
         if(this::outTransform.isInitialized) outTransform.close()
     }''',expected=2)
+from sip_reconnect_source import apply as apply_reconnect
+p=dest/sip;p.write_text(apply_reconnect(p.read_text(encoding='utf-8')),encoding='utf-8',newline='\n')
 print('Experimental IMS source generated; preserved snapshot unchanged.')
