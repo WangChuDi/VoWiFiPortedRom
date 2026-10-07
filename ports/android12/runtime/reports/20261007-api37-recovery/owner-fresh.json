@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "host_elapsed_seconds": 8.383,
+  "entry_exit": 137,
+  "probe_sha256": "21d594950ec87ef52c81f26c20878638914be20bd0e525965b591cf06656ea39",
+  "compile_header_sha256": "df715b19bbecf835337294391f87976e2d25c75d59f05590f5b79f68a00740da",
+  "retained_runtime_helper_sha256": "ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d",
+  "checkpoints": [
+    "context-initialization",
+    "subscription-observation",
+    "subscription-query-completed",
+    "telephony-manager-getter",
+    "telephony-manager-ready",
+    "sim-state-query",
+    "sim-state-query-completed",
+    "sim-ready-refused"
+  ],
+  "physical_phone_modified": false,
+  "raw_output_exported": false
+}

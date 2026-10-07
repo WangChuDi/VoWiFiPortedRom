@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "creation_requested_userdata_bytes": 4294967296,
+  "post_run_config_userdata_bytes": 6442450944,
+  "configured_guest_ram_mib": 4096,
+  "partition_size_verified_inside_guest": false,
+  "physical_phone_modified": false,
+  "writable_system_control_started": false,
+  "available_disk_bytes_at_preflight": 5811421184,
+  "stock_launcher_initial_disk_floor_bytes": 8589934592,
+  "initial_disk_floor_satisfied": false,
+  "original_avd_modified": false
+}

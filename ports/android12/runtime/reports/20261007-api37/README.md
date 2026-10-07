@@ -61,12 +61,16 @@ The isolated [subscription sampler](subscription-observation.json) observed
 then 1 after six seconds. This observation does not establish an asynchronous
 client cache, the root cause of reopen failure, or a safe fixed delay for production.
 
-Two read-only owner probe runs timed out under a 35-second process bound.
+Two read-only owner probe runs exited 137 under a 35-second process bound.
 [Their checkpoints](owner-checkpoints2.json) reached context initialization and
 subscription-query completion but not fixture inventory or owner-operation
 completion. They did not restore the outstanding owner; raw outputs and identities
 were not published. Further telephony/service and transaction diagnosis is needed
-before repeating mutation tests on this guest.
+before repeating mutation tests on this guest. Their timeout label was inferred
+from the exit code, rather than independently verified. The
+[later recovery investigation](../20261007-api37-recovery/README.md) reached a
+READY-guard refusal and the Settings-command boundary, retained original journals,
+and compared the original profile with a separate calibrated stock guest.
 
 ## Remaining scope
 

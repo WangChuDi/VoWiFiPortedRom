@@ -9,6 +9,10 @@ scoped checks with identical final artifacts in a separate one-worker run.
 The [API37 continuation](reports/20261007-api37/README.md) passed runtime/app
 checks but failed the full lifecycle; it retains failed reboot and deferred
 cleanup evidence and does not claim 49-stage or production installation success.
+The [original-fixture recovery investigation](reports/20261007-api37-recovery/README.md)
+later localized a Settings-command failure, compared resource growth with a
+calibrated stock guest, and added an isolated, pinned recovery probe. Original
+cleanup and full API37 lifecycle are still unconfirmed.
 Earlier sections below retain the artifact identities and limits of their original batches.
 
 The owned-emulator preparation script checks guest data headroom, a changed boot

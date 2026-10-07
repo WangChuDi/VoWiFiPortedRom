@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "selection",
+  "entry_exit": 1,
+  "host_elapsed_seconds": 12.036,
+  "process_timeout_observed": false,
+  "checkpoints": [
+    "context",
+    "subscription",
+    "telephony",
+    "sim-observed",
+    "inventory-observed",
+    "selection-restore"
+  ],
+  "retained_helper_verified": true,
+  "retained_payloads_verified": true,
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "selection",
+    "read_only": false,
+    "physical_phone_modified": false,
+    "new_baseline_created": false,
+    "readiness_samples": 2,
+    "two_consecutive_ready_samples": true,
+    "sim_state": 5,
+    "single_ready_fake_subscription": true,
+    "fixture_count": 1,
+    "fixtures": [
+      {
+        "ordinal": 0,
+        "installation_phase": "PREPARED",
+        "installation_schema_1": true,
+        "outer_record_present": true,
+        "owners": [
+          {
+            "phase": "ACTIVE",
+            "schema_3": true,
+            "current_owner": true,
+            "mode_owned": true
+          }
+        ]
+      }
+    ],
+    "error": "IOException",
+    "reason": "unclassified",
+    "origin": "ModernRootSettings.command:19",
+    "status": "failed"
+  }
+}

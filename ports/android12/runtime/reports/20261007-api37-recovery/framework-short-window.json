@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "samples": [
+    {
+      "index": 0,
+      "system_server": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "com.android.phone": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "MemTotal_kib": 4009368,
+      "MemAvailable_kib": 3176704,
+      "SwapTotal_kib": 3007020,
+      "SwapFree_kib": 3006540
+    },
+    {
+      "index": 1,
+      "system_server": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "com.android.phone": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "MemTotal_kib": 4009368,
+      "MemAvailable_kib": 3142456,
+      "SwapTotal_kib": 3007020,
+      "SwapFree_kib": 3006540
+    },
+    {
+      "index": 2,
+      "system_server": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "com.android.phone": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "MemTotal_kib": 4009368,
+      "MemAvailable_kib": 3077844,
+      "SwapTotal_kib": 3007020,
+      "SwapFree_kib": 3006540
+    },
+    {
+      "index": 3,
+      "system_server": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "com.android.phone": {
+        "query_exit": 0,
+        "single_process_observed": true
+      },
+      "MemTotal_kib": 4009368,
+      "MemAvailable_kib": 2994740,
+      "SwapTotal_kib": 3007020,
+      "SwapFree_kib": 3006540
+    }
+  ],
+  "system_server_single_process_in_all_samples": true,
+  "system_server_identity_unchanged": true,
+  "phone_single_process_in_all_samples": true,
+  "phone_identity_unchanged": true,
+  "kernel_boot_generation_unchanged": true,
+  "bounded_system_event_marker_counts": {
+    "WATCHDOG KILLING SYSTEM PROCESS": 0,
+    "Blocked in handler": 0,
+    "system_server died": 0,
+    "zygote died": 0,
+    "Fatal signal": 0,
+    "OutOfMemoryError": 0,
+    "am_crash": 0,
+    "am_anr": 0,
+    "am_proc_died": 1,
+    "boot_progress_system_run": 0
+  },
+  "crash_exception_classes": [
+    "IllegalStateException",
+    "RuntimeException"
+  ],
+  "kernel_read_exit": 0,
+  "kernel_oom_markers": 0,
+  "raw_logs_exported": false,
+  "physical_phone_modified": false
+}

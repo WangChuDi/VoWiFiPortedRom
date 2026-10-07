@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "package_catalogue_exit": 0,
+  "platform_reference_packages_observed": true,
+  "three_replacement_packages_absent": true,
+  "original_avd_modified": false,
+  "raw_output_exported": false
+}

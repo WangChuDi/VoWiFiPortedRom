@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "selection",
+  "entry_exit": 1,
+  "host_elapsed_seconds": 0.569,
+  "process_timeout_observed": false,
+  "checkpoints": [
+    "context",
+    "subscription",
+    "telephony",
+    "sim-observed",
+    "inventory-observed"
+  ],
+  "retained_helper_verified": true,
+  "retained_payloads_verified": true,
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "result": {
+    "schema": 1,
+    "sdk": 37,
+    "action": "selection",
+    "read_only": false,
+    "physical_phone_modified": false,
+    "new_baseline_created": false,
+    "sim_state": 5,
+    "single_ready_fake_subscription": false,
+    "fixture_count": 1,
+    "fixtures": [
+      {
+        "ordinal": 0,
+        "installation_phase": "PREPARED",
+        "installation_schema_1": true,
+        "outer_record_present": true,
+        "owners": [
+          {
+            "phase": "ACTIVE",
+            "schema_3": true,
+            "current_owner": true,
+            "mode_owned": true
+          }
+        ]
+      }
+    ],
+    "error": "SecurityException",
+    "reason": "unclassified",
+    "origin": "external",
+    "status": "failed"
+  }
+}

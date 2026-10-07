@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "failed",
+  "sdk": 30,
+  "new_call_or_sms": false,
+  "phone_reload_requested": false,
+  "production_apk_modified": false,
+  "engine_modified": false,
+  "test_apk_sha256": "db872ceb4b1ed87f64ecce3bb8693be9444b9ccfaf0e7d8a254e5ae1ff33ff05",
+  "target_tool_sha256": "de22787f736555d5efe9260fab3559f04d5f03ffaec3728c0b06564cc0205c3c",
+  "raw_output_exported": false,
+  "sim_ids_exported": false,
+  "sms_bodies_exported": false,
+  "error": "ValueError",
+  "elapsed_seconds": 0.94
+}

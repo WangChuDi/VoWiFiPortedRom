@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "action": "inventory",
+  "read_only": true,
+  "status": "failed",
+  "physical_phone_modified": false,
+  "raw_output_exported": false,
+  "timeout_cause_verified": false,
+  "error": "ValueError",
+  "reason": "owned-api37-required",
+  "host_total_elapsed_seconds": 0.061
+}

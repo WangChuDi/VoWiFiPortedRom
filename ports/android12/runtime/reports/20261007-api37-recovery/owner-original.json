@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "entry_exit": 137,
+  "legacy_exit_code_timeout_heuristic": true,
+  "timeout_cause_verified": false,
+  "exit_indicates_sigkill": true,
+  "retained_payloads_verified": true,
+  "retained_helper_sha256": "ea54aa8d54f3b8822312da08d33803880d6e92a1fc24124970af31114bf49b7d",
+  "checkpoints": [
+    "context-initialization",
+    "subscription-observation",
+    "subscription-query-completed",
+    "sim-state-query",
+    "sim-state-query-completed"
+  ],
+  "physical_phone_modified": false,
+  "raw_output_exported": false
+}

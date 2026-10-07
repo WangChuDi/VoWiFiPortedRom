@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "probe_sha256": "90b6b967e98d08be5d6e1d85c133c54d5ba0850dcb7f1ec27271565477f4f5bd",
+  "read_only": true,
+  "physical_phone_modified": false,
+  "retained_helper_modified": false,
+  "observations": [
+    {
+      "mode": "unpumped",
+      "entry_exit": 0,
+      "process_timeout_observed": false,
+      "checkpoints": [
+        "context-initialization",
+        "context-ready",
+        "subscription-manager-getter",
+        "subscription-manager-ready",
+        "subscription-query",
+        "subscription-query-completed",
+        "single-subscription-guard-passed",
+        "telephony-manager-getter",
+        "telephony-manager-ready",
+        "sim-state-query",
+        "sim-state-query-completed",
+        "operator-query",
+        "operator-query-completed"
+      ],
+      "result": {
+        "schema": 1,
+        "sdk": 37,
+        "status": "observed",
+        "mode": "unpumped",
+        "single_ready_fake_subscription": true,
+        "read_only": true,
+        "physical_phone_modified": false
+      }
+    },
+    {
+      "mode": "pumped",
+      "entry_exit": 0,
+      "process_timeout_observed": false,
+      "checkpoints": [
+        "context-initialization",
+        "context-ready",
+        "subscription-manager-getter",
+        "subscription-manager-ready",
+        "subscription-query",
+        "subscription-query-completed",
+        "single-subscription-guard-passed",
+        "telephony-manager-getter",
+        "telephony-manager-ready",
+        "sim-state-query",
+        "sim-state-query-completed",
+        "operator-query",
+        "operator-query-completed"
+      ],
+      "result": {
+        "schema": 1,
+        "sdk": 37,
+        "status": "observed",
+        "mode": "pumped",
+        "single_ready_fake_subscription": true,
+        "read_only": true,
+        "physical_phone_modified": false
+      }
+    }
+  ]
+}

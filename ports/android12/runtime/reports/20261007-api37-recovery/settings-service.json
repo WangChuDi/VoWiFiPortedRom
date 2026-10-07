@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "sdk": 37,
+  "read_only": true,
+  "service_list_exit": 0,
+  "fixed_services_present": {
+    "settings": false,
+    "activity": false,
+    "package": false,
+    "phone": false,
+    "carrier_config": false
+  },
+  "commands": [
+    {
+      "kind": "settings",
+      "exit": 20,
+      "integer_result_observed": false,
+      "cannot_find_settings_service": true
+    },
+    {
+      "kind": "cmd-settings",
+      "exit": 20,
+      "integer_result_observed": false,
+      "cannot_find_settings_service": true
+    }
+  ],
+  "settings_process_crash_mentioned": false,
+  "exception_classes": [
+    "IllegalStateException",
+    "RemoteException",
+    "RuntimeException"
+  ],
+  "fixed_framework_frames": [
+    "android.app.ActivityThread$H.handleMessage(ActivityThread.java:2804)",
+    "android.app.ActivityThread.handleCreateService(ActivityThread.java:5644)",
+    "android.app.ActivityThread.main(ActivityThread.java:9523)",
+    "android.os.Handler.dispatchMessage(Handler.java:125)",
+    "android.os.Handler.dispatchMessageImpl(Handler.java:135)",
+    "android.os.Handler.dispatchMessageImpl(Handler.java:142)",
+    "android.os.Handler.handleCallback(Handler.java:1095)",
+    "android.os.HandlerThread.run(HandlerThread.java:139)",
+    "android.os.Looper.loop(Looper.java:397)",
+    "android.os.Looper.loopOnce(Looper.java:296)",
+    "android.os.Parcel.createException(Parcel.java:3376)",
+    "android.os.Parcel.createExceptionOrNull(Parcel.java:3400)",
+    "android.os.Parcel.readException(Parcel.java:3301)",
+    "android.os.Parcel.readException(Parcel.java:3359)"
+  ],
+  "raw_logs_exported": false,
+  "physical_phone_modified": false
+}

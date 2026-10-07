@@ -344,3 +344,10 @@ native INFO send/receive/inbox/notification. Explicit-account191 voice also pass
 These results are distinct from the new provenance build's startup checks and
 from long-term stability. See [exact changes, artifact identities and retained
 failures](IMS-CLIENT-REBIND-20261007.md).
+
+The unchanged0.9.11 APK was subsequently tested in its own application UID using
+same-signature instrumentation. Its real rebind button recovered an observed
+native-SMS/dispatcher false state to true while WLAN voice remained registered,
+with Phone identity stable, IMS PID unchanged and no production update. This specific UI run
+sent no new call/SMS and did not recheck every replacement action. See
+[the own-UID UI evidence and retained failures](reports/20261007-app-own-uid/README.md).
