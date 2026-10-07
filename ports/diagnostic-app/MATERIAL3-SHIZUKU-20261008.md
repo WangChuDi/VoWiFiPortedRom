@@ -70,6 +70,11 @@ acceptance does not repair this existing SMS failure or establish its cause.
 
 ## Shizuku: actual scope of the experiment
 
+This section describes the original ADB-only probe. A later actual installed
+Shizuku/rish transport experiment is recorded separately in
+[the control-path follow-up](SHIZUKU-CONTROL-20261008.md); the application still
+does not integrate the Shizuku SDK.
+
 `ShellCapabilityProbe` is a separate, read-only UID2000 `app_process` entry point.
 It emits only capability booleans, state values and exception class names. It
 does not output phone numbers, subscription IDs, APN values, messages or module

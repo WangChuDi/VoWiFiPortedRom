@@ -11,6 +11,8 @@ observations. The current UI APK was installed without changing the live engines
 The UID2000 feasibility probe supports some telephony diagnostics, but Shizuku is
 not integrated and the existing full Magisk replacement still needs root. See
 [the interface, permission scope and validation record](MATERIAL3-SHIZUKU-20261008.md).
+Actual installed Shizuku/rish follow-up checks and the installation/restoration
+boundary are documented in [the control-path experiment](SHIZUKU-CONTROL-20261008.md).
 The embedded ingress-diagnostic engines remain candidates; their newer counters
 are described in [the registered receive-path record](SIP-INGRESS-20261007.md).
 

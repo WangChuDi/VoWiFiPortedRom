@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "uid": 2000,
+  "sdk": 30,
+  "slot": 1,
+  "read_only": true,
+  "shizuku_transport_tested": false,
+  "permissions": {
+    "READ_PRIVILEGED_PHONE_STATE": true,
+    "MODIFY_PHONE_STATE": true,
+    "WRITE_APN_SETTINGS": false,
+    "RECEIVE_SMS": false,
+    "BIND_IMS_SERVICE": false,
+    "MANAGE_IPSEC_TUNNELS": false
+  },
+  "network_enumeration": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "wifi_network_observation": {
+    "call_succeeded": false,
+    "error": "SecurityException"
+  },
+  "active_subscription_query": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "carrier_config_read": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "wfc_setting_read": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "wfc_roaming_read": {
+    "call_succeeded": true,
+    "value": false
+  },
+  "provisioning_read": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "ims_registration_callback": {
+    "call_succeeded": true,
+    "value": true
+  },
+  "native_ims_sms_query": {
+    "call_succeeded": true,
+    "value": false
+  },
+  "preferred_apn_read": {
+    "call_succeeded": false,
+    "error": "SecurityException"
+  },
+  "magisk_module_file_read": {
+    "call_succeeded": false,
+    "error": "FileNotFoundException"
+  },
+  "system_partition_write_access_hint": false,
+  "module_directory_write_access_hint": false,
+  "mutation_tested": false,
+  "status": "completed"
+}

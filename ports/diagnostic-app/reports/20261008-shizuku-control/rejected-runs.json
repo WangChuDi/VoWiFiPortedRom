@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "accepted": false,
+  "runs": [
+    {
+      "reason": "rish_outer_exit_does_not_propagate_remote_failure",
+      "initial_inferred_filesystem_success_is_invalid": true
+    },
+    {
+      "reason": "explicit_remote_status_marker_missing",
+      "exception_class": "RuntimeError",
+      "no_success_inferred": true
+    }
+  ],
+  "no_raw_output_retained": true
+}

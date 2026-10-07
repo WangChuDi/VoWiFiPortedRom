@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "scope": "bridge_identity_and_permissions_only",
+  "ims_or_module_modified": false,
+  "server_started_by_probe": true,
+  "server_present_before": false,
+  "installed_native_starter_available": true,
+  "starter_exit": 0,
+  "starter_error_classes": [],
+  "rish_identity_exit": 0,
+  "rish_execution_uid": 2000,
+  "rish_error_classes": [],
+  "authorization_needed": false,
+  "server_unavailable": false,
+  "probe_assets_on_device": true
+}
