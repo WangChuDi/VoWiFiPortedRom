@@ -15,6 +15,12 @@ Version0.9.19 adds an explicit **网络检测** button, selected-SIM home-operat
 candidate results and bounded IKE SA_INIT probes of UDP500/4500. It also displays
 the user-requested detailed internet/IMS APN settings, with password reveal/hide.
 See [network detection, APN scope and result boundaries](NETWORK-DETECTION-20261008.md).
+Version0.9.20 adds separately scoped giffgaff Internet/MMS references and CTExcel
+UK/US/Canada/France/Hong Kong/Italy/travel product entries. Unknown official APN
+values stay unknown; browsing a reference never applies it or changes detection
+targets. It also lists all23 lookup signatures by purpose and puts real-session
+evidence alongside independent UDP results. See
+[carrier coverage, sources and interface catalogue](CARRIER-REFERENCES-20261008.md).
 Actual installed Shizuku/rish follow-up checks and the installation/restoration
 boundary are documented in [the control-path experiment](SHIZUKU-CONTROL-20261008.md).
 The embedded ingress-diagnostic engines remain candidates; their newer counters

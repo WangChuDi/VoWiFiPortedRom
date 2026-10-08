@@ -167,7 +167,7 @@ public final class MainActivity extends Activity {
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         JSONObject health=data.optJSONObject("platform_health");
         card("电话服务进程观测",health==null?"未观测，不能判断进程是否稳定":
-            "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n用于发现检查期间电话进程或系统服务重启，避免把旧注册状态当成当前结果；身份一致不代表 IMS 或运营商链路正常。");
+            "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n用于发现检查期间电话进程或系统服务重启，避免把旧注册状态当成当前结果；身份一致不代表 IMS 或运营商链路正常。\n只读检查不会主动重载进程。崩溃、系统维护或此前的替换／重载操作可能改变进程；需结合日志才能确定原因。");
         if(!diagnosticReady())card("检查尚未完成","停留阶段："+diagnosticStage(data.optString("diagnostic_stage"))+"。已取得的结果保留；请刷新检查后再开始替换或安装更新。");
         diagnosticSection("设备与系统",false);
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
@@ -176,9 +176,20 @@ public final class MainActivity extends Activity {
             " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
             "\n"+(abi.optBoolean("modern_candidate")?"当前为 Android12–17 候选版本；实际安装与绑定需另行验证":abi.optInt("sdk")==30?"当前系统为 Android11，使用独立的 Android11 替换引擎":"超出当前替换版本范围")+
             "\n23 项是跨版本的固定核心签名候选，不是当前 Android 版本全部接口。可见表示当前 root app_process 加载器找到签名；缺失项可能只在服务的 IKE 共享库中可见。未调用接口，也未验证权限或替换可用性。");
+        if(abi!=null){
+            card("如何选择替换接口","引擎按系统版本与设备配置选择。23 项预检查只显示签名，不会自动切换所有接口；生产代码仅对 IKE Builder 构造器、加密提案方法及 CarrierConfig 读取方法做缺失签名回退。调用失败不会自动改用下一签名。");
+            JSONObject checks=abi.optJSONObject("checks");Map<String,String> states=new LinkedHashMap<>();
+            if(checks!=null)for(String key:RuntimeAbiDetails.keys())if(checks.has(key))states.put(key,checks.optString(key));
+            for(int group=0;group<RuntimeAbiDetails.GROUPS.length;group++)card(RuntimeAbiDetails.GROUPS[group],RuntimeAbiDetails.describe(group,states));
+        }
         diagnosticSection("网络检测",data.optJSONObject("network_detection")!=null&&data.optJSONObject("network_detection").optBoolean("active_probe"));
         card("SIM 运营商与归属网",data.optString("carrier_name","未取得名称")+" · "+data.optString("sim_operator_name","")+"\nSIM MCC/MNC："+data.optString("operator","不可见")+"\n当前注册网络："+data.optString("registered_operator_name","")+" · "+data.optString("registered_operator","未注册")+"\n漫游状态："+(data.has("network_roaming")?data.optBoolean("network_roaming"):"不可见")+"\n检测目标来自 SIM 归属网与可见配置，不把漫游网络当成 SIM 运营商。");
+        card("运营商识别范围",CarrierReference.identityNote(data.optString("carrier_name"),data.optString("sim_operator_name"),data.optString("operator"))+"\n域名随运营商／配置而变。UDP 500 用于 IKE，4500 常用于 NAT-T；解析成功、端口有响应和运营商允许这张卡注册是不同结论。");
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
+        JSONObject realTunnel=data.optJSONObject("iwlan_status"),realIms=data.optJSONObject("ims_status");
+        card("实际会话与网络证据",NetworkSessionEvidence.describe(DiagnosticPolicy.complete(data),PlatformHealth.stable(health),data.optInt("ims_transport",-1),
+            realTunnel!=null&&realTunnel.optBoolean("observed"),realTunnel!=null&&realTunnel.optBoolean("ike_open"),realTunnel!=null&&realTunnel.optBoolean("child_open"),
+            realIms!=null&&realIms.optBoolean("observed"),realIms!=null&&realIms.optBoolean("registered"),realIms==null?0:realIms.optInt("sip_status")));
         card("运营商 ePDG / UDP 500 与 4500",NetworkDetection.describe(data.optJSONObject("network_detection"))+"\n"+data.optString("udp","未观测"));
         card("实际 IWLAN 隧道",data.optString("ike","不可见"));
         JSONObject qns=data.optJSONObject("qns_status");
@@ -192,6 +203,7 @@ public final class MainActivity extends Activity {
         }
         else if(iwlan!=null)card("检查时的 IWLAN 会话","未观测到所选 SIM 的有效实例");
         diagnosticSection("APN 与运营商配置",false);
+        carrierReferenceCard(data);
         JSONObject apns=data.optJSONObject("apn_details");
         if(apns==null)card("首选互联网 APN",data.optString("apn","不可见"));
         else{
@@ -338,6 +350,20 @@ public final class MainActivity extends Activity {
             TextView details=(TextView)lastCard.getChildAt(1);Button reveal=button("查看 APN 密码",null);
             reveal.setOnClickListener(v->{boolean showing=Boolean.TRUE.equals(reveal.getTag());reveal.setTag(!showing);details.setText(ApnDetails.describe(row,!showing));reveal.setText(showing?"查看 APN 密码":"隐藏 APN 密码");});lastCard.addView(reveal);
         }
+    }
+    private void carrierReferenceCard(JSONObject data){
+        LinearLayout target=detailGroup==null?results:detailGroup,c=panel(target,theme.surface);
+        c.addView(text("运营商 APN 参考 · 只读",16));
+        c.addView(text("参考不改变检测目标或替换引擎，也不会写入 APN。CTExcel 需确认发卡地区和具体产品；未核实字段保留未知。",13));
+        Spinner picker=new Spinner(this);picker.setMinimumHeight(dp(52));c.addView(picker);
+        TextView detail=text("",14);detail.setTextIsSelectable(true);c.addView(detail);
+        ArrayList<String> labels=new ArrayList<>();labels.add("选择运营商／地区参考");for(CarrierReference.Profile p:CarrierReference.all())labels.add(p.label);
+        picker.setAdapter(spinnerAdapter(labels));
+        picker.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(AdapterView<?> parent,View view,int index,long id){detail.setText(index==0?"当前 APN 与 IMS 记录列在下方。其他运营商可读取 SIM／配置并检测候选地址；是否能注册还需实际卡验证。":CarrierReference.all().get(index-1).describe());}
+            public void onNothingSelected(AdapterView<?> parent){}
+        });
+        picker.setSelection(CarrierReference.suggested(data.optString("carrier_name"),data.optString("sim_operator_name"),data.optString("operator"))+1);
     }
     private void setActions(boolean supported){
         if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rebind.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);

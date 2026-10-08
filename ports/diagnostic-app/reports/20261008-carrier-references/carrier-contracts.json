@@ -1,0 +1,6 @@
+{
+  "status": "passed",
+  "assertions": 70,
+  "network_traffic": false,
+  "carrier_registration_verified": false
+}

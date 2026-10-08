@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "pending_unlock",
+  "test_built": true,
+  "visible_device_acceptance": false,
+  "test_identity": {
+    "schema": 1,
+    "target_tool_sha256": "7a35c8eca30bba39b7b6bee63841170df6e33c33fd1538decbd04952cd7104e2",
+    "test_apk_sha256": "dfd5678a93e0c310c29fb631dc359e307aef9ebc3af5aaba5fc7132cdb0bbf28",
+    "source_sha256": "32b4b0b8831bcb191763643c444bd517aa220f7be671ad9855e3967e1237c51a",
+    "manifest_sha256": "c0a4cc0a6a8f2aa160e35cc7e07438a60748e48864ce45771d1dfcb4fdd2af0b",
+    "phone_modified": false
+  }
+}
