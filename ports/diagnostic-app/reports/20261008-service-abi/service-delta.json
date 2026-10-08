@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "baseline_source_commit": "bda69909c8aefc20f9907d71dbfe8654134bc0b1",
+  "baseline_engine_sha256": "71b871ada6aa6c330791f330fd2588b086117fd1238139d74da3a7875dee1c6d",
+  "sip_kotlin_recompiled": false,
+  "controller_rebuilt": false,
+  "roles": {
+    "iwlan": {
+      "baseline_jar_sha256": "d7ceb2047c4dfc6753c1f886fb4cd1fd74eb9111a440acd643fe21ff3b719410",
+      "baseline_dex_replay_exact": true,
+      "non_diagnostic_classes_unchanged": true,
+      "retained_class_count": 30,
+      "changed_classes": [
+        "dev/codex/vowifi/common/ServiceAbiCatalog$Entry.class",
+        "dev/codex/vowifi/common/ServiceAbiCatalog.class",
+        "dev/codex/vowifi/common/StackTelemetryProvider.class"
+      ],
+      "version_code": 4,
+      "version_name": "0.3-network-loss-service-abi",
+      "apk_sha256": "ad303fa30707e3621908c026601021a5a943759d64de2556d7267fd36647b8b4",
+      "same_signing_identity": true
+    },
+    "qns": {
+      "baseline_jar_sha256": "9694891767f582d32ae8bde93a070f73c063b26f25eb6382b1681a5ed57324af",
+      "baseline_dex_replay_exact": true,
+      "non_diagnostic_classes_unchanged": true,
+      "retained_class_count": 20,
+      "changed_classes": [
+        "dev/codex/vowifi/common/ServiceAbiCatalog$Entry.class",
+        "dev/codex/vowifi/common/ServiceAbiCatalog.class",
+        "dev/codex/vowifi/common/StackTelemetryProvider.class"
+      ],
+      "version_code": 3,
+      "version_name": "0.2-status-service-abi",
+      "apk_sha256": "28d866d150881f8d636c2b95196ae4d3ab4a5c7ec2003ed1f575f64e4bacccdc",
+      "same_signing_identity": true
+    },
+    "ims": {
+      "baseline_jar_sha256": "367f8f0c892449f4414351173a07bc72864ee71bcb3ce650e2de1a8421f63c14",
+      "baseline_dex_replay_exact": true,
+      "non_diagnostic_classes_unchanged": true,
+      "retained_class_count": 153,
+      "changed_classes": [
+        "dev/codex/vowifi/common/ServiceAbiCatalog$Entry.class",
+        "dev/codex/vowifi/common/ServiceAbiCatalog.class",
+        "dev/codex/vowifi/common/StackTelemetryProvider.class"
+      ],
+      "version_code": 46,
+      "version_name": "0.4.10-service-abi",
+      "apk_sha256": "ef2f9c406c9aea15f6c1cebf66b565d98a63334365b08c31e92d29719da22984",
+      "same_signing_identity": true
+    }
+  },
+  "module_sha256": "8103e70d3c7e91d818d2810c463a22c30b584a76901c424dfcde4ef781376ac4",
+  "source_sha256": {
+    "StackTelemetryProvider.java": "9079e1d6670d59fc57141dc06d63df38aba0b05831ae0a8ce74446d7aab45e3d",
+    "ServiceAbiCatalog.java": "208d4a688aeef941f325517bdfe95bb595570519e5b738f6f65954a939b6a469"
+  }
+}

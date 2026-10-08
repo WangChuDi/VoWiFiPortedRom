@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "non_documentation_frozen_inputs_match": true,
+  "files": 904,
+  "frozen_source_inputs_sha256": "f6c661766f7ff2230d988b4c1ef30be6d5bc92c045ccf66752fa2576e5008961",
+  "new_feature_paths": {
+    "ports/android11/stack/common/ServiceAbiCatalog.java": "208d4a688aeef941f325517bdfe95bb595570519e5b738f6f65954a939b6a469",
+    "ports/android11/stack/common/StackTelemetryProvider.java": "9079e1d6670d59fc57141dc06d63df38aba0b05831ae0a8ce74446d7aab45e3d",
+    "ports/diagnostic-app/MainActivity.java": "b6377c01bc3edfbce66d36714d72f36c0f88dfe2586ee051a77b15882901dba1",
+    "ports/diagnostic-app/RootDiagnostics.java": "90edc8c102e2a856c75b2ae614777e239cb8f6d42c6d75f4b72e096a56faab8d",
+    "ports/diagnostic-app/RootServiceAbi.java": "7c49611b70b0d7511301b673f9db5cdbb2aa47ce507664788cc6175291dc0582",
+    "ports/diagnostic-app/ServiceAbiSnapshot.java": "e5efbaa61c35de8405fca12d3e50594a83dff254dfee1fc1bb47cda1f68065f8",
+    "ports/diagnostic-app/tests/ServiceAbiContracts.java": "18956b37856e6525d1dc270801fa1226bd13d5bc0ed32ce8f57be44962a43e1f"
+  }
+}

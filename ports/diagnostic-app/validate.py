@@ -20,6 +20,7 @@ def main():
     if args.build:
         subprocess.run([sys.executable, str(B / 'build.py')]+(['--unsigned']if args.unsigned else []), check=True)
     if not args.artifacts_only:
+        subprocess.run([sys.executable, str(B / 'test-service-abi.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-carrier-reference.py')], check=True)
         subprocess.run([sys.executable, str(B / 'test-network-detection.py')], check=True)
         subprocess.run([sys.executable, str(B.parent / 'compatibility/test-telemetry.py')], check=True)

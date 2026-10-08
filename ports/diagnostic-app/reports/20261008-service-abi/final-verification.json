@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "initial_install_run": "failed-during-asynchronous-rebind",
+  "recovered_without_further_mutation": true,
+  "actual_service_processes_observed": true,
+  "all_selected_dependencies_visible": true,
+  "shell_uid_denied": true,
+  "process_instances_stable": true,
+  "owner_stable_during_final_observation": true,
+  "boot_stable_during_final_observation": true,
+  "packages_installed_exact": {
+    "dev.codex.vowifi.tool": true,
+    "dev.codex.vowifi.iwlan": true,
+    "dev.codex.vowifi.qns": true,
+    "me.phh.ims": true
+  },
+  "live_module_payload_baseline_until_next_boot": true,
+  "live_module_prop": "updated-metadata",
+  "updated_module_staged_exact": true,
+  "new_call_or_sms": false,
+  "active_udp_probe_requested": false,
+  "additional_reload_or_reboot": false,
+  "credentials_exported": false,
+  "ui_visible_validation": false
+}

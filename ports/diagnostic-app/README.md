@@ -21,6 +21,10 @@ values stay unknown; browsing a reference never applies it or changes detection
 targets. It also lists all23 lookup signatures by purpose and puts real-session
 evidence alongside independent UDP results. See
 [carrier coverage, sources and interface catalogue](CARRIER-REFERENCES-20261008.md).
+Version0.9.21 makes actual selected, running service processes the primary
+interface observation: IWLAN22, QNS5 and IMS15 scoped dependencies. The root
+loader's23 lookups remain an auxiliary result. See
+[service-process scope, diagnostic-only build and live evidence](SERVICE-ABI-20261008.md).
 Actual installed Shizuku/rish follow-up checks and the installation/restoration
 boundary are documented in [the control-path experiment](SHIZUKU-CONTROL-20261008.md).
 The embedded ingress-diagnostic engines remain candidates; their newer counters
@@ -56,11 +60,19 @@ The root helper reports only selected-subscription metadata:
   returns completed-stage snapshots and the stalled stage if a system call blocks.
   Partial observations disable new changes while recorded-owner recovery remains
   available. PIDs, start times and raw process output are not returned to the UI.
+* Version0.9.21 queries each selected, already-running replacement service's
+  own class loader. Role-specific class/method signatures are checked without
+  initialization or invocation. Current CarrierConfig, active owner/generation,
+  PID/start time, boot, nonce and freshness checks prevent another process or
+  stale sample being presented as current. Unselected, stopped, old or
+  inaccessible services remain explicitly unknown. These finite catalogues
+  do not prove invocation permissions, binding health or SMS delivery.
 * Version0.8.0 adds23 core IKE/EAP/IPsec/CarrierConfig signature lookups in the
   root app_process loader. Each lookup reports visible, absent, inaccessible or
   linkage error; explicit constructor/read/proposal aliases are checked in
   production order. No class initialization, method invocation or SIM auth occurs.
-  These23 checks are a scoped pre-install aid, not the entire service ABI.
+  These23 checks are auxiliary root-loader information, not a replacement verdict
+  or the entire service ABI.
   Missing IKE classes in this loader may still be available to a service through
   its declared shared library. Visibility does not prove Binder permissions,
   package installation, service binding or carrier acceptance. Version0.9.0 now

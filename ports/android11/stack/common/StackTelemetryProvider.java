@@ -17,7 +17,8 @@ public final class StackTelemetryProvider extends ContentProvider {
         if(Binder.getCallingUid()!=0)throw new SecurityException("status-root-required");
         boolean clients="capabilities".equals(method)||"client-rebind".equals(method);
         boolean nativeSms="native-sms".equals(method);
-        if((!"status".equals(method)&&!clients&&!nativeSms)||arg==null||arg.length()>96)throw new IllegalArgumentException("status-request");
+        boolean runtimeAbi="runtime-abi".equals(method);
+        if((!"status".equals(method)&&!clients&&!nativeSms&&!runtimeAbi)||arg==null||arg.length()>96)throw new IllegalArgumentException("status-request");
         String[] parts=arg.split(":",-1);
         if(parts.length!=4||!parts[1].matches("[0-7]")||!parts[2].matches("[0-9]{1,10}")||!parts[3].matches("[0-9a-f]{16}"))
             throw new IllegalArgumentException("status-selection");
@@ -25,6 +26,27 @@ public final class StackTelemetryProvider extends ContentProvider {
         if(!pkg.equals(channel.equals("ims")?"me.phh.ims":"dev.codex.vowifi."+channel)||
            !(channel.equals("iwlan")||channel.equals("qns")||channel.equals("ims")))throw new IllegalArgumentException("status-channel");
         int slot=Integer.parseInt(parts[1]),sub=Integer.parseInt(parts[2]);
+        if(runtimeAbi){
+            try{
+                SubscriptionInfo actual=StackProfile.selectedSubscription(getContext(),slot);
+                boolean authorized=actual!=null&&actual.getSubscriptionId()==sub;
+                Map<String,Object> before=authorized?StackTelemetry.snapshot(channel,slot,sub):null;
+                if(before!=null&&Boolean.TRUE.equals(before.get("retired")))before=null;
+                JSONObject value=new JSONObject().put("schema",1).put("channel",channel).put("slot",slot).put("sub",sub).put("nonce",parts[3])
+                    .put("pid",android.os.Process.myPid()).put("boot",Settings.Global.getInt(getContext().getContentResolver(),Settings.Global.BOOT_COUNT,-1))
+                    .put("scope","active_service_process_lookup").put("read_only",true).put("initialization_performed",false).put("calls_verified",false)
+                    .put("authorized",authorized).put("observed",before!=null).put("catalogue",1).put("sdk",Build.VERSION.SDK_INT);
+                if(before!=null){
+                    Map<String,String> checks=ServiceAbiCatalog.inspect(channel,StackTelemetryProvider.class.getClassLoader());
+                    SubscriptionInfo afterSub=StackProfile.selectedSubscription(getContext(),slot);
+                    Map<String,Object> after=StackTelemetry.snapshot(channel,slot,sub);
+                    if(afterSub==null||afterSub.getSubscriptionId()!=sub||after==null||Boolean.TRUE.equals(after.get("retired"))||!before.get("generation").equals(after.get("generation")))throw new IllegalStateException("abi-owner-changed");
+                    int[] counts=ServiceAbiCatalog.counts(checks);
+                    value.put("generation",after.get("generation")).put("checks",new JSONObject(checks)).put("total",checks.size()).put("visible",counts[0]).put("missing",counts[1]).put("inaccessible",counts[2]).put("linkage_errors",counts[3]);
+                }
+                value.put("sample_elapsed",SystemClock.elapsedRealtime());Bundle result=new Bundle();result.putString("snapshot",value.toString());return result;
+            }catch(Exception unavailable){throw new IllegalStateException("abi-query-unavailable");}
+        }
         if(nativeSms){
             if(!"ims".equals(channel)||!"me.phh.ims".equals(pkg))throw new IllegalArgumentException("native-query-channel");
             try{

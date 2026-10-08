@@ -189,6 +189,13 @@ public final class RootDiagnostics {
         try{
         final int querySub=sub;
         statuses.put("ims_native_sms",statusWorkers.submit(()->RootNativeSmsQuery.observe(context,slot,querySub)));
+        String[] abiChannels={"iwlan","qns","ims"},abiPackages={"dev.codex.vowifi.iwlan","dev.codex.vowifi.qns","me.phh.ims"};
+        String[] abiKeys={"carrier_data_service_wlan_package_override_string","carrier_qualified_networks_service_package_override_string","config_ims_mmtel_package_override_string"};
+        final boolean abiOwner=provider!=null&&provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub;
+        for(int index=0;index<abiChannels.length;index++){
+            final String role=abiChannels[index],pkg=abiPackages[index],key=abiKeys[index];
+            statuses.put(role+"_abi",statusWorkers.submit(()->RootServiceAbi.observe(context,role,pkg,key,slot,querySub,abiOwner)));
+        }
         if(provider!=null&&provider.optInt("owner_slot",-1)==slot&&provider.optInt("owner_sub",-1)==sub){
             String[] channels={"iwlan","qns","ims"};String[] packages={"dev.codex.vowifi.iwlan","dev.codex.vowifi.qns","me.phh.ims"};
             String[] keys={"carrier_data_service_wlan_package_override_string","carrier_qualified_networks_service_package_override_string","config_ims_mmtel_package_override_string"};
@@ -236,6 +243,8 @@ public final class RootDiagnostics {
             progress.checkpoint(out,"service_status");
         }
         statusWorkers.shutdownNow();
+        for(String role:abiChannels){JSONObject abi=out.optJSONObject(role+"_abi_status"),current=out.optJSONObject(role+"_status");
+            if(abi!=null&&"OBSERVED".equals(abi.optString("status"))&&current!=null&&current.optBoolean("observed")&&abi.optLong("generation")!=current.optLong("generation"))out.put(role+"_abi_status",new JSONObject().put("status","INSTANCE_CHANGED").put("sample_elapsed",SystemClock.elapsedRealtime()));}
         JSONObject ownIwlan=out.optJSONObject("iwlan_status");
         if(ownIwlan!=null&&ownIwlan.optBoolean("observed")){
             out.put("ike","替代服务本次采样 · "+ownIwlan.optString("phase")+" · IKE "+ownIwlan.optBoolean("ike_open")+" · child "+ownIwlan.optBoolean("child_open")+

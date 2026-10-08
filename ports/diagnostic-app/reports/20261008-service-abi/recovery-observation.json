@@ -1,0 +1,154 @@
+{
+  "diagnostic_complete": true,
+  "ims_transport": 2,
+  "voice": true,
+  "sms": true,
+  "native_sms_ims_supported": true,
+  "dispatcher_available": true,
+  "iwlan": {
+    "observed": true,
+    "phase": "CHILD_OPENED",
+    "registered": false,
+    "generation": 1,
+    "ike_open": true,
+    "child_open": true,
+    "register_tx": 0,
+    "sip_status": 0,
+    "sms_tx": 0,
+    "sms_tx_ok": 0,
+    "sms_tx_failed": 0,
+    "sms_rx": 0,
+    "sms_ack_ok": 0,
+    "sms_ack_failed": 0
+  },
+  "qns": {
+    "observed": true,
+    "phase": "IWLAN_SELECTED",
+    "registered": false,
+    "generation": 1,
+    "ike_open": false,
+    "child_open": false,
+    "register_tx": 0,
+    "sip_status": 0,
+    "sms_tx": 0,
+    "sms_tx_ok": 0,
+    "sms_tx_failed": 0,
+    "sms_rx": 0,
+    "sms_ack_ok": 0,
+    "sms_ack_failed": 0
+  },
+  "ims": {
+    "observed": true,
+    "phase": "REGISTERED",
+    "registered": true,
+    "generation": 2,
+    "ike_open": false,
+    "child_open": false,
+    "register_tx": 2,
+    "sip_status": 200,
+    "sms_tx": 0,
+    "sms_tx_ok": 0,
+    "sms_tx_failed": 0,
+    "sms_rx": 0,
+    "sms_ack_ok": 0,
+    "sms_ack_failed": 0,
+    "sip_connect_schema": 1,
+    "sip_attempt": 1,
+    "sip_stage": "REGISTERED",
+    "sip_failure": "NONE"
+  },
+  "clients": {
+    "registered": true,
+    "enabled_mask": 9,
+    "last_notified_mask": 9,
+    "sms_ready_events": 1,
+    "callback_count_observed": true,
+    "capability_callback_count": 3,
+    "feature_state": 2,
+    "initialized": true,
+    "removed": false,
+    "client_rebind_pending": false,
+    "client_rebind_returns": 0,
+    "sms_session_idle": true,
+    "native_watch_schema": 1,
+    "native_watch_status": "HEALTHY",
+    "native_watch_native": "TRUE",
+    "native_watch_checks": 50,
+    "native_watch_requests": 0,
+    "native_watch_checked_elapsed": 65908418,
+    "native_watch_mismatch_since_elapsed": 0,
+    "native_watch_last_request_elapsed": 0,
+    "native_watch_self_uid": true,
+    "generation": 2
+  },
+  "providers": {
+    "owner_slot": "1",
+    "owner_sub": "1",
+    "transaction": "ACTIVE",
+    "persistent": "ENABLED",
+    "components": "7",
+    "iwlan": null,
+    "qns": null,
+    "ims": null,
+    "mode": "AP-assisted"
+  },
+  "abi": {
+    "iwlan": {
+      "status": "OBSERVED",
+      "visible": 22,
+      "missing": 0,
+      "total": 22,
+      "generation": 1,
+      "observed": true
+    },
+    "qns": {
+      "status": "OBSERVED",
+      "visible": 5,
+      "missing": 0,
+      "total": 5,
+      "generation": 1,
+      "observed": true
+    },
+    "ims": {
+      "status": "OBSERVED",
+      "visible": 15,
+      "missing": 0,
+      "total": 15,
+      "generation": 2,
+      "observed": true
+    }
+  },
+  "packages": {
+    "dev.codex.vowifi.iwlan": {
+      "running": true,
+      "stopped": false,
+      "installed": true,
+      "enabled_states": [
+        "0",
+        "0"
+      ],
+      "uses_ike": true
+    },
+    "dev.codex.vowifi.qns": {
+      "running": true,
+      "stopped": false,
+      "installed": true,
+      "enabled_states": [
+        "0",
+        "0"
+      ],
+      "uses_ike": false
+    },
+    "me.phh.ims": {
+      "running": true,
+      "stopped": false,
+      "installed": true,
+      "enabled_states": [
+        "0",
+        "0"
+      ],
+      "uses_ike": false
+    }
+  },
+  "module_disabled": false
+}

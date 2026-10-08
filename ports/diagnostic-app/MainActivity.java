@@ -171,8 +171,13 @@ public final class MainActivity extends Activity {
         if(!diagnosticReady())card("检查尚未完成","停留阶段："+diagnosticStage(data.optString("diagnostic_stage"))+"。已取得的结果保留；请刷新检查后再开始替换或安装更新。");
         diagnosticSection("设备与系统",false);
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
+        diagnosticSection("实际服务接口诊断",true);
+        card("检查对象与判定","分别在当前选中且已运行的 IWLAN／QNS／IMS 服务进程中查找各自需要的类和方法签名。校验所选 SIM、服务实例及进程身份；接口可见不等于调用成功，实际隧道、注册和短信分发在对应分组单独显示。原厂或旧版服务未提供入口时，保持未确定。");
+        for(String role:new String[]{"iwlan","qns","ims"})card(role.toUpperCase(Locale.ROOT)+" · 检查时的实际服务接口",
+            !DiagnosticPolicy.complete(data)||!PlatformHealth.stable(health)?"本次检查未完整或进程稳定性未确认；请刷新，暂不使用接口样本作结论。":ServiceAbiSnapshot.describe(data.optJSONObject(role+"_abi_status"),role));
+        diagnosticSection("诊断进程附加检查",false);
         JSONObject abi=data.optJSONObject("runtime_abi");
-        if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
+        if(abi!=null)card("仅 root 诊断加载器 · 不作为替换判定", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
             " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
             "\n"+(abi.optBoolean("modern_candidate")?"当前为 Android12–17 候选版本；实际安装与绑定需另行验证":abi.optInt("sdk")==30?"当前系统为 Android11，使用独立的 Android11 替换引擎":"超出当前替换版本范围")+
             "\n23 项是跨版本的固定核心签名候选，不是当前 Android 版本全部接口。可见表示当前 root app_process 加载器找到签名；缺失项可能只在服务的 IKE 共享库中可见。未调用接口，也未验证权限或替换可用性。");

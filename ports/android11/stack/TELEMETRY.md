@@ -187,3 +187,35 @@ timeline, enums, codes and acceptance consistency. Production Java contracts
 cover reversed SIP/RP arrival, timeout, terminal late results, two simulated
 owners, retired producers, malformed extensions and legacy producer compatibility.
 These checks do not establish real simultaneous dual-active-SIM behavior.
+
+## Separate actual-service interface observation (2026-10-08)
+
+`runtime-abi` is a separate root-only provider method. Existing status,
+capabilities, client-rebind and native-SMS schemas are unchanged. It accepts
+the existing role/slot/sub/nonce tuple and returns schema1/catalogue1 with
+PID, boot, SDK, selected active-owner generation and monotonic sample time.
+Its scope is `active_service_process_lookup`; `read_only=true`,
+`initialization_performed=false` and `calls_verified=false` are mandatory.
+
+The provider uses its service package's own class loader and checks a limited
+role-specific catalogue: IWLAN22, QNS5, IMS15. Classes are loaded without
+initialization, and methods/constructors are inspected without invocation or
+changing accessibility. Explicit aliases are tried only after class/method
+absence; inaccessible and linkage errors do not silently choose an alias.
+Class/method visibility is not proof of Binder access, permission, successful
+invocation, operator acceptance, audio or SMS delivery.
+
+The tool requires the current CarrierConfig to select the expected package,
+the selected SIM to remain active, and the process to exist before querying.
+It compares PID plus process start time before/after, validates the exact
+nonce/boot/tuple/schema/key set, checks five-second freshness, and correlates
+generation with the service status sample. A process death race can start a
+new provider process, but the changed identity rejects the result. No active
+owner, unselected/absent process, old producer, incomplete reply or mismatched
+generation stays unknown; there is no root-loader fallback count.
+
+The root app_process23-entry catalogue is displayed separately. In the tested
+Android11 profile it resolves5/23, while the actual active IWLAN resolves22/22,
+QNS5/5 and IMS15/15. IWLAN's declared IKE shared library explains why its loader
+can resolve classes unavailable to the independent root loader. See
+[build provenance and live observation](../../diagnostic-app/SERVICE-ABI-20261008.md).

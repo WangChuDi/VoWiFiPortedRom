@@ -28,7 +28,7 @@ classes=out/'classes'
 if classes.exists():shutil.rmtree(classes)
 android=TOOLS/'android-all-11.jar'
 def run(args):subprocess.run([str(x)for x in args],check=True)
-run([JAVA,'-jar',TOOLS/'ecj.jar','-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',android,'-d',classes,*B.glob('*.java'),generated])
+run([JAVA,'-jar',TOOLS/'ecj.jar','-encoding','UTF-8','-source','8','-target','8','-proc:none','-classpath',android,'-d',classes,*B.glob('*.java'),B.parent/'android11/stack/common/ServiceAbiCatalog.java',generated])
 jar=out/'classes.jar'
 with zipfile.ZipFile(jar,'w')as z:
     for p in classes.rglob('*.class'):z.write(p,p.relative_to(classes).as_posix())
