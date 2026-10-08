@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "production_source_matches_compiled_snapshot": true,
+  "files_checked": 24,
+  "module_engine_rebuilt": false,
+  "ui_acceptance": "pending_unlock"
+}

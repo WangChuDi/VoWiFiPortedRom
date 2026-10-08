@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "engine_install_requested": false,
+  "phone_reload_requested": false,
+  "new_call_or_sms": false,
+  "tool_version": "0.9.19",
+  "active_ike_sa_init_requested": true,
+  "sim_authentication_requested": false,
+  "prior_tool_retained_exact": true,
+  "tool_installed_exact": true,
+  "diagnostic_complete": true,
+  "diagnostic_stage": "finished",
+  "network_probe_completed": true,
+  "apn_details_observed": true,
+  "phone_identity_stable": true,
+  "ims_identity_stable": true,
+  "three_engine_apks_unchanged": true,
+  "module_properties_unchanged": true,
+  "full_owner_preserved": true
+}

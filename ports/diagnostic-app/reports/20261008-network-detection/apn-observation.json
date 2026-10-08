@@ -1,0 +1,54 @@
+{
+  "preferred_status": "OBSERVED",
+  "preferred": {
+    "name": " Talkmobile PAYG",
+    "apn": "payg.talkmobile.co.uk",
+    "mmsc": "http://mms.talkmobile.co.uk/servlets/mms",
+    "mmsproxy": "212.183.137.12",
+    "mmsport": "8799",
+    "mcc": "234",
+    "mnc": "15",
+    "type": "default,mms,supl",
+    "protocol": "IPV4V6",
+    "roaming_protocol": "IPV4V6",
+    "authtype": "0",
+    "carrier_enabled": "1",
+    "username_set": true,
+    "password_set": true
+  },
+  "preferred_fields_present": [
+    "apn",
+    "authtype",
+    "carrier_enabled",
+    "mcc",
+    "mmsc",
+    "mmsport",
+    "mmsproxy",
+    "mnc",
+    "name",
+    "password",
+    "protocol",
+    "roaming_protocol",
+    "type",
+    "user"
+  ],
+  "ims_status": "OBSERVED",
+  "ims_record_count": 1,
+  "ims_records": [
+    {
+      "name": "Vodafone UK IMS",
+      "apn": "ims",
+      "mmsc": "",
+      "mmsproxy": "",
+      "mmsport": "",
+      "mcc": "234",
+      "mnc": "15",
+      "type": "ims",
+      "protocol": "IPV4V6",
+      "roaming_protocol": "IPV4V6",
+      "authtype": "-1",
+      "carrier_enabled": "1"
+    }
+  ],
+  "credentials_exported": false
+}

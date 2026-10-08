@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "active_probe": true,
+  "route": "physical_wifi",
+  "sim_authentication": false,
+  "operator_registration_tested": false,
+  "candidate_scope": "static_and_home_plmn_not_full_modem_selector",
+  "domains": [
+    {
+      "host": "epdg.epc.mnc015.mcc234.pub.3gppnetwork.org",
+      "source": "SIM \u5f52\u5c5e\u7f51\u6807\u51c6\u57df\u540d",
+      "status": "RESOLVED",
+      "address_count": 3,
+      "addresses": [
+        "88.82.11.221",
+        "88.82.11.208",
+        "148.252.188.96"
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "host": "epdg.epc.mnc015.mcc234.pub.3gppnetwork.org",
+      "address": "88.82.11.221",
+      "port": 500,
+      "status": "NO_RESPONSE",
+      "elapsed_ms": 2255
+    },
+    {
+      "host": "epdg.epc.mnc015.mcc234.pub.3gppnetwork.org",
+      "address": "88.82.11.221",
+      "port": 4500,
+      "status": "NO_RESPONSE",
+      "elapsed_ms": 2248
+    },
+    {
+      "host": "epdg.epc.mnc015.mcc234.pub.3gppnetwork.org",
+      "address": "88.82.11.208",
+      "port": 500,
+      "status": "NO_RESPONSE",
+      "elapsed_ms": 2248
+    },
+    {
+      "host": "epdg.epc.mnc015.mcc234.pub.3gppnetwork.org",
+      "address": "88.82.11.208",
+      "port": 4500,
+      "status": "NO_RESPONSE",
+      "elapsed_ms": 2252
+    }
+  ],
+  "status": "COMPLETED",
+  "matched_responses": 0,
+  "address_limit": 4,
+  "attempts_per_port": 1
+}

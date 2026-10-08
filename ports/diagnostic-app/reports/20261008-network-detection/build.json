@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "tool_version": "0.9.19",
+  "status": "passed",
+  "phone_modified": false,
+  "engines_rebuilt": false,
+  "shizuku_sdk_integrated": false,
+  "apk_sha256": "9090815f93001c2c4d43a86ee34cbabd096edad6f518e8fff67d6dc368a5e742",
+  "embedded_engine_sha256": {
+    "api30-engine.zip": "6f659b54968f0b064086394fb9162a836d32b06c0ecf569d26ca58a3f5dd1dee",
+    "modern-engine.zip": "c934711841da6f7213e3fca95e4ea321f5c8c0d77658abfcb13d850e8e84b147"
+  },
+  "old_candidate_unchanged": true,
+  "source_inputs_unchanged": true
+}

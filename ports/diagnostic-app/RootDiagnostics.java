@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.*;
 
-/** Read-only root entry: status metadata only, no calls/SMS/SIM authentication. */
+/** Root diagnostics; optional SA_INIT reachability probe, no calls/SMS/SIM authentication. */
 public final class RootDiagnostics {
     private static final String CONTROLLER="/data/adb/modules/codex_vowifi_stack_api30/control.sh";
     private static volatile int transport=-1;
@@ -25,7 +25,8 @@ public final class RootDiagnostics {
         DiagnosticProgress progress=null;PlatformHealth health=null;
         try{
             if(android.os.Process.myUid()!=0)throw new SecurityException("root-required");
-            if(args.length!=1)throw new IllegalArgumentException("slot-required");
+            if(args.length<1||args.length>2||(args.length==2&&!"network".equals(args[1])))throw new IllegalArgumentException("slot-required");
+            boolean probeNetwork=args.length==2;
             int slot=Integer.parseInt(args[0]);
             if(slot<0||slot>7)throw new IllegalArgumentException("slot-range");
             result.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
@@ -36,7 +37,7 @@ public final class RootDiagnostics {
             Context context=ActivityThread.systemMain().getSystemContext();
             // MIUI app_process does not run the telephony Zygote bootstrap.
             try{initializeTelephony();}catch(Throwable t){result.put("bootstrap_error",errorName(t));}
-            collect(result,context,slot,progress);
+            collect(result,context,slot,progress,probeNetwork);
         }catch(Throwable t){try{result.put("error",t.getClass().getSimpleName());for(StackTraceElement frame:t.getStackTrace())if(frame.getClassName().equals(RootDiagnostics.class.getName())){result.put("error_line",frame.getLineNumber());break;}}catch(Exception ignored){}}
         if(progress!=null)try{
             JSONObject platform=health.finish();result.put("platform_health",platform);
@@ -53,7 +54,7 @@ public final class RootDiagnostics {
         if(initializer.getMethod("getTelephonyServiceManager").invoke(null)==null)
             initializer.getMethod("setTelephonyServiceManager",services).invoke(null,services.getConstructor().newInstance());
     }
-    private static void collect(JSONObject out,Context context,int slot,DiagnosticProgress progress)throws Exception{
+    private static void collect(JSONObject out,Context context,int slot,DiagnosticProgress progress,boolean probeNetwork)throws Exception{
         out.put("sdk",Build.VERSION.SDK_INT).put("device",Build.DEVICE).put("slot",slot);
         out.put("runtime_abi",new JSONObject(RuntimeAbiProbe.inspect(Build.VERSION.SDK_INT,RootDiagnostics.class.getClassLoader())));
         JSONObject provider=null;
@@ -68,7 +69,7 @@ public final class RootDiagnostics {
         int sub=info==null?-1:info.getSubscriptionId();
         progress.checkpoint(out,"controller");
         try{provider=controller(out,context,slot,sub);}catch(Throwable t){out.put("controller_error",errorName(t));}
-        String operator="";int simState=TelephonyManager.SIM_STATE_UNKNOWN;
+        String operator="";boolean roaming=false;int simState=TelephonyManager.SIM_STATE_UNKNOWN;
         out.put("sim",info==null?(out.has("subscription_error")?"订阅信息不可见":"无活动 SIM"):"活动订阅存在，SIM 状态未知");
         if(info!=null){
             out.put("sub_id",sub);
@@ -82,6 +83,9 @@ public final class RootDiagnostics {
                 progress.checkpoint(out,"telephony");
                 operator=tm.getSimOperator();if(operator==null)operator="";
                 out.put("operator",operator);
+                out.put("carrier_name",String.valueOf(info.getCarrierName())).put("sim_operator_name",tm.getSimOperatorName());
+                out.put("registered_operator",tm.getNetworkOperator()).put("registered_operator_name",tm.getNetworkOperatorName());
+                roaming=tm.isNetworkRoaming();out.put("network_roaming",roaming);
             }catch(Throwable t){out.put("telephony_error",errorName(t));}
         }
         boolean modern=Build.VERSION.SDK_INT>=31&&Build.VERSION.SDK_INT<=37;
@@ -94,10 +98,12 @@ public final class RootDiagnostics {
         try{
           ConnectivityManager cm=context.getSystemService(ConnectivityManager.class);
           if(cm==null)throw new IllegalStateException("connectivity-service-unavailable");
+          Network active=cm.getActiveNetwork();boolean vpn=false;
           for(Network network:cm.getAllNetworks()){
             NetworkCapabilities caps=cm.getNetworkCapabilities(network);LinkProperties lp=cm.getLinkProperties(network);
             if(caps==null||lp==null)continue;
-            if(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)&&!caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)&&caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))wifi=network;
+            if(caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN))vpn=true;
+            if(caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)&&!caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)&&caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)&&(wifi==null||network.equals(active)))wifi=network;
             if(caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_IMS)){
                 // No attribution by enumeration order: match the selected subscription.
                 int attribution=networkAttribution(caps,sub);
@@ -105,21 +111,17 @@ public final class RootDiagnostics {
                 else if(attribution==-1)unattributed++;
             }
           }
-          out.put("ims_network_count",imsCount).put("pcscf_count",pcscfCount).put("ims_unattributed_network_count",unattributed);
+          out.put("ims_network_count",imsCount).put("pcscf_count",pcscfCount).put("ims_unattributed_network_count",unattributed).put("phone_vpn_present",vpn);
+          if(wifi!=null){LinkProperties lp=cm.getLinkProperties(wifi);if(lp!=null)out.put("wifi_interface",lp.getInterfaceName());}
         }catch(Throwable t){out.put("network_error",errorName(t));}
         out.put("wifi",wifi!=null?"实体 Wi-Fi 已连接":"未找到实体 Wi-Fi 网络");
         out.put("ims_interface",iface==null?JSONObject.NULL:iface);
         if(iface!=null)out.put("ims_interface_present",new File("/sys/class/net",iface).exists());
-        if(wifi!=null&&operator.matches("[0-9]{5,6}")){
-            progress.checkpoint(out,"dns");
-            String hostname=String.format(Locale.US,"epdg.epc.mnc%03d.mcc%s.pub.3gppnetwork.org",Integer.parseInt(operator.substring(3)),operator.substring(0,3));
-            ExecutorService dns=Executors.newSingleThreadExecutor();final Network physical=wifi;
-            Future<Integer> f=dns.submit(()->physical.getAllByName(hostname).length);
-            try{out.put("dns","成功 · "+f.get(7,TimeUnit.SECONDS)+" 个地址");}
-            catch(Exception e){out.put("dns","未成功 · "+e.getClass().getSimpleName());f.cancel(true);}
-            finally{dns.shutdownNow();}
-        }else out.put("dns","未测试");
-        out.put("udp","未主动测试 UDP 500/4500；DNS 成功不代表端口可达");
+        try{
+            if(probeNetwork&&info!=null)requireSmsOwner(context,slot,sub);
+            NetworkDetection.inspect(context,wifi,sub,operator,roaming,probeNetwork,out,progress);
+            if(probeNetwork&&info!=null)requireSmsOwner(context,slot,sub);
+        }catch(Exception e){out.put("network_detection_error",errorName(e)).put("udp","检测未完成");out.remove("network_detection");}
         // Wi-Fi/controller checks remain useful even when subscriptions are hidden.
         if(info==null)return;
         progress.checkpoint(out,"native_sms");
@@ -147,14 +149,10 @@ public final class RootDiagnostics {
             requireSmsOwner(context,slot,sub);
         }catch(Throwable failure){out.remove("native_sms_ims_supported");out.remove("sms_dispatcher_window");out.put("native_sms_error",errorName(failure));}
         progress.checkpoint(out,"apn");
-        // Display only APN/type, never APN username/password or subscriber identifiers.
-        try(Cursor c=context.getContentResolver().query(Uri.parse("content://telephony/carriers/preferapn/subId/"+sub),new String[]{"apn","type"},null,null,null)){
-            out.put("apn",c!=null&&c.moveToFirst()?c.getString(0)+" · "+c.getString(1):"未设置首选互联网 APN");
-        }catch(Exception e){
-            String rows=observation(out,"apn_error",4,"content","query","--uri","content://telephony/carriers/preferapn/subId/"+sub,"--projection","apn:type");
-            Matcher fields=Pattern.compile("apn=([^,\\r\\n]+), type=([^\\r\\n]+)").matcher(rows);
-            out.put("apn",fields.find()?fields.group(1)+" · "+fields.group(2):"不可见 · "+e.getClass().getSimpleName());
-        }
+        // User explicitly requested full APN settings. Credentials go only to
+        // the tool's private IPC response; UI masks password until tapped.
+        try{JSONObject details=ApnDetails.read(context,slot,sub,operator);out.put("apn_details",details);JSONObject preferred=details.optJSONObject("preferred");out.put("apn",preferred==null?"未设置或不可见":preferred.optString("apn")+" · "+preferred.optString("type"));}
+        catch(Exception e){out.put("apn_error",errorName(e)).put("apn","不可见");}
         ImsMmTelManager manager=null;
         progress.checkpoint(out,"wfc_settings");
         try{manager=ImsMmTelManager.createForSubscriptionId(sub);}catch(Throwable t){out.put("ims_error",errorName(t));}

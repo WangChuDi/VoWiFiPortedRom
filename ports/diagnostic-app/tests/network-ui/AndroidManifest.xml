@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.codex.vowifi.networktest" android:versionCode="1" android:versionName="1">
+  <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="30" />
+  <application android:label="VoWiFi network UI test" android:allowBackup="false" />
+  <instrumentation android:name=".NetworkUiTrial" android:targetPackage="dev.codex.vowifi.tool" android:functionalTest="true" />
+</manifest>

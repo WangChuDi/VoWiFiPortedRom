@@ -35,7 +35,7 @@ public final class MainActivity extends Activity {
     private ScrollView scroll;
     private ProgressBar progress;
     private TextView connectionTitle,connectionDetail;
-    private Button check;
+    private Button check,networkCheck;
     private final Button[] navigation=new Button[3];
     private int selectedPage;
     public void onCreate(Bundle saved){
@@ -61,9 +61,11 @@ public final class MainActivity extends Activity {
         summary=text("选择 SIM 后检查。请在 Magisk 中允许本应用使用 root。",13);summary.setTextColor(theme.secondary);summary.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);body.addView(summary);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(theme.primary));progress.setVisibility(View.GONE);body.addView(progress,new LinearLayout.LayoutParams(-1,dp(4)));
         check=button("检查当前链路",v->diagnose());theme.button(check,true);body.addView(check);
+        networkCheck=button("网络检测",v->diagnoseNetwork());body.addView(networkCheck);
         overview=column();results=column();operations=column();body.addView(overview);body.addView(results);body.addView(operations);
         TextView operationsTitle=text("管理替换组件",22);theme.typography(operationsTitle,22,true);operations.addView(operationsTitle);
         operations.addView(text("先试用最多 5 分钟，确认后保留常驻。修改组件组合前，请恢复当前事务。",14));
+        operations.addView(text("首次替换需要安装并启用配套 Magisk 模块，重启后才能切换组件。模块部署程序和系统权限；root 执行切换与恢复。之后可在运行中试用组合，但可能重载电话服务、短暂断开连接。",13));
         operations.addView(text("Android 11：raphael / VOXI 已进行实机验证，短信收发仍有未解决的问题。Android 12–17：实验引擎，当前机型的实际通话、短信及双卡同时注册需分别验证。",13));
         LinearLayout choices=panel(operations,theme.container);choices.addView(text("选择组件",16));
         String[] labels={"替换 IWLAN（数据和网络服务）","替换 QNS（接入网络选择）","替换 IMS（通话和系统短信）"};
@@ -87,7 +89,7 @@ public final class MainActivity extends Activity {
         LinearLayout updates=panel(operations,theme.surface);updates.addView(text("模块与权限",18));
         install=button("安装配套模块更新 · 需要重启",v->installModule());updates.addView(install);
         updates.addView(text("当前后端：root。Shizuku 尚未接入；ADB 模式不能完成本模块的系统组件替换。安装更新后，请通过手机电源菜单重启。",13));
-        updates.addView(text("检查只读取链路元数据，不会拨号、发送短信或读取短信正文。",13));
+        updates.addView(text("链路检查不拨号、不发短信、不读取短信正文。网络检测会发送少量 IKE 初始探测，不做 SIM 鉴权。APN 密码仅在点击后显示。",13));
         selectPage(saved==null?0:saved.getInt("page",0));resetOverview();
         setActions(false);loadSims();
         if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},1);
@@ -136,8 +138,15 @@ public final class MainActivity extends Activity {
         final int slot=slots.get(sims.getSelectedItemPosition());
         execute("正在检查所选 SIM…",()->readDiagnostic(slot,45),this::render);
     }
+    private void diagnoseNetwork(){
+        if(busy)return;final int slot=slots.get(sims.getSelectedItemPosition());
+        execute("正在检测所选运营商的 ePDG 与 UDP 500 / 4500…",()->readDiagnostic(slot,45,true),data->{render(data);selectPage(1);});
+    }
     private JSONObject readDiagnostic(int slot,int seconds)throws Exception{
-        String command="CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout "+Math.min(40,seconds-2)+"s app_process /system/bin dev.codex.vowifi.tool.RootDiagnostics "+slot;
+        return readDiagnostic(slot,seconds,false);
+    }
+    private JSONObject readDiagnostic(int slot,int seconds,boolean network)throws Exception{
+        String command="CLASSPATH="+quote(getApplicationInfo().sourceDir)+" timeout "+Math.min(40,seconds-2)+"s app_process /system/bin dev.codex.vowifi.tool.RootDiagnostics "+slot+(network?" network":"");
         String response=shell(command,seconds);
         String json=null;for(String line:response.split("[\\r\\n]+"))if(line.startsWith("{")&&line.endsWith("}"))json=line;
         if(json==null)throw new IOException("diagnostic-result-unavailable");
@@ -153,24 +162,25 @@ public final class MainActivity extends Activity {
         if(data.optBoolean("engine_experimental"))card("现代替换引擎 · 实验功能","适配范围 Android 12–17 / VOXI。Android 13 和 16 已进行模拟器生命周期验证；实际设备、运营商通话短信及双卡注册需要分别验证。模块安装后重启，再检查组件链路。");
         reload.setText(data.optBoolean("engine_experimental")?"检查并续租当前替换链路":"重新拉起 · 空闲时重载电话服务");
         StringBuilder unavailable=new StringBuilder();
-        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","native_sms_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error","ims_clients_status_error"})
+        for(String key:new String[]{"error","diagnostic_error","bootstrap_error","controller_error","subscription_error","telephony_error","network_error","network_detection_error","apn_error","settings_error","policy_error","provisioning_error","ims_error","native_sms_error","iwlan_observation_error","sms_observation_error","iwlan_status_error","qns_status_error","ims_status_error","ims_clients_status_error"})
             if(data.has(key)){if(unavailable.length()>0)unavailable.append("\n");unavailable.append(key).append(": ").append(data.optString(key));}
         if(unavailable.length()>0)card("未完成的检查 · 其余可用结果保留",unavailable.toString());
         JSONObject health=data.optJSONObject("platform_health");
         card("电话服务进程观测",health==null?"未观测，不能判断进程是否稳定":
-            "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n比较检查开始与结束时的进程身份；一致不代表 IMS 或运营商链路正常。");
+            "电话进程："+processState(health.optJSONObject("phone"))+"\n系统服务："+processState(health.optJSONObject("system_server"))+"\n用于发现检查期间电话进程或系统服务重启，避免把旧注册状态当成当前结果；身份一致不代表 IMS 或运营商链路正常。");
         if(!diagnosticReady())card("检查尚未完成","停留阶段："+diagnosticStage(data.optString("diagnostic_stage"))+"。已取得的结果保留；请刷新检查后再开始替换或安装更新。");
         diagnosticSection("设备与系统",false);
         card("SIM",data.optString("sim","未知")+" / "+data.optString("operator",""));
         JSONObject abi=data.optJSONObject("runtime_abi");
         if(abi!=null)card("替换接口预检查", "核心接口可见 "+abi.optInt("visible")+"/"+abi.optInt("total")+
             " · 缺失 "+abi.optInt("missing")+" · 访问受限 "+abi.optInt("inaccessible")+" · 加载错误 "+abi.optInt("linkage_errors")+
-            "\n"+(abi.optBoolean("modern_candidate")?"属于 Android12–17 候选范围；需检查当前机型安装与服务绑定":abi.optInt("sdk")==30?"Android11 接口范围；替换需匹配已验证设备":"超出当前替换版本范围")+
-            "\n只检查当前 root 进程中的接口；未验证权限、运营商注册或现代模块可用性。独立 IKE 库也可能仅在服务进程可见。");
-        diagnosticSection("网络与 IWLAN 隧道",false);
+            "\n"+(abi.optBoolean("modern_candidate")?"当前为 Android12–17 候选版本；实际安装与绑定需另行验证":abi.optInt("sdk")==30?"当前系统为 Android11，使用独立的 Android11 替换引擎":"超出当前替换版本范围")+
+            "\n23 项是跨版本的固定核心签名候选，不是当前 Android 版本全部接口。可见表示当前 root app_process 加载器找到签名；缺失项可能只在服务的 IKE 共享库中可见。未调用接口，也未验证权限或替换可用性。");
+        diagnosticSection("网络检测",data.optJSONObject("network_detection")!=null&&data.optJSONObject("network_detection").optBoolean("active_probe"));
+        card("SIM 运营商与归属网",data.optString("carrier_name","未取得名称")+" · "+data.optString("sim_operator_name","")+"\nSIM MCC/MNC："+data.optString("operator","不可见")+"\n当前注册网络："+data.optString("registered_operator_name","")+" · "+data.optString("registered_operator","未注册")+"\n漫游状态："+(data.has("network_roaming")?data.optBoolean("network_roaming"):"不可见")+"\n检测目标来自 SIM 归属网与可见配置，不把漫游网络当成 SIM 运营商。");
         card("实体 Wi-Fi",data.has("network_error")?"网络检查不完整 · "+data.optString("network_error"):data.optString("wifi","未观测"));
-        card("ePDG DNS",data.optString("dns","未观测"));
-        card("UDP / IKE",data.optString("udp","未观测")+"\n"+data.optString("ike","不可见"));
+        card("运营商 ePDG / UDP 500 与 4500",NetworkDetection.describe(data.optJSONObject("network_detection"))+"\n"+data.optString("udp","未观测"));
+        card("实际 IWLAN 隧道",data.optString("ike","不可见"));
         JSONObject qns=data.optJSONObject("qns_status");
         if(qns!=null)card("检查时的 QNS 选择",qns.optBoolean("observed")?"所选 SIM · "+phaseName(qns.optString("phase")):"未观测到所选 SIM 的有效实例");
         JSONObject iwlan=data.optJSONObject("iwlan_status");
@@ -182,12 +192,21 @@ public final class MainActivity extends Activity {
         }
         else if(iwlan!=null)card("检查时的 IWLAN 会话","未观测到所选 SIM 的有效实例");
         diagnosticSection("APN 与运营商配置",false);
-        card("首选互联网 APN",data.optString("apn","不可见"));
+        JSONObject apns=data.optJSONObject("apn_details");
+        if(apns==null)card("首选互联网 APN",data.optString("apn","不可见"));
+        else{
+            JSONObject preferred=apns.optJSONObject("preferred");
+            if(preferred!=null)apnCard("首选互联网 APN · 当前配置",preferred);else card("首选互联网 APN","NOT_SET".equals(apns.optString("preferred_status"))?"未设置":"不可见 · "+apns.optString("preferred_error","未知"));
+            org.json.JSONArray imsApns=apns.optJSONArray("ims_records");
+            if(imsApns!=null&&imsApns.length()>0)for(int i=0;i<imsApns.length();i++)apnCard("IMS APN 记录 "+(i+1)+" · 不等于 modem 当前选用",imsApns.optJSONObject(i));
+            else card("IMS APN 记录",imsApns!=null?"数据库未返回这张卡的 IMS 类型记录；不代表 modem 没有内部 IMS 配置":"不可见 · "+apns.optString("ims_error",apns.optString("ims_status","未知")));
+        }
         card("Wi-Fi Calling 设置",data.has("wfc_setting")?"开启 "+data.optBoolean("wfc_setting")+" · 漫游开关 "+(data.has("wfc_roaming_setting")?data.optBoolean("wfc_roaming_setting"):"未知")+" · 偏好模式 "+(data.has("wfc_mode")?data.optInt("wfc_mode"):"未知"):"不可见 · "+data.optString("settings_error","未知"));
         card("WLAN 语音 provisioning",data.has("wlan_voice_provisioned")?Boolean.toString(data.optBoolean("wlan_voice_provisioned"))+"（框架配置结果，不代表运营商已接受注册）":"不可见 · "+data.optString("provisioning_error","未知"));
         JSONObject policy=data.optJSONObject("selected_policy");
         if(policy!=null)card("所选 SIM 的运营商策略",policy.toString());
         diagnosticSection("IMS 注册与系统短信",true);
+        card("这一组检查什么","IMS 同时承载语音和 SMS over IP。这里分别检查运营商 IMS 注册、语音/SMS 能力，以及 Android 短信服务是否绑定并能分发。语音可用不保证短信路径就绪；系统短信应用还负责收件箱和通知。");
         int networks=data.optInt("ims_network_count");
         card("所选 SIM 的 IMS 网络",data.has("network_error")?"不可见 · "+data.optString("network_error"):networks+" 个 · 接口 "+(data.isNull("ims_interface")?"未观测":data.optString("ims_interface","不可见"))+" · P-CSCF "+data.optInt("pcscf_count")+(data.optInt("ims_unattributed_network_count")>0?"\n另有 "+data.optInt("ims_unattributed_network_count")+" 个 IMS 网络无法归属到卡槽":"")+(data.has("ims_interface_present")?"\n内核接口存在 "+data.optBoolean("ims_interface_present"):"")+(data.has("iwlan_process_present")?" · IWLAN 进程运行 "+data.optBoolean("iwlan_process_present"):""));
         int t=data.optInt("ims_transport",-1);
@@ -286,7 +305,7 @@ public final class MainActivity extends Activity {
             case "platform_health":return "电话服务进程";case "bootstrap":return "系统上下文初始化";
             case "subscription":return "SIM 订阅";case "controller":return "替换事务状态";
             case "telephony":return "SIM 状态和运营商";case "network":return "网络枚举";
-            case "dns":return "ePDG DNS";case "apn":return "首选 APN";
+            case "dns":return "运营商 ePDG DNS";case "network_udp":return "UDP 500 / 4500 网络检测";case "apn":return "互联网与 IMS APN 详情";
             case "wfc_settings":return "Wi-Fi Calling 设置";case "carrier_policy":return "运营商配置";
             case "provisioning":return "IMS provisioning";case "ims_callbacks":return "IMS 注册和能力回调";
             case "native_sms":return "系统短信服务支持状态";
@@ -310,6 +329,15 @@ public final class MainActivity extends Activity {
     private void card(String heading,String value){
         LinearLayout c=panel(detailGroup==null?results:detailGroup,theme.surface);
         TextView label=text(heading,16);theme.typography(label,16,true);c.addView(label);TextView detail=text(value,14);detail.setTextColor(theme.secondary);detail.setTextIsSelectable(true);c.addView(detail);
+    }
+    private void apnCard(String heading,JSONObject row){
+        if(row==null)return;card(heading,ApnDetails.describe(row,false));
+        if(!row.optString("password").isEmpty()){
+            LinearLayout target=detailGroup==null?results:detailGroup;
+            LinearLayout lastCard=(LinearLayout)target.getChildAt(target.getChildCount()-1);
+            TextView details=(TextView)lastCard.getChildAt(1);Button reveal=button("查看 APN 密码",null);
+            reveal.setOnClickListener(v->{boolean showing=Boolean.TRUE.equals(reveal.getTag());reveal.setTag(!showing);details.setText(ApnDetails.describe(row,!showing));reveal.setText(showing?"查看 APN 密码":"隐藏 APN 密码");});lastCard.addView(reveal);
+        }
     }
     private void setActions(boolean supported){
         if(trial==null)return;trial.setEnabled(supported);enable.setEnabled(false);reload.setEnabled(false);rebind.setEnabled(false);rollback.setEnabled(false);install.setEnabled(supported);
@@ -437,9 +465,9 @@ public final class MainActivity extends Activity {
     private interface Work{JSONObject run()throws Exception;}
     private interface Show{void run(JSONObject data);}
     private void execute(String message,Work work,Show show){
-        busy=true;status(message);sims.setEnabled(false);check.setEnabled(false);progress.setVisibility(View.VISIBLE);setActions(false);
+        busy=true;status(message);sims.setEnabled(false);check.setEnabled(false);networkCheck.setEnabled(false);progress.setVisibility(View.VISIBLE);setActions(false);
         worker.submit(()->{JSONObject response;try{response=work.run();}catch(Throwable e){response=new JSONObject();try{response.put("error",e.getClass().getSimpleName());if(e instanceof RootFailure)response.put("action_error",e.getMessage());}catch(Exception ignored){}}
-            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);check.setEnabled(true);progress.setVisibility(View.GONE);if(!isFinishing()){if(result.has("error")&&!result.has("sdk")){last=null;setActions(false);resetOverview();results.removeAllViews();status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
+            final JSONObject result=response;runOnUiThread(()->{busy=false;sims.setEnabled(true);check.setEnabled(true);networkCheck.setEnabled(true);progress.setVisibility(View.GONE);if(!isFinishing()){if(result.has("error")&&!result.has("sdk")){last=null;setActions(false);resetOverview();results.removeAllViews();status("操作未完成："+result.optString("error")+(result.has("action_error")?"\n"+result.optString("action_error"):"")+"。请重新运行只读检查，核对事务状态和 Magisk 授权；超时不代表已回退。");}else show.run(result);}});
         });
     }
     private String shell(String command,int seconds)throws Exception{

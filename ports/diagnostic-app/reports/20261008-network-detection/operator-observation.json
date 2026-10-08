@@ -1,0 +1,10 @@
+{
+  "carrier_name": "vodafone UK WLAN \u901a\u8bdd",
+  "sim_operator_name": "vodafone UK",
+  "operator": "23415",
+  "registered_operator": "",
+  "registered_operator_name": "vodafone UK",
+  "network_roaming": false,
+  "phone_vpn_present": false,
+  "wifi_interface": "wlan0"
+}

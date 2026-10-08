@@ -11,6 +11,10 @@ observations. The current UI APK was installed without changing the live engines
 The UID2000 feasibility probe supports some telephony diagnostics, but Shizuku is
 not integrated and the existing full Magisk replacement still needs root. See
 [the interface, permission scope and validation record](MATERIAL3-SHIZUKU-20261008.md).
+Version0.9.19 adds an explicit **网络检测** button, selected-SIM home-operator/ePDG
+candidate results and bounded IKE SA_INIT probes of UDP500/4500. It also displays
+the user-requested detailed internet/IMS APN settings, with password reveal/hide.
+See [network detection, APN scope and result boundaries](NETWORK-DETECTION-20261008.md).
 Actual installed Shizuku/rish follow-up checks and the installation/restoration
 boundary are documented in [the control-path experiment](SHIZUKU-CONTROL-20261008.md).
 The embedded ingress-diagnostic engines remain candidates; their newer counters
@@ -23,7 +27,8 @@ The root helper reports only selected-subscription metadata:
 * Active SIM slot, subscription ID, actual SIM state and operator, without phone
   number/IMSI/ICCID. An active subscription is not assumed to mean SIM_READY.
 * Physical Wi-Fi and ePDG DNS resolution bound to that Wi-Fi network.
-* Selected internet APN/type, user WFC and roaming switches, carrier policy and
+* Selected internet and matching IMS APN records with the requested14 settings,
+  user WFC and roaming switches, carrier policy and
   WLAN voice provisioning where the ROM exposes those interfaces.
 * IMS networks matched by `TelephonyNetworkSpecifier` subscription ID, interface
   existence and P-CSCF count; a stale framework interface is shown explicitly.
@@ -56,12 +61,18 @@ The root helper reports only selected-subscription metadata:
   contains experimental modern replacement controls; the Android11 engine remains separate.
   See [runtime preflight evidence and loader limitation](RUNTIME-PREFLIGHT-20261006.md).
 
-DNS success does not prove UDP500/4500 reachability. The tool does not initiate
-an IKE probe, SIM authentication, phone call or SMS. Unknown/inaccessible stages
+DNS success does not prove UDP500/4500 reachability. The ordinary check sends no
+IKE probe; only the explicit network-detection button sends bounded SA_INIT.
+Neither path performs SIM authentication, calls or sends SMS. A matched IKE
+response is unauthenticated reachability evidence, not operator acceptance;
+no response is not proof of blocking. Unknown/inaccessible stages
 are shown as unknown, not failed. Provisioning configuration is not proof that
 the operator accepted registration. Registration and capabilities do not prove
 successful audio or SMS delivery. The app requests no SMS/contact permissions
-and exports no SMS bodies, authentication material or raw device dumps.
+and exports no SMS bodies, SIM authentication material or raw device dumps.
+The explicitly requested APN username/password are displayed in the private tool
+UI; password remains masked until tapped and credentials are excluded from host
+evidence. No APN or carrier setting is changed by these checks.
 
 Root is requested by the tool's own UID: authorizing ADB Shell is insufficient.
 MIUI's app_process needs an explicit telephony bootstrap and active-list slot
